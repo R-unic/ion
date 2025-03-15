@@ -2,7 +2,7 @@
 #include "../abstract/expression.h"
 #include "../../syntax/token.h"
 
-class literal : public expression
+class literal : public virtual expression
 {
 public:
     token token;

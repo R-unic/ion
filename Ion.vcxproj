@@ -179,6 +179,8 @@
     <ClInclude Include="ast\expressions.h" />
     <ClInclude Include="ast\expressions\literal.h" />
     <ClInclude Include="ast\statements.h" />
+    <ClInclude Include="ast\visitors.h" />
+    <ClInclude Include="ast_viewer.h" />
     <ClInclude Include="bi_map.h" />
     <ClInclude Include="lexer.h" />
     <ClInclude Include="parser.h" />

@@ -1,8 +1,10 @@
 bin/
 obj/
 .idea/
+Ion/
 **/x64/
 **/x32/
 /packages/
+Ion.sln.DotSettings.user
 riderModule.iml
 /_ReSharper.Caches/
