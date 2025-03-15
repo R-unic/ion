@@ -1,6 +1,8 @@
 #include <stdexcept>
 #include "lexer.h"
 
+#include <iostream>
+
 #include "syntax/syntax_facts.h"
 
 lexer::lexer(const source_file& file)
@@ -21,7 +23,10 @@ void lexer::lex()
 {
     const char character = current_char();
     lexeme_start_location = current_location();
-    advance();
+    if (character == '\n')
+        advance_new_line();
+    else
+        advance();
 
     switch (character)
     {
@@ -237,6 +242,21 @@ void lexer::read_number()
     }
 }
 
+static std::string escape_string(const std::string& input) {
+    std::string output;
+    for (const char c : input) {
+        switch (c) {
+        case '\"': output += "\\\""; break;
+        case '\\': output += "\\\\"; break;
+        case '\n': output += "\\n"; break;
+        case '\t': output += "\\t"; break;
+        default: output += c;
+        }
+    }
+    return output;
+}
+
+
 void lexer::skip_whitespace()
 {
     while (!is_eof() && std::isspace(current_char()))
@@ -285,7 +305,7 @@ char lexer::peek_char(const size_t offset) const
     return source[position + offset];
 }
 
-bool lexer::match_char(char expected)
+bool lexer::match_char(const char expected)
 {
     const bool is_match = !is_eof() && current_char() == expected;
     if (is_match)
