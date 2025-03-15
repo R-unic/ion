@@ -2,6 +2,7 @@
 #include <string>
 
 #include "syntax/token_stream.h"
+#include "ast/abstract/expression.h"
 
 class source_file
 {
@@ -12,5 +13,5 @@ public:
     explicit source_file(const std::string& file_path);
 
     [[nodiscard]] token_stream tokenize() const;
-    // expression parse();
+    [[nodiscard]] expression parse() const;
 };

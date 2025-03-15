@@ -1,10 +1,10 @@
 #include <fstream>
 #include <sstream>
+
 #include "source_file.h"
-
-#include <iostream>
-
 #include "lexer.h"
+#include "parser.h"
+#include "ast/abstract/expression.h"
 
 source_file::source_file(const std::string& file_path)
 {
@@ -25,4 +25,10 @@ source_file::source_file(const std::string& file_path)
 token_stream source_file::tokenize() const
 {
     return token_stream(lexer(*this).tokenize());
+}
+
+expression source_file::parse() const
+{
+    token_stream tokens = tokenize();
+    return parser(tokens).parse();
 }

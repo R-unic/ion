@@ -95,6 +95,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -111,6 +112,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,6 +131,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -149,6 +152,7 @@
       <ConformanceMode>true</ConformanceMode>
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -160,6 +164,7 @@
   <ItemGroup>
     <ClCompile Include="lexer.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="parser.cpp" />
     <ClCompile Include="source_file.cpp" />
     <ClCompile Include="syntax\location.cpp" />
     <ClCompile Include="syntax\span.cpp" />
@@ -168,8 +173,15 @@
     <ClCompile Include="syntax\token_stream.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ast\abstract\expression.h" />
+    <ClInclude Include="ast\abstract\statement.h" />
+    <ClInclude Include="ast\abstract\syntax_node.h" />
+    <ClInclude Include="ast\expressions.h" />
+    <ClInclude Include="ast\expressions\literal.h" />
+    <ClInclude Include="ast\statements.h" />
     <ClInclude Include="bi_map.h" />
     <ClInclude Include="lexer.h" />
+    <ClInclude Include="parser.h" />
     <ClInclude Include="source_file.h" />
     <ClInclude Include="syntax\location.h" />
     <ClInclude Include="syntax\span.h" />
@@ -180,6 +192,9 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="test.ion" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="ast\statements\" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

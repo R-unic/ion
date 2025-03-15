@@ -26,7 +26,7 @@ public:
     bool has_value(const Key& key)
     {
         return forward.contains(key);
-    }
+    } 
     
     bool has_key(Value value)
     {
