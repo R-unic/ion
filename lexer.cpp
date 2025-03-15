@@ -242,21 +242,6 @@ void lexer::read_number()
     }
 }
 
-static std::string escape_string(const std::string& input) {
-    std::string output;
-    for (const char c : input) {
-        switch (c) {
-        case '\"': output += "\\\""; break;
-        case '\\': output += "\\\\"; break;
-        case '\n': output += "\\n"; break;
-        case '\t': output += "\\t"; break;
-        default: output += c;
-        }
-    }
-    return output;
-}
-
-
 void lexer::skip_whitespace()
 {
     while (!is_eof() && std::isspace(current_char()))
