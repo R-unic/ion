@@ -1,14 +1,12 @@
 #include <stdexcept>
 #include "lexer.h"
 
-#include <iostream>
-#include <ostream>
-
 #include "syntax/syntax_facts.h"
 
 lexer::lexer(const source_file& file)
     : source(file.source), lexeme_start_location(location::empty(file.path))
 {
+    initialize_syntax_facts();
 }
 
 token_stream lexer::tokenize()
