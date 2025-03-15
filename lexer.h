@@ -19,7 +19,7 @@ class lexer
     void read_string(char terminator);
     void read_number();
     void skip_whitespace();
-    void push_token(syntax_kind kind, const token::value_t& value = nullptr);
+    void push_token(syntax_kind kind, const token::value_t& value = std::monostate());
     [[nodiscard]] std::string current_lexeme() const;
     [[nodiscard]] span current_span() const;
     [[nodiscard]] location current_location() const;
