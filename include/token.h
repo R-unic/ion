@@ -1,7 +1,7 @@
 #pragma once
 #include <format>
 
-#include "location.h"
+#include "file_location.h"
 #include "ast/source_file.h"
 
 enum class SyntaxKind : uint8_t
@@ -14,7 +14,7 @@ enum class SyntaxKind : uint8_t
 
 struct Token {
     SyntaxKind kind;
-    Span span;
+    FileSpan span;
     SourceFile file;
 };
 
