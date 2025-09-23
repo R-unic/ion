@@ -96,6 +96,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -113,6 +114,9 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>include</AdditionalIncludeDirectories>
+      <CompileAs>CompileAsCpp</CompileAs>
+      <ShowIncludes>true</ShowIncludes>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,6 +136,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -153,6 +158,7 @@
       <PrecompiledHeaderFile>pch.h</PrecompiledHeaderFile>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <AdditionalIncludeDirectories>include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -162,41 +168,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="lexer.cpp" />
-    <ClCompile Include="main.cpp" />
-    <ClCompile Include="parser.cpp" />
-    <ClCompile Include="source_file.cpp" />
-    <ClCompile Include="syntax\location.cpp" />
-    <ClCompile Include="syntax\span.cpp" />
-    <ClCompile Include="syntax\syntax_facts.cpp" />
-    <ClCompile Include="syntax\token.cpp" />
-    <ClCompile Include="syntax\token_stream.cpp" />
+    <ClCompile Include="src\**\*.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ast\abstract\expression.h" />
-    <ClInclude Include="ast\abstract\statement.h" />
-    <ClInclude Include="ast\abstract\syntax_node.h" />
-    <ClInclude Include="ast\expressions.h" />
-    <ClInclude Include="ast\expressions\literal.h" />
-    <ClInclude Include="ast\statements.h" />
-    <ClInclude Include="ast\visitors.h" />
-    <ClInclude Include="ast_viewer.h" />
-    <ClInclude Include="bi_map.h" />
-    <ClInclude Include="lexer.h" />
-    <ClInclude Include="parser.h" />
-    <ClInclude Include="source_file.h" />
-    <ClInclude Include="syntax\location.h" />
-    <ClInclude Include="syntax\span.h" />
-    <ClInclude Include="syntax\syntax_facts.h" />
-    <ClInclude Include="syntax\syntax_kind.h" />
-    <ClInclude Include="syntax\token.h" />
-    <ClInclude Include="syntax\token_stream.h" />
+    <ClInclude Include="include\**\*.h" />
+    <ClInclude Include="include\**\*.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="test.ion" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="ast\statements\" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
