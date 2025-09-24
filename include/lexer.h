@@ -11,11 +11,33 @@ struct LexState : FileLocation
 };
 
 const std::unordered_map<char, SyntaxKind> single_char_syntaxes = {
-    {'.', SyntaxKind::Dot}
+    {';', SyntaxKind::Semicolon},
+    {',', SyntaxKind::Comma},
+    {'.', SyntaxKind::Dot},
+    {'(', SyntaxKind::LParen},
+    {')', SyntaxKind::RParen},
+    {'[', SyntaxKind::LBracket},
+    {']', SyntaxKind::RBracket},
+    {'{', SyntaxKind::LBrace},
+    {'}', SyntaxKind::RBrace}
 };
 
 const std::unordered_map<std::string, SyntaxKind> keyword_syntaxes = {
-    {"let", SyntaxKind::LetKeyword}
+    {"let", SyntaxKind::LetKeyword},
+    {"fn", SyntaxKind::FnKeyword},
+    {"return", SyntaxKind::ReturnKeyword},
+    {"break", SyntaxKind::BreakKeyword},
+    {"continue", SyntaxKind::ContinueKeyword},
+    {"if", SyntaxKind::IfKeyword},
+    {"else", SyntaxKind::ElseKeyword},
+    {"while", SyntaxKind::WhileKeyword},
+    {"for", SyntaxKind::ForKeyword},
+    {"import", SyntaxKind::ImportKeyword},
+    {"from", SyntaxKind::FromKeyword},
+    {"number", SyntaxKind::NumberKeyword},
+    {"string", SyntaxKind::StringKeyword},
+    {"bool", SyntaxKind::BoolKeyword},
+    {"void", SyntaxKind::VoidKeyword},
 };
 
 std::vector<Token> tokenize(const SourceFile&);

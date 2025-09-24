@@ -34,17 +34,49 @@ enum class SyntaxKind : uint8_t
     BangEquals,
     Equals,
     EqualsEquals,
+    Semicolon,
+    Comma,
     Dot,
     Colon,
     ColonColon,
     Question,
     QuestionQuestion,
     QuestionQuestionEquals,
+    LParen,
+    RParen,
+    LBracket,
+    RBracket,
+    LBrace,
+    RBrace,
+    LArrow,
+    LArrowEquals,
+    LArrowLArrow,
+    LArrowLArrowEquals,
+    RArrow,
+    RArrowEquals,
+    RArrowRArrow,
+    RArrowRArrowEquals,
+    RArrowRArrowRArrow,
+    RArrowRArrowRArrowEquals,
 
     Identifier,
     NumberLiteral,
 
     LetKeyword,
+    FnKeyword,
+    ReturnKeyword,
+    BreakKeyword,
+    ContinueKeyword,
+    IfKeyword,
+    ElseKeyword,
+    WhileKeyword,
+    ForKeyword,
+    ImportKeyword,
+    FromKeyword,
+    NumberKeyword,
+    StringKeyword,
+    BoolKeyword,
+    VoidKeyword
 };
 
 struct Token {
@@ -56,4 +88,9 @@ inline std::string get_text(const Token& token)
 {
     const auto start_position = token.span.start.position;
     return token.span.start.file.text.substr(start_position, token.span.end.position - start_position);
+}
+
+inline std::string format_token(const Token& token)
+{
+    return get_text(token) + " (" + std::to_string(static_cast<int>(token.kind)) + ')';
 }

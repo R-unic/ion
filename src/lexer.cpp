@@ -202,6 +202,40 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
+    case '<':
+        {
+            auto kind = SyntaxKind::LArrow;
+            if (match(state, '='))
+                kind = SyntaxKind::LArrowEquals;
+            else if (match(state, '<'))
+            {
+                kind = SyntaxKind::LArrowLArrow;
+                if (match(state, '='))
+                    kind = SyntaxKind::LArrowLArrowEquals;
+            }
+
+            return push_token(state, kind);
+        }
+    case '>':
+        {
+            auto kind = SyntaxKind::RArrow;
+            if (match(state, '='))
+                kind = SyntaxKind::RArrowEquals;
+            else if (match(state, '>'))
+            {
+                kind = SyntaxKind::RArrowRArrow;
+                if (match(state, '='))
+                    kind = SyntaxKind::RArrowRArrowEquals;
+                else if (match(state, '>'))
+                {
+                    kind = SyntaxKind::RArrowRArrowRArrow;
+                    if (match(state, '='))
+                        kind = SyntaxKind::RArrowRArrowRArrowEquals;
+                }
+            }
+
+            return push_token(state, kind);
+        }
     case '!':
         {
             auto kind = SyntaxKind::Bang;

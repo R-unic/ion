@@ -11,9 +11,7 @@ int main(int argc, char* argv[])
     const auto file = create_file("test.ion");
     const auto tokens = tokenize(file);
     for (const auto& token : tokens)
-    {
-        std::cout << get_text(token) << " (" << std::to_string(static_cast<int>(token.kind)) << ')' << '\n';
-    }
+        std::cout << format_token(token) << '\n';
     
     return 0;
 }
