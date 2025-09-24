@@ -32,15 +32,16 @@ const std::unordered_map<std::string, SyntaxKind> keyword_syntaxes = {
     {"else", SyntaxKind::ElseKeyword},
     {"while", SyntaxKind::WhileKeyword},
     {"for", SyntaxKind::ForKeyword},
+    {"instance", SyntaxKind::InstanceKeyword},
+    {"event", SyntaxKind::EventKeyword},
+    {"typeof", SyntaxKind::TypeOfKeyword},
+    {"type", SyntaxKind::TypeKeyword},
+    {"interface", SyntaxKind::InterfaceKeyword},
     {"import", SyntaxKind::ImportKeyword},
     {"from", SyntaxKind::FromKeyword},
     {"true", SyntaxKind::TrueKeyword},
     {"false", SyntaxKind::FalseKeyword},
-    {"null", SyntaxKind::NullKeyword},
-    {"number", SyntaxKind::NumberKeyword},
-    {"string", SyntaxKind::StringKeyword},
-    {"bool", SyntaxKind::BoolKeyword},
-    {"void", SyntaxKind::VoidKeyword},
+    {"null", SyntaxKind::NullKeyword}
 };
 
 std::vector<Token> tokenize(const SourceFile&);

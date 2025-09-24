@@ -73,15 +73,16 @@ enum class SyntaxKind : uint8_t
     ElseKeyword,
     WhileKeyword,
     ForKeyword,
+    InstanceKeyword,
+    EventKeyword,
+    TypeOfKeyword,
+    TypeKeyword,
+    InterfaceKeyword,
     ImportKeyword,
     FromKeyword,
     TrueKeyword,
     FalseKeyword,
-    NumberKeyword,
-    StringKeyword,
-    NullKeyword,
-    BoolKeyword,
-    VoidKeyword
+    NullKeyword
 };
 
 struct Token {

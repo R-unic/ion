@@ -1,1 +1,13 @@
-"abc\ndef"
+event data_changed<T>(T);
+
+fn on_data_change<T>(new_data: T): void {
+    print("New data: {new_data}");
+}
+
+data_changed += on_data_change;
+
+let data = 69;
+## do something
+
+data = 420;
+data_changed!(data);

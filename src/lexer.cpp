@@ -263,6 +263,14 @@ static void read_string(LexState& state, const char terminator)
     push_token_override_text(state, SyntaxKind::StringLiteral, text);
 }
 
+static void skip_single_line_comment(LexState& state)
+{
+    while (!is_eof(state) && current_character(state) != '\n')
+        advance(state);
+
+    const auto text = consume_lexeme(state);
+}
+
 static void lex(LexState& state)
 {
     const auto character = current_character(state);
@@ -424,6 +432,12 @@ static void lex(LexState& state)
         
     case '\n':
         return skip_newlines(state);
+    case '#':
+        {
+            if (match(state, '#'))
+                return skip_single_line_comment(state);
+        }
+        break;
     case '"':
     case '\'':
         return read_string(state, character);
