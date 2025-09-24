@@ -1,10 +1,7 @@
-#include "lexer.h"
-
-#include <iostream>
-#include <unordered_map>
 #include <vector>
 
 #include "diagnostics.h"
+#include "lexer.h"
 
 static void advance(LexState& state)
 {
@@ -69,10 +66,6 @@ static void push_token(LexState& state, const SyntaxKind kind)
     state.tokens->push_back(token);
 }
 
-const std::unordered_map<char, SyntaxKind> single_char_syntaxes = {
-    {'.', SyntaxKind::Dot}
-};
-
 static bool is_whitespace(const char character)
 {
     return character == ' '
@@ -101,6 +94,25 @@ static void skip_newlines(LexState& state)
 
     state.column = 0;
     const auto text = consume_lexeme(state);
+}
+
+static bool is_valid_identifier_char(const char character, const bool include_numbers)
+{
+    return character == '_' || (
+        include_numbers
+            ? std::isalnum(character)
+            : std::isalpha(character)
+    );
+}
+
+static void read_identifier_or_keyword(LexState& state)
+{
+    while (!is_eof(state) && is_valid_identifier_char(current_character(state), true))
+        advance(state);
+
+    const auto text = current_lexeme(state);
+    const auto kind = keyword_syntaxes.contains(text) ? keyword_syntaxes.at(text) : SyntaxKind::Identifier;
+    push_token(state, kind);
 }
 
 static void lex(LexState& state)
@@ -198,6 +210,14 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
+    case '=':
+        {
+            auto kind = SyntaxKind::Equals;
+            if (match(state, '='))
+                kind = SyntaxKind::EqualsEquals;
+
+            return push_token(state, kind);
+        }
     case '?':
         {
             auto kind = SyntaxKind::Question;
@@ -225,6 +245,8 @@ static void lex(LexState& state)
 
     if (is_whitespace(character))
         return skip_whitespace(state);
+    if (is_valid_identifier_char(character, false))
+        return read_identifier_or_keyword(state);
     if (single_char_syntaxes.contains(character))
         return push_token(state, single_char_syntaxes.at(character));
 

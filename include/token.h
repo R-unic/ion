@@ -32,6 +32,8 @@ enum class SyntaxKind : uint8_t
     TildeEquals,
     Bang,
     BangEquals,
+    Equals,
+    EqualsEquals,
     Dot,
     Colon,
     ColonColon,
@@ -41,6 +43,8 @@ enum class SyntaxKind : uint8_t
 
     Identifier,
     NumberLiteral,
+
+    LetKeyword,
 };
 
 struct Token {

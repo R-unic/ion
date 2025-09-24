@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
     const auto tokens = tokenize(file);
     for (const auto& token : tokens)
     {
-        std::cout << get_text(token) << '\n';
+        std::cout << get_text(token) << " (" << std::to_string(static_cast<int>(token.kind)) << ')' << '\n';
     }
     
     return 0;
