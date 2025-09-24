@@ -25,6 +25,15 @@ static char current_character(const LexState& state)
     return state.file.text[state.position];
 }
 
+static bool match(LexState& state, const char character)
+{
+    const auto is_match = !is_eof(state) && current_character(state) == character;
+    if (is_match)
+        advance(state);
+    
+    return is_match;
+}
+
 static FileLocation current_location(const LexState& state)
 {
     return static_cast<FileLocation>(state);
@@ -49,26 +58,34 @@ static std::string consume_lexeme(LexState& state)
     return lexeme;
 }
 
-static void push_token(const LexState& state, const SyntaxKind kind)
+static void push_token(LexState& state, const SyntaxKind kind)
 {
     const auto token = Token {
         .kind = kind,
         .span = current_span(state)
     };
 
+    consume_lexeme(state);
     state.tokens->push_back(token);
 }
 
 const std::unordered_map<char, SyntaxKind> single_char_syntaxes = {
-    {'+', SyntaxKind::Plus},
-    {'-', SyntaxKind::Minus},
-    {'*', SyntaxKind::Star},
-    {'/', SyntaxKind::Slash},
+    {'.', SyntaxKind::Dot}
 };
+
+static bool is_whitespace(const char character)
+{
+    return character == ' '
+        || character == '\n'
+        || character == '\t'
+        || character == '\r'
+        || character == '\v'
+        || character == '\f';
+}
 
 static void skip_whitespace(LexState& state)
 {
-    while (!is_eof(state) && std::isblank(current_character(state)))
+    while (!is_eof(state) && is_whitespace(current_character(state)))
         advance(state);
 
     const auto text = consume_lexeme(state);
@@ -93,11 +110,120 @@ static void lex(LexState& state)
 
     switch (character)
     {
+    case '+':
+        {
+            auto kind = SyntaxKind::Plus;
+            if (match(state, '+'))
+                kind = SyntaxKind::PlusPlus;
+            else if (match(state, '='))
+                kind = SyntaxKind::PlusEquals;
+
+            return push_token(state, kind);
+        }
+    case '-':
+        {
+            auto kind = SyntaxKind::Minus;
+            if (match(state, '-'))
+                kind = SyntaxKind::MinusMinus;
+            else if (match(state, '='))
+                kind = SyntaxKind::MinusEquals;
+
+            return push_token(state, kind);
+        }
+    case '*':
+        {
+            auto kind = SyntaxKind::Star;
+            if (match(state, '='))
+                kind = SyntaxKind::StarEquals;
+
+            return push_token(state, kind);
+        }
+    case '/':
+        {
+            auto kind = SyntaxKind::Slash;
+            if (match(state, '='))
+                kind = SyntaxKind::SlashEquals;
+
+            return push_token(state, kind);
+        }
+    case '^':
+        {
+            auto kind = SyntaxKind::Carat;
+            if (match(state, '='))
+                kind = SyntaxKind::CaratEquals;
+
+            return push_token(state, kind);
+        }
+    case '&':
+        {
+            auto kind = SyntaxKind::Ampersand;
+            if (match(state, '='))
+                kind = SyntaxKind::AmpersandEquals;
+            else if (match(state, '&'))
+            {
+                kind = SyntaxKind::AmpersandAmpersand;
+                if (match(state, '='))
+                    kind = SyntaxKind::AmpersandAmpersandEquals;
+            }
+
+            return push_token(state, kind);
+        }
+    case '|':
+        {
+            auto kind = SyntaxKind::Pipe;
+            if (match(state, '='))
+                kind = SyntaxKind::PipeEquals;
+            else if (match(state, '|'))
+            {
+                kind = SyntaxKind::PipePipe;
+                if (match(state, '='))
+                    kind = SyntaxKind::PipePipeEquals;
+            }
+
+            return push_token(state, kind);
+        }
+    case '~':
+        {
+            auto kind = SyntaxKind::Tilde;
+            if (match(state, '='))
+                kind = SyntaxKind::TildeEquals;
+
+            return push_token(state, kind);
+        }
+    case '!':
+        {
+            auto kind = SyntaxKind::Bang;
+            if (match(state, '='))
+                kind = SyntaxKind::BangEquals;
+
+            return push_token(state, kind);
+        }
+    case '?':
+        {
+            auto kind = SyntaxKind::Question;
+            if (match(state, '?'))
+            {
+                kind = SyntaxKind::QuestionQuestion;
+                if (match(state, '='))
+                    kind = SyntaxKind::QuestionQuestionEquals;
+            }
+
+            return push_token(state, kind);
+        }
+    case ':':
+        {
+            auto kind = SyntaxKind::Colon;
+            if (match(state, ':'))
+                kind = SyntaxKind::ColonColon;
+
+            return push_token(state, kind);
+        }
+        
     case '\n':
         return skip_newlines(state);
     }
 
-    if (std::isblank(current_character(state)))
+    if (is_whitespace(character))
         return skip_whitespace(state);
     if (single_char_syntaxes.contains(character))
         return push_token(state, single_char_syntaxes.at(character));

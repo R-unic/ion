@@ -7,9 +7,40 @@
 enum class SyntaxKind : uint8_t
 {
     Plus,
+    PlusEquals,
+    PlusPlus,
     Minus,
+    MinusMinus,
+    MinusEquals,
     Star,
-    Slash
+    StarEquals,
+    Slash,
+    SlashEquals,
+    Percent,
+    PercentEquals,
+    Carat,
+    CaratEquals,
+    AmpersandAmpersand,
+    AmpersandAmpersandEquals,
+    PipePipe,
+    PipePipeEquals,
+    Ampersand,
+    AmpersandEquals,
+    Pipe,
+    PipeEquals,
+    Tilde,
+    TildeEquals,
+    Bang,
+    BangEquals,
+    Dot,
+    Colon,
+    ColonColon,
+    Question,
+    QuestionQuestion,
+    QuestionQuestionEquals,
+
+    Identifier,
+    NumberLiteral,
 };
 
 struct Token {
