@@ -52,10 +52,15 @@ static std::string current_lexeme(const LexState& state)
     return state.file.text.substr(start_position, state.position - start_position);
 }
 
+static void start_new_lexeme(LexState& state)
+{
+    state.lexeme_start = current_location(state);
+}
+
 static std::string consume_lexeme(LexState& state)
 {
     const auto lexeme = current_lexeme(state);
-    state.lexeme_start = current_location(state);
+    start_new_lexeme(state);
 
     return lexeme;
 }
@@ -65,6 +70,18 @@ static std::string consume_lexeme(LexState& state)
     report_malformed_number(state.lexeme_start, current_lexeme(state));
 }
 
+static void push_token_override_text(LexState& state, const SyntaxKind kind, const std::string& text)
+{
+    const auto token = Token {
+        .kind = kind,
+        .span = current_span(state),
+        .text = text
+    };
+
+    start_new_lexeme(state);
+    state.tokens->push_back(token);
+}
+
 static void push_token(LexState& state, const SyntaxKind kind)
 {
     const auto token = Token {
@@ -72,7 +89,7 @@ static void push_token(LexState& state, const SyntaxKind kind)
         .span = current_span(state)
     };
 
-    consume_lexeme(state);
+    start_new_lexeme(state);
     state.tokens->push_back(token);
 }
 
@@ -202,17 +219,48 @@ static void read_number(LexState& state, const char first_character)
     return read_decimal_number(state);
 }
 
+std::string unescape(const std::string& s) {
+    std::string result;
+    result.reserve(s.size());
+    for (size_t i = 0; i < s.size(); ++i) {
+        if (s[i] == '\\' && i + 1 < s.size()) {
+            switch (s[++i]) {
+            case 'n': result += '\n'; break;
+            case 'r': result += '\r'; break;
+            case 't': result += '\t'; break;
+            case 'b': result += '\b'; break;
+            case 'f': result += '\f'; break;
+            case 'v': result += '\v'; break;
+            case 'a': result += '\a'; break;
+            case 'e': result += '\x1B'; break; // escape
+            case '\\': result += '\\'; break;
+            case '"': result += '"'; break;
+            case '\'': result += '\''; break;
+            default:  result += s[i]; break; // unknown escape: keep literal
+            }
+        } else {
+            result += s[i];
+        }
+    }
+    return result;
+}
+
 static void read_string(LexState& state, const char terminator)
 {
     char character;
     while (!is_eof(state) && (character = current_character(state)) != terminator && character != '\n')
+    {
         advance(state);
+    }
 
-    if (current_character(state) != terminator)
-        malformed_number(state);
-
+    const auto last_character = current_character(state);
     advance(state);
-    push_token(state, SyntaxKind::StringLiteral);
+    
+    const auto text = unescape(current_lexeme(state));
+    if (last_character != terminator)
+        report_unterminated_string(state, text);
+
+    push_token_override_text(state, SyntaxKind::StringLiteral, text);
 }
 
 static void lex(LexState& state)

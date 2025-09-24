@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <format>
 
 #include "file_location.h"
@@ -86,12 +87,15 @@ enum class SyntaxKind : uint8_t
 struct Token {
     SyntaxKind kind;
     FileSpan span;
+    std::optional<std::string> text;
 };
 
 inline std::string get_text(const Token& token)
 {
     const auto start_position = token.span.start.position;
-    return token.span.start.file.text.substr(start_position, token.span.end.position - start_position);
+    return token.text.has_value() 
+    ? token.text.value()
+        : token.span.start.file.text.substr(start_position, token.span.end.position - start_position);
 }
 
 inline std::string format_token(const Token& token)
