@@ -10,7 +10,7 @@
 
 [[noreturn]] static void error(const std::string& message, const uint8_t code)
 {
-    std::cerr << message << '\n';
+    std::cout << message << '\n';
     exit(code);
 }
 

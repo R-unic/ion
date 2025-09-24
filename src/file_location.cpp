@@ -11,10 +11,10 @@ std::string format_location(const FileLocation& location, const bool include_fil
 
 FileLocation get_start_location(const SourceFile& file)
 {
-    return FileLocation {
-        .position = 0,
-        .line = 1,
-        .column = 0,
-        .file = file
-    };
+    return FileLocation { .file = file };
+}
+
+FileSpan create_span(const FileLocation& start, const FileLocation& end)
+{
+    return FileSpan { .start = start, .end = end };
 }

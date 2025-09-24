@@ -5,9 +5,9 @@
 
 struct FileLocation
 {
-    int position;
-    int line;
-    int column;
+    int position = 0;
+    int line = 1;
+    int column = 0;
     SourceFile file;
 };
 
@@ -19,3 +19,4 @@ struct FileSpan
 
 std::string format_location(const FileLocation&, bool = true);
 FileLocation get_start_location(const SourceFile&);
+FileSpan create_span(const FileLocation&, const FileLocation&);
