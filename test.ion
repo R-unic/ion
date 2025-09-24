@@ -1,7 +1,7 @@
-import nutz from nutlib;
-
-fn add(a: number, b: number): number {
-    return a + b;
-}
-
-add(1, 2);
+420.69
+420
+"abc"
+'def'
+true
+false
+null

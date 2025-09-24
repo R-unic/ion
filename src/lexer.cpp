@@ -115,12 +115,67 @@ static void read_identifier_or_keyword(LexState& state)
     push_token(state, kind);
 }
 
+static bool is_hex_digit(const LexState& state)
+{
+    const auto character = current_character(state);
+    return std::isdigit(character) || (character >= 'A' && character <= 'F');
+}
+
+static void read_hex_number(LexState& state)
+{
+    while (!is_eof(state) && is_hex_digit(state))
+        advance(state);
+
+    push_token(state, SyntaxKind::NumberLiteral);
+}
+
+static bool is_numeric_char(const char character)
+{
+    return std::isdigit(character) || character == '_';
+}
+
+static void read_decimal_number(LexState& state)
+{
+    bool decimal_used = false;
+    bool decimal_used_twice = false;
+    char character;
+    while (!is_eof(state) && (is_numeric_char(character = current_character(state)) || character == '.'))
+    {
+        if (character == '.')
+        {
+            if (decimal_used)
+                decimal_used_twice = true;
+            
+            decimal_used = true;
+        }
+        
+        advance(state);
+    }
+
+    if (decimal_used_twice)
+        report_malformed_number(state.lexeme_start, current_lexeme(state));
+
+    push_token(state, SyntaxKind::NumberLiteral);
+}
+
+static void read_number(LexState& state, const char first_character)
+{
+    if (first_character == '0')
+    {
+        if (match(state, 'x'))
+            return read_hex_number(state);
+    }
+
+    return read_decimal_number(state);
+}
+
 static void lex(LexState& state)
 {
     const auto character = current_character(state);
     advance(state);
 
-    switch (character)
+    // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
+    switch (character) // NOLINT(hicpp-multiway-paths-covered)
     {
     case '+':
         {
@@ -281,6 +336,8 @@ static void lex(LexState& state)
         return skip_whitespace(state);
     if (is_valid_identifier_char(character, false))
         return read_identifier_or_keyword(state);
+    if (is_numeric_char(character))
+        return read_number(state, character);
     if (single_char_syntaxes.contains(character))
         return push_token(state, single_char_syntaxes.at(character));
 

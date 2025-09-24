@@ -36,6 +36,16 @@ static std::string format_severity(const DiagnosticSeverity severity)
     error(format_diagnostic(diagnostic), diagnostic.code);
 }
 
+[[noreturn]] static void report_error(const uint8_t code, const FileLocation& location, const diagnostic_data_t& data)
+{
+    report(Diagnostic {
+        .code = code,
+        .severity = DiagnosticSeverity::Error,
+        .location = location,
+        .data = data
+    });
+}
+
 [[noreturn]] void report_compiler_error(const std::string& message)
 {
     error("Compiler error: " + message, -1);
@@ -43,12 +53,12 @@ static std::string format_severity(const DiagnosticSeverity severity)
 
 [[noreturn]] void report_unexpected_character(const FileLocation& location, const char character)
 {
-    report(Diagnostic {
-        .code     = 0001,
-        .severity = DiagnosticSeverity::Error,
-        .location = location,
-        .data     = UnexpectedCharacter { character }
-    });
+    report_error(0001, location, UnexpectedCharacter { character });
+}
+
+[[noreturn]] void report_malformed_number(const FileLocation& location, const std::string& malformed)
+{
+    report_error(0002, location, MalformedNumber { malformed });
 }
 
 std::string format_diagnostic(const Diagnostic& diagnostic)
@@ -60,6 +70,8 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
         using type_t = std::decay_t<T>;
         if constexpr (std::is_same_v<type_t, UnexpectedCharacter>)
            return "Unexpected character: '" + std::string(1, arg.character) + '\'';
+        else if constexpr (std::is_same_v<type_t, MalformedNumber>)
+            return "Malformed number: '" + arg.malformed + '\'';
         
         report_compiler_error("Unhandled diagnostic type: " + std::to_string(diagnostic.data.index()));
     }, diagnostic.data);
