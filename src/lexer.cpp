@@ -1,13 +1,8 @@
+#include <optional>
 #include <vector>
 
 #include "diagnostics.h"
 #include "lexer.h"
-
-static void advance(LexState& state)
-{
-    state.position++;
-    state.column++;
-}
 
 static bool is_eof(const LexState& state)
 {
@@ -20,6 +15,16 @@ static char current_character(const LexState& state)
         report_compiler_error("Lexer attempted to access an out of bounds file source index");
     
     return state.file.text[state.position];
+}
+
+static std::optional<char> advance(LexState& state)
+{
+    state.position++;
+    state.column++;
+    if (is_eof(state))
+        return std::nullopt;
+    
+    return current_character(state);
 }
 
 static bool match(LexState& state, const char character)
@@ -53,6 +58,11 @@ static std::string consume_lexeme(LexState& state)
     state.lexeme_start = current_location(state);
 
     return lexeme;
+}
+
+[[noreturn]] static void malformed_number(const LexState& state)
+{
+    report_malformed_number(state.lexeme_start, current_lexeme(state));
 }
 
 static void push_token(LexState& state, const SyntaxKind kind)
@@ -114,45 +124,65 @@ static void read_identifier_or_keyword(LexState& state)
     push_token(state, kind);
 }
 
+static bool is_numeric_char(const char character)
+{
+    return std::isdigit(character) || character == '_';
+}
+
 static bool is_hex_digit(const LexState& state)
 {
     const auto character = current_character(state);
     return std::isdigit(character) || (character >= 'A' && character <= 'F');
 }
 
-static void read_hex_number(LexState& state)
+static void read_non_decimal_number(LexState& state, bool (*is_valid_digit)(const LexState&))
 {
-    while (!is_eof(state) && is_hex_digit(state))
+    bool malformed = false;
+    while (!is_eof(state) && is_valid_digit(state))
+    {
+        const auto next_character = advance(state);
+        malformed = next_character.has_value() && std::isalnum(next_character.value()) && !is_valid_digit(state);
+    }
+    
+    if (malformed)
+    {
         advance(state);
+        malformed_number(state);
+    }
 
     push_token(state, SyntaxKind::NumberLiteral);
 }
 
-static bool is_numeric_char(const char character)
+static bool is_octal_digit(const LexState& state)
 {
-    return std::isdigit(character) || character == '_';
+    const auto character = current_character(state);
+    return character >= '0' && character <= '7';
+}
+
+static bool is_binary_digit(const LexState& state)
+{
+    const auto character = current_character(state);
+    return character == '1' || character == '0';
 }
 
 static void read_decimal_number(LexState& state)
 {
     bool decimal_used = false;
-    bool decimal_used_twice = false;
+    bool malformed = false;
     char character;
     while (!is_eof(state) && (is_numeric_char(character = current_character(state)) || character == '.'))
     {
         if (character == '.')
         {
-            if (decimal_used)
-                decimal_used_twice = true;
-            
+            malformed = decimal_used;
             decimal_used = true;
         }
         
         advance(state);
     }
 
-    if (decimal_used_twice)
-        report_malformed_number(state.lexeme_start, current_lexeme(state));
+    if (malformed)
+        malformed_number(state);
 
     push_token(state, SyntaxKind::NumberLiteral);
 }
@@ -162,7 +192,11 @@ static void read_number(LexState& state, const char first_character)
     if (first_character == '0')
     {
         if (match(state, 'x'))
-            return read_hex_number(state);
+            return read_non_decimal_number(state, is_hex_digit);
+        if (match(state, 'o'))
+            return read_non_decimal_number(state, is_octal_digit);
+        if (match(state, 'b'))
+            return read_non_decimal_number(state, is_binary_digit);
     }
 
     return read_decimal_number(state);
@@ -174,9 +208,8 @@ static void read_string(LexState& state, const char terminator)
     while (!is_eof(state) && (character = current_character(state)) != terminator && character != '\n')
         advance(state);
 
-    const auto terminated = current_character(state) == terminator;
-    if (!terminated)
-        report_unterminated_string(state.lexeme_start, current_lexeme(state));
+    if (current_character(state) != terminator)
+        malformed_number(state);
 
     advance(state);
     push_token(state, SyntaxKind::StringLiteral);
