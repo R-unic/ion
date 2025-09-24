@@ -61,6 +61,11 @@ static std::string format_severity(const DiagnosticSeverity severity)
     report_error(0002, location, MalformedNumber { malformed });
 }
 
+[[noreturn]] void report_unterminated_string(const FileLocation& location, const std::string& body)
+{
+    report_error(0002, location, UnterminatedString { body });
+}
+
 std::string format_diagnostic(const Diagnostic& diagnostic)
 {
     const auto location = format_location(diagnostic.location);
@@ -72,6 +77,13 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
            return "Unexpected character: '" + std::string(1, arg.character) + '\'';
         else if constexpr (std::is_same_v<type_t, MalformedNumber>)
             return "Malformed number: '" + arg.malformed + '\'';
+        else if constexpr (std::is_same_v<type_t, UnterminatedString>)
+        {
+            auto body = static_cast<std::string>(arg.body);
+            body.erase(body.find_last_not_of('\n') + 1);
+            
+            return "Unterminated string: '" + body + '\'';
+        }
         
         report_compiler_error("Unhandled diagnostic type: " + std::to_string(diagnostic.data.index()));
     }, diagnostic.data);

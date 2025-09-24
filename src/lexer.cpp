@@ -69,7 +69,6 @@ static void push_token(LexState& state, const SyntaxKind kind)
 static bool is_whitespace(const char character)
 {
     return character == ' '
-        || character == '\n'
         || character == '\t'
         || character == '\r'
         || character == '\v'
@@ -167,6 +166,20 @@ static void read_number(LexState& state, const char first_character)
     }
 
     return read_decimal_number(state);
+}
+
+static void read_string(LexState& state, const char terminator)
+{
+    char character;
+    while (!is_eof(state) && (character = current_character(state)) != terminator && character != '\n')
+        advance(state);
+
+    const auto terminated = current_character(state) == terminator;
+    if (!terminated)
+        report_unterminated_string(state.lexeme_start, current_lexeme(state));
+
+    advance(state);
+    push_token(state, SyntaxKind::StringLiteral);
 }
 
 static void lex(LexState& state)
@@ -330,6 +343,9 @@ static void lex(LexState& state)
         
     case '\n':
         return skip_newlines(state);
+    case '"':
+    case '\'':
+        return read_string(state, character);
     }
 
     if (is_whitespace(character))

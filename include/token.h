@@ -61,6 +61,7 @@ enum class SyntaxKind : uint8_t
 
     Identifier,
     NumberLiteral,
+    StringLiteral,
 
     LetKeyword,
     FnKeyword,
@@ -73,8 +74,11 @@ enum class SyntaxKind : uint8_t
     ForKeyword,
     ImportKeyword,
     FromKeyword,
+    TrueKeyword,
+    FalseKeyword,
     NumberKeyword,
     StringKeyword,
+    NullKeyword,
     BoolKeyword,
     VoidKeyword
 };
