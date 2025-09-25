@@ -12,6 +12,7 @@ class AstViewer final : public ExpressionVisitor<void>, public StatementVisitor<
     static void write(const std::string&);
     static void write(const char*);
     static void write_line();
+    void write_indent() const;
     void write_line(const std::string&) const;
     void write_line(const char*) const;
     

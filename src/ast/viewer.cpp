@@ -23,9 +23,15 @@ void AstViewer::write_line(const std::string& text) const
     write_line(text.c_str());
 }
 
+void AstViewer::write_indent() const
+{
+    std::cout << std::string(2ull * indent_, ' ');
+}
+
 void AstViewer::write_line(const char* text) const
 {
-    std::cout << text << '\n' << std::string(2ull * indent_, ' ');
+    std::cout << text << '\n';
+    write_indent();
 }
 
 void AstViewer::visit_literal(const Literal& literal)
@@ -58,9 +64,10 @@ void AstViewer::visit_binary_op(const BinaryOp& binary_op)
     write_line(",");
     write_line('"' + get_text(binary_op.operator_token) + "\",");
     visit(binary_op.right);
-    indent_--;
     write_line();
-    write_line(")");
+    indent_--;
+    write_indent();
+    write(")");
 }
 
 void AstViewer::visit_expression_statement(const ExpressionStatement& expression_statement)
@@ -69,5 +76,6 @@ void AstViewer::visit_expression_statement(const ExpressionStatement& expression
     write_line("ExpressionStatement(");
     visit(expression_statement.expression);
     indent_--;
+    write_indent();
     write_line(")");
 }
