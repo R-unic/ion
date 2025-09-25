@@ -3,6 +3,7 @@
 #include "diagnostics.h"
 #include "parser.h"
 
+#include <algorithm>
 #include <iostream>
 
 #include "lexer.h"
@@ -51,10 +52,28 @@ static std::optional<Token> advance(ParseState& state)
     return token;
 }
 
-static bool match(ParseState& state, const SyntaxKind kind)
+static bool check(const ParseState& state, const SyntaxKind kind)
 {
     const auto token = current_token(state);
-    const auto is_match = token.has_value() && token.value().kind == kind;
+    return token.has_value() && token.value().kind == kind;
+}
+
+static bool match(ParseState& state, const SyntaxKind kind)
+{
+    const auto is_match = check(state, kind);
+    if (is_match)
+        advance(state);
+    
+    return is_match;
+}
+
+static bool match_any(ParseState& state, const std::vector<SyntaxKind>& characters)
+{
+    const auto is_match = !is_eof(state) && std::ranges::any_of(characters, [&](const auto syntax)
+    {
+        return check(state, syntax);
+    });
+    
     if (is_match)
         advance(state);
     
@@ -128,10 +147,10 @@ static expression_ptr_t parse_primary(ParseState& state)
     }
 }
 
-static expression_ptr_t parse_addition(ParseState& state)
+static expression_ptr_t parse_exponentation(ParseState& state)
 {
     auto left = parse_primary(state);
-    while (match(state, SyntaxKind::Plus) || match(state, SyntaxKind::Minus))
+    while (match(state, SyntaxKind::Carat))
     {
         const auto operator_token = previous_token(state);
         auto right = parse_primary(state);
@@ -141,9 +160,137 @@ static expression_ptr_t parse_addition(ParseState& state)
     return left;
 }
 
+const std::vector multiplicative_syntaxes = {SyntaxKind::Star, SyntaxKind::Slash, SyntaxKind::Percent};
+static expression_ptr_t parse_multiplication(ParseState& state)
+{
+    auto left = parse_exponentation(state);
+    while (match_any(state, multiplicative_syntaxes))
+    {
+        const auto operator_token = previous_token(state);
+        auto right = parse_exponentation(state);
+        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+const std::vector additive_syntaxes = {SyntaxKind::Plus, SyntaxKind::Minus};
+static expression_ptr_t parse_addition(ParseState& state)
+{
+    auto left = parse_multiplication(state);
+    while (match_any(state, additive_syntaxes))
+    {
+        const auto operator_token = previous_token(state);
+        auto right = parse_multiplication(state);
+        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+const std::vector bit_shift_syntaxes = {SyntaxKind::LArrowLArrow, SyntaxKind::RArrowRArrow, SyntaxKind::RArrowRArrowRArrow};
+static expression_ptr_t parse_bit_shift(ParseState& state)
+{
+    auto left = parse_addition(state);
+    while (match_any(state, bit_shift_syntaxes))
+    {
+        const auto operator_token = previous_token(state);
+        auto right = parse_addition(state);
+        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+static expression_ptr_t parse_bitwise_and(ParseState& state)
+{
+    auto left = parse_bit_shift(state);
+    while (match(state, SyntaxKind::Ampersand))
+    {
+        const auto operator_token = previous_token(state);
+        auto right = parse_bit_shift(state);
+        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+static expression_ptr_t parse_bitwise_or(ParseState& state)
+{
+    auto left = parse_bitwise_and(state);
+    while (match(state, SyntaxKind::Pipe))
+    {
+        const auto operator_token = previous_token(state);
+        auto right = parse_bitwise_and(state);
+        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+static expression_ptr_t parse_bitwise_xor(ParseState& state)
+{
+    auto left = parse_bitwise_or(state);
+    while (match(state, SyntaxKind::Tilde))
+    {
+        const auto operator_token = previous_token(state);
+        auto right = parse_bitwise_or(state);
+        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+const std::vector comparison_syntaxes = {
+    SyntaxKind::EqualsEquals,
+    SyntaxKind::BangEquals,
+    SyntaxKind::LArrow,
+    SyntaxKind::LArrowEquals,
+    SyntaxKind::RArrow,
+    SyntaxKind::RArrowEquals
+};
+static expression_ptr_t parse_comparison(ParseState& state)
+{
+    auto left = parse_bitwise_xor(state);
+    while (match_any(state, comparison_syntaxes))
+    {
+        const auto operator_token = previous_token(state);
+        auto right = parse_bitwise_xor(state);
+        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+static expression_ptr_t parse_logical_and(ParseState& state)
+{
+    auto left = parse_comparison(state);
+    while (match(state, SyntaxKind::AmpersandAmpersand))
+    {
+        const auto operator_token = previous_token(state);
+        auto right = parse_comparison(state);
+        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+static expression_ptr_t parse_logical_or(ParseState& state)
+{
+    auto left = parse_logical_and(state);
+    while (match(state, SyntaxKind::PipePipe))
+    {
+        const auto operator_token = previous_token(state);
+        auto right = parse_logical_and(state);
+        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
 static expression_ptr_t parse_expression(ParseState& state)
 {
-    return parse_addition(state);
+    return parse_logical_or(state);
 }
 
 expression_ptr_t parse(const SourceFile* file)

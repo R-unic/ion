@@ -47,7 +47,7 @@ static bool match(LexState& state, const char character)
 
 static bool match_any(LexState& state, const std::vector<char>& characters)
 {
-    const auto is_match = !is_eof(state) && std::ranges::any_of(characters, [&](const char character)
+    const auto is_match = !is_eof(state) && std::ranges::any_of(characters, [&](const auto character)
     {
         return check(state, character);
     });
