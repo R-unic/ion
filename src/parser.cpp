@@ -10,6 +10,7 @@
 #include "ast/node.h"
 #include "ast/expressions/binary_op.h"
 #include "ast/expressions/literal.h"
+#include "ast/expressions/unary_op.h"
 
 static bool is_eof(const ParseState& state, const int offset = 0)
 {
@@ -147,14 +148,27 @@ static expression_ptr_t parse_primary(ParseState& state)
     }
 }
 
+const std::vector unary_syntaxes = {SyntaxKind::Bang, SyntaxKind::Tilde, SyntaxKind::Minus};
+static expression_ptr_t parse_unary(ParseState& state)
+{
+    while (match_any(state, unary_syntaxes))
+    {
+        const auto operator_token = *previous_token(state);
+        auto operand = parse_unary(state);
+        return UnaryOp::create(operator_token, std::move(operand));
+    }
+
+    return parse_primary(state);
+}
+
 static expression_ptr_t parse_exponentation(ParseState& state)
 {
-    auto left = parse_primary(state);
+    auto left = parse_unary(state);
     while (match(state, SyntaxKind::Carat))
     {
-        const auto operator_token = previous_token(state);
-        auto right = parse_primary(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        const auto operator_token = *previous_token(state);
+        auto right = parse_unary(state);
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
@@ -166,9 +180,9 @@ static expression_ptr_t parse_multiplication(ParseState& state)
     auto left = parse_exponentation(state);
     while (match_any(state, multiplicative_syntaxes))
     {
-        const auto operator_token = previous_token(state);
+        const auto operator_token = *previous_token(state);
         auto right = parse_exponentation(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
@@ -180,9 +194,9 @@ static expression_ptr_t parse_addition(ParseState& state)
     auto left = parse_multiplication(state);
     while (match_any(state, additive_syntaxes))
     {
-        const auto operator_token = previous_token(state);
+        const auto operator_token = *previous_token(state);
         auto right = parse_multiplication(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
@@ -194,9 +208,9 @@ static expression_ptr_t parse_bit_shift(ParseState& state)
     auto left = parse_addition(state);
     while (match_any(state, bit_shift_syntaxes))
     {
-        const auto operator_token = previous_token(state);
+        const auto operator_token = *previous_token(state);
         auto right = parse_addition(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
@@ -207,9 +221,9 @@ static expression_ptr_t parse_bitwise_and(ParseState& state)
     auto left = parse_bit_shift(state);
     while (match(state, SyntaxKind::Ampersand))
     {
-        const auto operator_token = previous_token(state);
+        const auto operator_token = *previous_token(state);
         auto right = parse_bit_shift(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
@@ -220,9 +234,9 @@ static expression_ptr_t parse_bitwise_or(ParseState& state)
     auto left = parse_bitwise_and(state);
     while (match(state, SyntaxKind::Pipe))
     {
-        const auto operator_token = previous_token(state);
+        const auto operator_token = *previous_token(state);
         auto right = parse_bitwise_and(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
@@ -233,9 +247,9 @@ static expression_ptr_t parse_bitwise_xor(ParseState& state)
     auto left = parse_bitwise_or(state);
     while (match(state, SyntaxKind::Tilde))
     {
-        const auto operator_token = previous_token(state);
+        const auto operator_token = *previous_token(state);
         auto right = parse_bitwise_or(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
@@ -254,9 +268,9 @@ static expression_ptr_t parse_comparison(ParseState& state)
     auto left = parse_bitwise_xor(state);
     while (match_any(state, comparison_syntaxes))
     {
-        const auto operator_token = previous_token(state);
+        const auto operator_token = *previous_token(state);
         auto right = parse_bitwise_xor(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
@@ -267,9 +281,9 @@ static expression_ptr_t parse_logical_and(ParseState& state)
     auto left = parse_comparison(state);
     while (match(state, SyntaxKind::AmpersandAmpersand))
     {
-        const auto operator_token = previous_token(state);
+        const auto operator_token = *previous_token(state);
         auto right = parse_comparison(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
@@ -280,9 +294,9 @@ static expression_ptr_t parse_logical_or(ParseState& state)
     auto left = parse_logical_and(state);
     while (match(state, SyntaxKind::PipePipe))
     {
-        const auto operator_token = previous_token(state);
+        const auto operator_token = *previous_token(state);
         auto right = parse_logical_and(state);
-        left = BinaryOp::create(*operator_token, std::move(left), std::move(right));
+        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;

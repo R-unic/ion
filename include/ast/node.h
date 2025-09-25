@@ -1,7 +1,7 @@
 #pragma once
 #include <memory>
 
-#include "visitor.h"
+#include "visitor_fwd.h"
 
 class SyntaxNode
 {

@@ -1,0 +1,26 @@
+#pragma once
+#include "token.h"
+#include "ast/node.h"
+
+class UnaryOp final : public Expression
+{
+public:
+    Token operator_token;
+    expression_ptr_t operand;
+    
+    explicit UnaryOp(Token operator_token, expression_ptr_t operand)
+        : operator_token(std::move(operator_token)),
+        operand(std::move(operand))
+    {
+    }
+    
+    static expression_ptr_t create(Token operator_token, expression_ptr_t operand)
+    {
+        return std::make_unique<UnaryOp>(std::move(operator_token), std::move(operand));
+    }
+
+    void accept(ExpressionVisitor<void>& visitor) override
+    {
+        return visitor.visit_unary_op(*this);
+    }
+};

@@ -56,15 +56,89 @@ void AstViewer::visit_literal(const Literal& literal)
     write(")");
 }
 
-void AstViewer::visit_binary_op(const BinaryOp& binary_op)
+void AstViewer::visit_identifier(const Identifier& identifier)
 {
-    indent_++;
-    write_line("BinaryOp(");
+    write("Identifier(");
+    write(identifier.name);
+    write(")");
+}
+
+void AstViewer::write_binary_op_contents(const BinaryOp& binary_op) const
+{
     visit(binary_op.left);
     write_line(",");
     write_line('"' + get_text(binary_op.operator_token) + "\",");
     visit(binary_op.right);
     write_line();
+}
+
+void AstViewer::visit_binary_op(const BinaryOp& binary_op)
+{
+    indent_++;
+    write_line("BinaryOp(");
+    write_binary_op_contents(binary_op);
+    indent_--;
+    write_indent();
+    write(")");
+}
+
+void AstViewer::visit_unary_op(const UnaryOp& unary_op)
+{
+    indent_++;
+    write_line("UnaryOp(");
+    write_line('"' + get_text(unary_op.operator_token) + "\",");
+    visit(unary_op.operand);
+    write_line();
+    indent_--;
+    write_indent();
+    write(")");
+}
+
+void AstViewer::visit_assignment_op(const AssignmentOp& assignment_op)
+{
+    indent_++;
+    write_line("AssignmentOp(");
+    write_binary_op_contents(assignment_op);
+    indent_--;
+    write_indent();
+    write(")");
+}
+
+void AstViewer::visit_invocation(const Invocation& invocation)
+{
+    indent_++;
+    write_line("Invocation(");
+    visit(invocation.callee);
+    write_line(",");
+
+    indent_++;
+    write_line("[");
+    
+    size_t i = 0;
+    for (const auto& argument : invocation.arguments)
+    {
+        visit(argument);
+        if (i++ < invocation.arguments.size())
+            write_line(",");
+    }
+    indent_--;
+    write_line("]");
+    
+    write("Special: ");
+    write(invocation.bang_token.has_value() ? "true" : "false");
+    write_line();
+    indent_--;
+    write_indent();
+    write(")");
+}
+
+void AstViewer::visit_member_access(const MemberAccess& member_access)
+{
+    indent_++;
+    write_line("MemberAccess(");
+    visit(member_access.expression);
+    write_line(",");
+    write_line(get_text(member_access.name));
     indent_--;
     write_indent();
     write(")");
@@ -78,4 +152,76 @@ void AstViewer::visit_expression_statement(const ExpressionStatement& expression
     indent_--;
     write_indent();
     write_line(")");
+}
+
+void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_declaration)
+{
+    indent_++;
+    write_line("VariableDeclaration(");
+    write_line(get_text(variable_declaration.name) + ",");
+    if (variable_declaration.initializer.has_value())
+    {
+        write_line(",");
+        visit(*variable_declaration.initializer);
+    }
+    write_line();
+    indent_--;
+    write_indent();
+    write_line(")");
+}
+
+void AstViewer::visit_if(const If& if_statement)
+{
+    indent_++;
+    write_line("If(");
+    visit(if_statement.condition);
+    write_line(",");
+    visit(if_statement.then_branch);
+    if (if_statement.else_branch.has_value())
+    {
+        write_line(",");
+        visit(*if_statement.else_branch);
+    }
+    write_line();
+    indent_--;
+    write_indent();
+    write_line(")");
+}
+
+void AstViewer::visit_while(const While& while_statement)
+{
+    indent_++;
+    write_line("While(");
+    visit(while_statement.condition);
+    write_line(",");
+    visit(while_statement.body);
+    write_line();
+    indent_--;
+    write_indent();
+    write_line(")");
+}
+
+void AstViewer::visit_import(const Import& import)
+{
+    indent_++;
+    write_line("Import(");
+    
+    indent_++;
+    write_line("[");
+    size_t i = 0;
+    for (const auto& name : import.names)
+    {
+        write(get_text(name));
+        if (i++ < import.names.size())
+            write_line(",");
+        else
+            write_line();
+    }
+    indent_--;
+    write_line("],");
+    write_line(get_text(import.module));
+    
+    indent_--;
+    write_indent();
+    write(")");
 }

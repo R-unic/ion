@@ -1,9 +1,6 @@
 #pragma once
 
-#include "ast/visitor.h"
-#include "ast/expressions/binary_op.h"
-#include "ast/expressions/literal.h"
-#include "ast/statements/expression_statement.h"
+#include "visitor.h"
 
 class AstViewer final : public ExpressionVisitor<void>, public StatementVisitor<void>
 {
@@ -31,8 +28,19 @@ public:
         statement->accept(viewer);
     }
     
+    void write_binary_op_contents(const BinaryOp& binary_op) const;
+    
     void visit_literal(const Literal&) override;
+    void visit_identifier(const Identifier&) override;
     void visit_binary_op(const BinaryOp&) override;
+    void visit_unary_op(const UnaryOp&) override;
+    void visit_assignment_op(const AssignmentOp&) override;
+    void visit_invocation(const Invocation&) override;
+    void visit_member_access(const MemberAccess&) override;
     
     void visit_expression_statement(const ExpressionStatement&) override;
+    void visit_variable_declaration(const VariableDeclaration&) override;
+    void visit_if(const If&) override;
+    void visit_while(const While&) override;
+    void visit_import(const Import&) override;
 };

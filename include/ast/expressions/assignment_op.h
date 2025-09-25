@@ -1,18 +1,13 @@
 #pragma once
+#include "binary_op.h"
 #include "token.h"
 #include "ast/node.h"
 
-class BinaryOp : public Expression
+class AssignmentOp final : public BinaryOp
 {
 public:
-    Token operator_token;
-    expression_ptr_t left;
-    expression_ptr_t right;
-    
-    explicit BinaryOp(Token operator_token, expression_ptr_t left, expression_ptr_t right)
-        : operator_token(std::move(operator_token)),
-        left(std::move(left)),
-        right(std::move(right))
+    explicit AssignmentOp(Token operator_token, expression_ptr_t left, expression_ptr_t right)
+        : BinaryOp(std::move(operator_token), std::move(left), std::move(right))
     {
     }
     
@@ -23,6 +18,6 @@ public:
 
     void accept(ExpressionVisitor<void>& visitor) override
     {
-        return visitor.visit_binary_op(*this);
+        return visitor.visit_assignment_op(*this);
     }
 };

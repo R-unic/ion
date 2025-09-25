@@ -1,22 +1,16 @@
 #pragma once
+#include "ast/visitor_fwd.h"
 
-class ExpressionStatement;
-class Literal;
-class BinaryOp;
+#include "ast/expressions/literal.h"
+#include "ast/expressions/identifier.h"
+#include "ast/expressions/binary_op.h"
+#include "ast/expressions/unary_op.h"
+#include "ast/expressions/assignment_op.h"
+#include "ast/expressions/invocation.h"
+#include "ast/expressions/member_access.h"
 
-template <typename R>
-struct ExpressionVisitor
-{
-    virtual R visit_literal(const Literal&) = 0;
-    virtual R visit_binary_op(const BinaryOp&) = 0;
-    
-    virtual ~ExpressionVisitor() = default;
-};
-
-template <typename R>
-struct StatementVisitor
-{
-    virtual R visit_expression_statement(const ExpressionStatement&) = 0;
-
-    virtual ~StatementVisitor() = default;
-};
+#include "ast/statements/expression_statement.h"
+#include "ast/statements/variable_declaration.h"
+#include "ast/statements/if.h"
+#include "ast/statements/while.h"
+#include "ast/statements/import.h"
