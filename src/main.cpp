@@ -1,15 +1,12 @@
-#include <iostream>
-#include <ostream>
-#include <vector>
-
-#include "lexer.h"
+#include "parser.h"
+#include "ast/viewer.h"
 
 int main(int argc, char* argv[])
 {
     const auto file = create_file("test.ion");
-    const auto tokens = tokenize(file);
-    for (const auto& token : tokens)
-        std::cout << format_token(token) << '\n';
+    const auto ast = parse(file);
+    const auto viewer = new AstViewer;
+    viewer->visit(ast);
     
     return 0;
 }

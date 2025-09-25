@@ -2,7 +2,7 @@
 #include <string>
 
 #include "diagnostics.h"
-#include "ast/source_file.h"
+#include "source_file.h"
 
 static std::string read_file(const std::string& path)
 {
@@ -19,8 +19,8 @@ static std::string read_file(const std::string& path)
     return contents;
 }
 
-SourceFile create_file(const std::string& path)
+SourceFile* create_file(const std::string& path)
 {
     const auto text = read_file(path);
-    return SourceFile { .path = path, .text = text };
+    return new SourceFile(path, text);
 }

@@ -1,9 +1,8 @@
 #pragma once
 #include <optional>
-#include <format>
+#include <string>
 
-#include "file_location.h"
-#include "ast/source_file.h"
+#include "source_file.h"
 
 enum class SyntaxKind : uint8_t
 {
@@ -85,21 +84,28 @@ enum class SyntaxKind : uint8_t
     NullKeyword
 };
 
+struct FileLocation
+{
+    int position = 0;
+    int line = 1;
+    int column = 0;
+    const SourceFile* file;
+};
+
+struct FileSpan
+{
+    FileLocation start;
+    FileLocation end;
+};
+
 struct Token {
     SyntaxKind kind;
     FileSpan span;
-    std::optional<std::string> text;
+    std::optional<std::string> text = std::nullopt;
 };
 
-inline std::string get_text(const Token& token)
-{
-    const auto start_position = token.span.start.position;
-    return token.text.has_value() 
-    ? token.text.value()
-        : token.span.start.file.text.substr(start_position, token.span.end.position - start_position);
-}
-
-inline std::string format_token(const Token& token)
-{
-    return get_text(token) + " (" + std::to_string(static_cast<int>(token.kind)) + ')';
-}
+std::string format_location(const FileLocation&, bool = true);
+FileLocation get_start_location(const SourceFile*);
+FileSpan create_span(const FileLocation&, const FileLocation&);
+std::string get_text(const Token&);
+std::string format_token(const Token&);

@@ -1,8 +1,25 @@
 #pragma once
-#include <variant>
+#include <memory>
 
-#include "source_file.h"
+#include "visitor.h"
 
-using expression_t = std::variant<>;
-using statement_t = std::variant<SourceFile>;
-using node_t = std::variant<expression_t, statement_t>;
+class SyntaxNode
+{
+public:
+    virtual ~SyntaxNode() = default;
+};
+
+class Expression : public SyntaxNode
+{
+public:
+    virtual void accept(ExpressionVisitor<void>&) = 0;
+};
+
+class Statement : public SyntaxNode
+{
+public:
+    virtual void accept(StatementVisitor<void>&) = 0;
+};
+
+using expression_ptr_t = std::unique_ptr<Expression>;
+using statement_ptr_t = std::unique_ptr<Statement>;

@@ -6,7 +6,7 @@
 
 static bool is_eof(const LexState& state)
 {
-    return static_cast<int>(state.file.text.length()) <= state.position;
+    return static_cast<int>(state.file->text.length()) <= state.position;
 }
 
 static char current_character(const LexState& state)
@@ -14,9 +14,10 @@ static char current_character(const LexState& state)
     if (is_eof(state))
         report_compiler_error("Lexer attempted to access an out of bounds file source index");
     
-    return state.file.text[state.position];
+    return state.file->text[state.position];
 }
 
+/** Returns the next unadvanced character */
 static std::optional<char> advance(LexState& state)
 {
     state.position++;
@@ -49,7 +50,7 @@ static FileSpan current_span(const LexState& state)
 static std::string current_lexeme(const LexState& state)
 {
     const auto start_position = state.lexeme_start.position;
-    return state.file.text.substr(start_position, state.position - start_position);
+    return state.file->text.substr(start_position, state.position - start_position);
 }
 
 static void start_new_lexeme(LexState& state)
@@ -67,7 +68,7 @@ static std::string consume_lexeme(LexState& state)
 
 [[noreturn]] static void malformed_number(const LexState& state)
 {
-    report_malformed_number(state.lexeme_start, current_lexeme(state));
+    report_malformed_number(current_span(state), current_lexeme(state));
 }
 
 static void push_token_override_text(LexState& state, const SyntaxKind kind, const std::string& text)
@@ -79,7 +80,7 @@ static void push_token_override_text(LexState& state, const SyntaxKind kind, con
     };
 
     start_new_lexeme(state);
-    state.tokens->push_back(token);
+    state.tokens.push_back(token);
 }
 
 static void push_token(LexState& state, const SyntaxKind kind)
@@ -90,7 +91,7 @@ static void push_token(LexState& state, const SyntaxKind kind)
     };
 
     start_new_lexeme(state);
-    state.tokens->push_back(token);
+    state.tokens.push_back(token);
 }
 
 static bool is_whitespace(const char character)
@@ -258,7 +259,7 @@ static void read_string(LexState& state, const char terminator)
     
     const auto text = unescape(current_lexeme(state));
     if (last_character != terminator)
-        report_unterminated_string(state, text);
+        report_unterminated_string(current_span(state), text);
 
     push_token_override_text(state, SyntaxKind::StringLiteral, text);
 }
@@ -452,20 +453,19 @@ static void lex(LexState& state)
     if (single_char_syntaxes.contains(character))
         return push_token(state, single_char_syntaxes.at(character));
 
-    report_unexpected_character(state, character);
+    report_unexpected_character(current_span(state), character);
 }
 
-std::vector<Token> tokenize(const SourceFile& file)
+std::vector<Token> tokenize(const SourceFile* file)
 {
-    auto tokens = std::vector<Token>();
     auto state = LexState {
         { .file = file },
         get_start_location(file),
-        &tokens
+        {}
     };
     
     while (!is_eof(state))
         lex(state);
 
-    return *state.tokens;
+    return state.tokens;
 }

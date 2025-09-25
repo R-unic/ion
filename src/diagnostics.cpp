@@ -36,12 +36,12 @@ static std::string format_severity(const DiagnosticSeverity severity)
     error(format_diagnostic(diagnostic), diagnostic.code);
 }
 
-[[noreturn]] static void report_error(const uint8_t code, const FileLocation& location, const diagnostic_data_t& data)
+[[noreturn]] static void report_error(const uint8_t code, const FileSpan& span, const diagnostic_data_t& data)
 {
     report(Diagnostic {
         .code = code,
         .severity = DiagnosticSeverity::Error,
-        .location = location,
+        .span = span,
         .data = data
     });
 }
@@ -51,24 +51,44 @@ static std::string format_severity(const DiagnosticSeverity severity)
     error("Compiler error: " + message, -1);
 }
 
-[[noreturn]] void report_unexpected_character(const FileLocation& location, const char character)
+[[noreturn]] void report_unexpected_character(const FileSpan& span, const char character)
 {
-    report_error(0001, location, UnexpectedCharacter { character });
+    report_error(0001, span, UnexpectedCharacter { character });
 }
 
-[[noreturn]] void report_malformed_number(const FileLocation& location, const std::string& malformed)
+[[noreturn]] void report_malformed_number(const FileSpan& span, const std::string& malformed)
 {
-    report_error(0002, location, MalformedNumber { malformed });
+    report_error(0002, span, MalformedNumber { malformed });
 }
 
-[[noreturn]] void report_unterminated_string(const FileLocation& location, const std::string& body)
+[[noreturn]] void report_unterminated_string(const FileSpan& span, const std::string& body)
 {
-    report_error(0002, location, UnterminatedString { body });
+    report_error(0002, span, UnterminatedString { body });
+}
+
+[[noreturn]] void report_unexpected_syntax(const Token& token)
+{
+    report_unexpected_syntax(token.span, get_text(token));
+}
+
+[[noreturn]] void report_unexpected_syntax(const FileSpan& span, const std::string& lexeme)
+{
+    report_error(0003, span, UnexpectedSyntax { lexeme });
+}
+
+[[noreturn]] void report_unexpected_eof(const FileSpan& span)
+{
+    report_error(0004, span, UnexpectedEOF {});
+}
+
+[[noreturn]] void report_expected_different_syntax(const FileSpan& span, const std::string& expected, const std::string& got)
+{
+    report_error(0005, span, ExpectedDifferentSyntax { expected, got });
 }
 
 std::string format_diagnostic(const Diagnostic& diagnostic)
 {
-    const auto location = format_location(diagnostic.location);
+    const auto location = format_location(diagnostic.span.start);
     const auto severity = format_severity(diagnostic.severity);
     const auto code = std::format("{:04}", diagnostic.code);
     const auto message = std::visit([&]<typename T>(T& arg) {
@@ -84,8 +104,12 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
             
             return "Unterminated string: '" + body + '\'';
         }
-        
-        report_compiler_error("Unhandled diagnostic type: " + std::to_string(diagnostic.data.index()));
+        else if constexpr (std::is_same_v<type_t, UnexpectedSyntax>)
+            return "Unexpected token '" + arg.lexeme + '\'';
+        else if constexpr (std::is_same_v<type_t, UnexpectedEOF>)
+            return std::string("Unexpected end of file");
+        else if constexpr (std::is_same_v<type_t, ExpectedDifferentSyntax>)
+            return "Expected '" + arg.expected + "', got '" + arg.got + '\'';
     }, diagnostic.data);
 
     return location + " - " + severity + " ION" + code + ": " + message;
