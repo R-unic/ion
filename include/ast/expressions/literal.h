@@ -5,7 +5,7 @@
 
 #include "ast/node.h"
 
-using literal_value_t = std::optional<std::variant<int, bool, std::string>>;
+using literal_value_t = std::optional<std::variant<double, bool, std::string>>;
 
 class Literal final : public Expression
 {

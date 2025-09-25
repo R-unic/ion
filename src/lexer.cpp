@@ -1,8 +1,11 @@
+#include <algorithm>
 #include <optional>
 #include <vector>
 
 #include "diagnostics.h"
 #include "lexer.h"
+
+#include <algorithm>
 
 static bool is_eof(const LexState& state)
 {
@@ -28,9 +31,27 @@ static std::optional<char> advance(LexState& state)
     return current_character(state);
 }
 
+static bool check(const LexState& state, const char character)
+{
+    return !is_eof(state) && current_character(state) == character;
+}
+
 static bool match(LexState& state, const char character)
 {
-    const auto is_match = !is_eof(state) && current_character(state) == character;
+    const auto is_match = check(state, character);
+    if (is_match)
+        advance(state);
+    
+    return is_match;
+}
+
+static bool match_any(LexState& state, const std::vector<char>& characters)
+{
+    const auto is_match = !is_eof(state) && std::ranges::any_of(characters, [&](const char character)
+    {
+        return check(state, character);
+    });
+    
     if (is_match)
         advance(state);
     
@@ -205,22 +226,25 @@ static void read_decimal_number(LexState& state)
     push_token(state, SyntaxKind::NumberLiteral);
 }
 
+const std::vector hex_specifier = {'x', 'X'};
+const std::vector octal_specifier = {'o', 'O'};
+const std::vector binary_specifier = {'b', 'B'};
 static void read_number(LexState& state, const char first_character)
 {
     if (first_character == '0')
     {
-        if (match(state, 'x'))
+        if (match_any(state, hex_specifier))
             return read_non_decimal_number(state, is_hex_digit);
-        if (match(state, 'o'))
+        if (match_any(state, octal_specifier))
             return read_non_decimal_number(state, is_octal_digit);
-        if (match(state, 'b'))
+        if (match_any(state, binary_specifier))
             return read_non_decimal_number(state, is_binary_digit);
     }
 
     return read_decimal_number(state);
 }
 
-std::string unescape(const std::string& s) {
+static std::string unescape(const std::string& s) {
     std::string result;
     result.reserve(s.size());
     for (size_t i = 0; i < s.size(); ++i) {

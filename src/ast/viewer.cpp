@@ -15,7 +15,7 @@ void AstViewer::write(const char* text)
 
 void AstViewer::write_line()
 {
-    std::cout << '\n';
+    write("\n");
 }
 
 void AstViewer::write_line(const std::string& text) const
@@ -25,7 +25,7 @@ void AstViewer::write_line(const std::string& text) const
 
 void AstViewer::write_line(const char* text) const
 {
-    std::cout << text << '\n' << std::string(2 * indent_, ' ');
+    std::cout << text << '\n' << std::string(2ull * indent_, ' ');
 }
 
 void AstViewer::visit_literal(const Literal& literal)
@@ -39,7 +39,7 @@ void AstViewer::visit_literal(const Literal& literal)
         std::visit([]<typename T>(T& arg)
         {
             using type_t = std::decay_t<T>;
-            if constexpr (std::is_same_v<type_t, int>)
+            if constexpr (std::is_same_v<type_t, double>)
                 write(std::to_string(arg));
             else if constexpr (std::is_same_v<type_t, std::string>)
                 write(arg);

@@ -7,7 +7,7 @@
 
 class AstViewer final : public ExpressionVisitor<void>, public StatementVisitor<void>
 {
-    int indent_ = 0;
+    unsigned int indent_ = 0;
     
     static void write(const std::string&);
     static void write(const char*);

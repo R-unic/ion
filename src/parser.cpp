@@ -61,6 +61,18 @@ static bool match(ParseState& state, const SyntaxKind kind)
     return is_match;
 }
 
+static FileSpan empty_span(const ParseState& state)
+{
+    return create_span(get_start_location(state.file), get_start_location(state.file));
+}
+
+static FileSpan get_optional_span(const ParseState& state, const std::optional<Token>& token)
+{
+    return token.has_value()
+        ? token.value().span
+        : empty_span(state);
+}
+
 static Token consume(ParseState& state, const SyntaxKind kind)
 {
     const auto token = current_token(state);
@@ -69,7 +81,21 @@ static Token consume(ParseState& state, const SyntaxKind kind)
     if (token.has_value() && token.value().kind == kind)
         return *token;
 
-    report_expected_different_syntax(token.value().span, std::to_string(static_cast<int>(kind)), get_text(*token));
+    const auto span = get_optional_span(state, token);
+    const auto expected = std::to_string(static_cast<int>(kind));
+    const auto got = get_text(*token);
+    report_expected_different_syntax(span, expected, got);
+}
+
+static double to_number(const std::string& s) {
+    if (s.starts_with("0x") || s.starts_with("0X"))
+        return static_cast<double>(std::stoll(s, nullptr, 16));
+    if (s.starts_with("0o") || s.starts_with("0O"))
+        return static_cast<double>(std::stoll(s.substr(2), nullptr, 8));
+    if (s.starts_with("0b") || s.starts_with("0B"))
+        return static_cast<double>(std::stoll(s.substr(2), nullptr, 2));
+        
+    return std::stod(s);
 }
 
 static expression_ptr_t parse_primary(ParseState& state)
@@ -78,14 +104,13 @@ static expression_ptr_t parse_primary(ParseState& state)
     if (!token_opt.has_value())
     {
         const auto last_token = previous_token(state);
-        const auto span = last_token.has_value() 
-            ? last_token.value().span
-            : create_span(get_start_location(state.file), get_start_location(state.file));
-        
+        const auto span = get_optional_span(state, last_token);
         report_unexpected_eof(span);
     }
-
-    switch (const auto& token = token_opt.value(); token.kind)
+    
+    const auto& token = token_opt.value();
+    const auto text = get_text(token);
+    switch (token.kind)
     {
     case SyntaxKind::TrueKeyword:
         return Literal::create(true);
@@ -94,10 +119,9 @@ static expression_ptr_t parse_primary(ParseState& state)
     case SyntaxKind::NullKeyword:
         return Literal::create(std::nullopt);
     case SyntaxKind::StringLiteral:
-        return Literal::create(token.text->substr(1, token.text->size() - 1));
+        return Literal::create(text.substr(1, text.size() - 1));
     case SyntaxKind::NumberLiteral:
-        // TODO
-        return Literal::create(69);
+        return Literal::create(to_number(text));
         
     default:
         report_unexpected_syntax(token);
@@ -107,7 +131,7 @@ static expression_ptr_t parse_primary(ParseState& state)
 static expression_ptr_t parse_addition(ParseState& state)
 {
     auto left = parse_primary(state);
-    while (match(state, SyntaxKind::Plus))
+    while (match(state, SyntaxKind::Plus) || match(state, SyntaxKind::Minus))
     {
         const auto operator_token = previous_token(state);
         auto right = parse_primary(state);
