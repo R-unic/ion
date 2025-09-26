@@ -81,14 +81,14 @@ static std::string format_severity(const DiagnosticSeverity severity)
     report_error(0004, span, UnexpectedEOF {});
 }
 
-[[noreturn]] void report_expected_different_syntax(const FileSpan& span, const std::string& expected, const std::string& got)
+[[noreturn]] void report_expected_different_syntax(const FileSpan& span, const std::string& expected, const std::string& got, const bool quote_expected)
 {
-    report_error(0005, span, ExpectedDifferentSyntax { expected, got });
+    report_error(0005, span, ExpectedDifferentSyntax { .expected = expected, .got = got, .quote_expected = quote_expected });
 }
 
 std::string format_diagnostic(const Diagnostic& diagnostic)
 {
-    const auto location = format_location(diagnostic.span.start);
+    const auto location = format_location(diagnostic.span.end);
     const auto severity = format_severity(diagnostic.severity);
     const auto code = std::format("{:04}", diagnostic.code);
     const auto message = std::visit([&]<typename T>(T& arg) {
@@ -109,7 +109,10 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
         else if constexpr (std::is_same_v<type_t, UnexpectedEOF>)
             return std::string("Unexpected end of file");
         else if constexpr (std::is_same_v<type_t, ExpectedDifferentSyntax>)
-            return "Expected '" + arg.expected + "', got '" + arg.got + '\'';
+        {
+            const std::string quote = arg.quote_expected ? "'" : "";
+            return "Expected " + quote + arg.expected + quote + ", got '" + arg.got + '\'';
+        }
     }, diagnostic.data);
 
     return location + " - " + severity + " ION" + code + ": " + message;

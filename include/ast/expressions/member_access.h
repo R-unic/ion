@@ -16,9 +16,9 @@ public:
     {
     }
     
-    static expression_ptr_t create(Token operator_token, expression_ptr_t expression, Token name)
+    static expression_ptr_t create(Token dot_token, expression_ptr_t expression, Token name)
     {
-        return std::make_unique<MemberAccess>(std::move(operator_token), std::move(expression), std::move(name));
+        return std::make_unique<MemberAccess>(std::move(dot_token), std::move(expression), std::move(name));
     }
 
     void accept(ExpressionVisitor<void>& visitor) override

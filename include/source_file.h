@@ -8,10 +8,12 @@ struct SourceFile
 {
     std::string path;
     std::string text;
-    std::vector<statement_ptr_t> statements;
+    std::vector<statement_ptr_t>* statements;
 
-    SourceFile(std::string path, std::string text, std::vector<statement_ptr_t> statements = {})
-        : path(std::move(path)), text(std::move(text)), statements(std::move(statements))
+    SourceFile(std::string path, std::string text, std::vector<statement_ptr_t>* statements = new std::vector<statement_ptr_t>)
+        : path(std::move(path)),
+        text(std::move(text)),
+        statements(statements)
     {
     }
     

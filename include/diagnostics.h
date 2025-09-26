@@ -41,6 +41,7 @@ struct ExpectedDifferentSyntax
 {
     std::string expected;
     std::string got;
+    bool quote_expected;
 };
 
 using diagnostic_data_t = std::variant<
@@ -67,5 +68,5 @@ struct Diagnostic
 [[noreturn]] void report_unexpected_syntax(const FileSpan&, const std::string&);
 [[noreturn]] void report_unexpected_syntax(const Token&);
 [[noreturn]] void report_unexpected_eof(const FileSpan&);
-[[noreturn]] void report_expected_different_syntax(const FileSpan&, const std::string&, const std::string&);
+[[noreturn]] void report_expected_different_syntax(const FileSpan&, const std::string&, const std::string&, bool = true);
 std::string format_diagnostic(const Diagnostic&);

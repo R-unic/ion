@@ -4,9 +4,9 @@
 int main(int argc, char* argv[])
 {
     const auto file = create_file("test.ion");
-    const auto ast = parse(file);
+    const auto statements = parse(file);
     const auto viewer = new AstViewer;
-    viewer->visit(ast);
+    viewer->visit(statements);
     
     return 0;
 }

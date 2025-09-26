@@ -2,7 +2,9 @@
 #include <memory>
 #include <vector>
 
-#include "token.h"
+#include "lexer.h"
+#include "ast/node.h"
+#include "ast/ast.h"
 
 struct ParseState
 {
@@ -11,4 +13,6 @@ struct ParseState
     std::vector<Token> tokens;
 };
 
-expression_ptr_t parse(const SourceFile*);
+static expression_ptr_t parse_expression(ParseState& state);
+static statement_ptr_t parse_statement(ParseState& state);
+std::vector<statement_ptr_t>* parse(const SourceFile*);

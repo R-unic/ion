@@ -8,13 +8,24 @@ class AstViewer final : public ExpressionVisitor<void>, public StatementVisitor<
     
     static void write(const std::string&);
     static void write(const char*);
-    static void write_line();
     void write_indent() const;
+    void write_line() const;
     void write_line(const std::string&) const;
     void write_line(const char*) const;
     
 public:
     AstViewer() = default;
+
+    void visit(const std::vector<statement_ptr_t>* statements) const
+    {
+        size_t i = 0;
+        for (const auto& statement : *statements)
+        {
+            visit(statement);
+            if (i++ < statements->size())
+                write_line();
+        }
+    }
     
     void visit(const expression_ptr_t& expression) const
     {
@@ -39,6 +50,7 @@ public:
     void visit_member_access(const MemberAccess&) override;
     
     void visit_expression_statement(const ExpressionStatement&) override;
+    void write_closing_paren();
     void visit_variable_declaration(const VariableDeclaration&) override;
     void visit_if(const If&) override;
     void visit_while(const While&) override;
