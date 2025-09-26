@@ -35,6 +35,21 @@ void AstViewer::write_line(const char* text) const
     write_indent();
 }
 
+void AstViewer::write_closing_paren()
+{
+    indent_--;
+    write_line();
+    write(")");
+}
+
+void AstViewer::write_binary_op_contents(const BinaryOp& binary_op) const
+{
+    visit(binary_op.left);
+    write_line(",");
+    write_line('"' + get_text(binary_op.operator_token) + "\",");
+    visit(binary_op.right);
+}
+
 void AstViewer::visit_literal(const Literal& literal)
 {
     write("Literal(");
@@ -64,12 +79,12 @@ void AstViewer::visit_identifier(const Identifier& identifier)
     write(")");
 }
 
-void AstViewer::write_binary_op_contents(const BinaryOp& binary_op) const
+void AstViewer::visit_parenthesized(const Parenthesized& parenthesized)
 {
-    visit(binary_op.left);
-    write_line(",");
-    write_line('"' + get_text(binary_op.operator_token) + "\",");
-    visit(binary_op.right);
+    indent_++;
+    write_line("Parenthesized(");
+    visit(parenthesized.expression);
+    write_closing_paren();
 }
 
 void AstViewer::visit_binary_op(const BinaryOp& binary_op)
@@ -89,11 +104,32 @@ void AstViewer::visit_unary_op(const UnaryOp& unary_op)
     write_closing_paren();
 }
 
+void AstViewer::visit_postfix_unary_op(const PostfixUnaryOp& postfix_unary_op)
+{indent_++;
+    write_line("PostfixUnaryOp(");
+    visit(postfix_unary_op.operand);
+    write_line(",");
+    write('"' + get_text(postfix_unary_op.operator_token) + '"');
+    write_closing_paren();
+}
+
 void AstViewer::visit_assignment_op(const AssignmentOp& assignment_op)
 {
     indent_++;
     write_line("AssignmentOp(");
     write_binary_op_contents(assignment_op);
+    write_closing_paren();
+}
+
+void AstViewer::visit_ternary_op(const TernaryOp& ternary_op)
+{
+    indent_++;
+    write_line("TernaryOp(");
+    visit(ternary_op.condition);
+    write_line(",");
+    visit(ternary_op.when_true);
+    write_line(",");
+    visit(ternary_op.when_false);
     write_closing_paren();
 }
 
@@ -140,6 +176,16 @@ void AstViewer::visit_member_access(const MemberAccess& member_access)
     write_closing_paren();
 }
 
+void AstViewer::visit_element_access(const ElementAccess& element_access)
+{
+    indent_++;
+    write_line("ElementAccess(");
+    visit(element_access.expression);
+    write_line(",");
+    visit(element_access.index_expression);
+    write_closing_paren();
+}
+
 void AstViewer::visit_expression_statement(const ExpressionStatement& expression_statement)
 {
     indent_++;
@@ -148,11 +194,29 @@ void AstViewer::visit_expression_statement(const ExpressionStatement& expression
     write_closing_paren();
 }
 
-void AstViewer::write_closing_paren()
+void AstViewer::visit_block(const Block& block)
 {
-    indent_--;
-    write_line();
-    write(")");
+    const auto starting_indent = indent_++;
+    write("Block([");
+
+    size_t i = 0;
+    for (const auto& statement : *block.statements)
+    {
+        write_line();
+        visit(statement);
+        if (++i < block.statements->size())
+            write(",");
+        else
+        {
+            indent_--;
+            write_line();
+        }
+    }
+
+    if (indent_ != starting_indent)
+        indent_--;
+    
+    write("])");
 }
 
 void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_declaration)
@@ -167,6 +231,29 @@ void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_d
     }
     
     write_closing_paren();
+}
+
+void AstViewer::visit_break(const Break&)
+{
+    write("Break");
+}
+
+void AstViewer::visit_continue(const Continue&)
+{
+    write("Continue");
+}
+
+void AstViewer::visit_return(const Return& return_statement)
+{
+    indent_++;
+    write("Return");
+    if (return_statement.expression.has_value())
+    {
+        write_line("(");
+        visit(*return_statement.expression);
+        write_closing_paren();
+    } else
+        write_line();
 }
 
 void AstViewer::visit_if(const If& if_statement)
@@ -222,5 +309,13 @@ void AstViewer::visit_import(const Import& import)
     
     write_line("],");
     write(get_text(import.module_name));
+    write_closing_paren();
+}
+
+void AstViewer::visit_export(const Export& export_statement)
+{
+    indent_++;
+    write_line("Export(");
+    visit(export_statement.statement);
     write_closing_paren();
 }

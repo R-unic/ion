@@ -40,19 +40,28 @@ public:
     }
     
     void write_binary_op_contents(const BinaryOp& binary_op) const;
+    void write_closing_paren();
     
     void visit_literal(const Literal&) override;
     void visit_identifier(const Identifier&) override;
+    void visit_parenthesized(const Parenthesized&) override;
     void visit_binary_op(const BinaryOp&) override;
     void visit_unary_op(const UnaryOp&) override;
+    void visit_postfix_unary_op(const PostfixUnaryOp&) override;
     void visit_assignment_op(const AssignmentOp&) override;
+    void visit_ternary_op(const TernaryOp&) override;
     void visit_invocation(const Invocation&) override;
     void visit_member_access(const MemberAccess&) override;
+    void visit_element_access(const ElementAccess&) override;
     
     void visit_expression_statement(const ExpressionStatement&) override;
-    void write_closing_paren();
+    void visit_block(const Block&) override;
     void visit_variable_declaration(const VariableDeclaration&) override;
+    void visit_break(const Break&) override;
+    void visit_continue(const Continue&) override;
+    void visit_return(const Return&) override;
     void visit_if(const If&) override;
     void visit_while(const While&) override;
     void visit_import(const Import&) override;
+    void visit_export(const Export&) override;
 };

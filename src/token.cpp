@@ -1,4 +1,4 @@
-#include "token.h"
+#include "lexer.h"
 
 std::string format_location(const FileLocation& location, const bool include_file_path)
 {
@@ -21,10 +21,17 @@ FileSpan create_span(const FileLocation& start, const FileLocation& end)
 
 std::string get_text(const Token& token)
 {
+    if (token.text.has_value())
+        return *token.text;
+
+    if (keyword_lexemes.contains(token.kind))
+        return keyword_lexemes.at(token.kind);
+
+    if (single_char_lexemes.contains(token.kind))
+        return { 1, single_char_lexemes.at(token.kind) };
+    
     const auto start_position = token.span.start.position;
-    return token.text.has_value() 
-        ? token.text.value()
-        : token.span.start.file->text.substr(start_position, token.span.end.position - start_position);
+    return token.span.start.file->text.substr(start_position, token.span.end.position - start_position);
 }
 
 std::string format_token(const Token& token)

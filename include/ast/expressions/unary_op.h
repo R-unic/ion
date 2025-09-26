@@ -2,13 +2,13 @@
 #include "token.h"
 #include "ast/node.h"
 
-class UnaryOp final : public Expression
+class UnaryOp : public Expression
 {
 public:
     Token operator_token;
     expression_ptr_t operand;
     
-    explicit UnaryOp(Token operator_token, expression_ptr_t operand)
+    UnaryOp(Token operator_token, expression_ptr_t operand)
         : operator_token(std::move(operator_token)),
         operand(std::move(operand))
     {

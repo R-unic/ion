@@ -134,6 +134,7 @@ static void skip_whitespace(LexState& state)
 
 static void skip_newlines(LexState& state)
 {
+    state.line++;
     while (!is_eof(state) && current_character(state) == '\n')
     {
         state.position++;

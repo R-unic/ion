@@ -1,6 +1,7 @@
 #include <iostream>
 #include <memory>
 #include <algorithm>
+#include <utility>
 
 #include "diagnostics.h"
 #include "parser.h"
@@ -25,6 +26,11 @@ static Token peek(const ParseState& state, const int offset)
         return *token;
     
     report_compiler_error("Parser attempted to access an out of bounds token index");
+}
+
+static Token current_token_guaranteed(const ParseState& state)
+{
+    return peek(state, 0);
 }
 
 static std::optional<Token> current_token(const ParseState& state)
@@ -80,6 +86,12 @@ static bool is_assignment_target(const expression_ptr_t& expression)
     return true;
 }
 
+static void assert_assignment_target(const expression_ptr_t& expression)
+{
+    if (is_assignment_target(expression)) return;
+    // TODO: error
+}
+
 static FileSpan empty_span(const ParseState& state)
 {
     return create_span(get_start_location(state.file), get_start_location(state.file));
@@ -111,6 +123,11 @@ static Token consume(ParseState& state, const SyntaxKind kind, const std::string
     report_expected_different_syntax(span, custom_expected.empty() ? expected : custom_expected, got, quote_expected);
 }
 
+static bool has_line_break_after(const Token& token, const Token& next)
+{
+    return token.span.end.line < next.span.start.line;
+}
+
 static double to_number(const std::string& s) {
     if (s.starts_with("0x") || s.starts_with("0X"))
         return static_cast<double>(std::stoll(s, nullptr, 16));
@@ -120,6 +137,15 @@ static double to_number(const std::string& s) {
         return static_cast<double>(std::stoll(s.substr(2), nullptr, 2));
         
     return std::stod(s);
+}
+
+static expression_ptr_t parse_parenthesized(ParseState& state)
+{
+    const auto l_paren = *previous_token(state);
+    auto expression = parse_expression(state);
+    const auto r_paren = consume(state, SyntaxKind::RParen);
+
+    return Parenthesized::create(l_paren, r_paren, std::move(expression));
 }
 
 static expression_ptr_t parse_primary(ParseState& state)
@@ -138,6 +164,8 @@ static expression_ptr_t parse_primary(ParseState& state)
     {
     case SyntaxKind::Identifier:
         return Identifier::create(text);
+    case SyntaxKind::LParen:
+        return parse_parenthesized(state);
         
     case SyntaxKind::TrueKeyword:
         return Literal::create(true);
@@ -157,6 +185,7 @@ static expression_ptr_t parse_primary(ParseState& state)
 
 static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t callee, const std::optional<Token>& bang_token)
 {
+    consume(state, SyntaxKind::LParen);
     const auto l_paren = *previous_token(state);
     const auto arguments = new std::vector<expression_ptr_t>;
     if (!check(state, SyntaxKind::RParen))
@@ -176,6 +205,15 @@ static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t 
     return MemberAccess::create(dot_token, std::move(expression), name);
 }
 
+static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t expression, const Token& l_bracket)
+{
+    auto index_expression = parse_expression(state);
+    const auto r_bracket = consume(state, SyntaxKind::RBracket);
+    
+    return ElementAccess::create(l_bracket, r_bracket, std::move(expression), std::move(index_expression));
+}
+
+const std::vector postfix_op_syntaxes = {SyntaxKind::PlusPlus, SyntaxKind::MinusMinus};
 static expression_ptr_t parse_postfix(ParseState& state)
 {
     auto expression = parse_primary(state);
@@ -185,14 +223,23 @@ static expression_ptr_t parse_postfix(ParseState& state)
         {
             const auto is_special = match(state, SyntaxKind::Bang);
             const auto bang_token = is_special ? previous_token(state) : std::nullopt;
-            consume(state, SyntaxKind::LParen);
-            
             expression = parse_invocation(state, std::move(expression), bang_token);
+        }
+        else if (match(state, SyntaxKind::LBracket))
+        {
+            const auto l_bracket = *previous_token(state);
+            expression = parse_element_access(state, std::move(expression), l_bracket);
         }
         else if (match(state, SyntaxKind::Dot))
         {
             const auto dot_token = *previous_token(state);
             expression = parse_member_access(state, std::move(expression), dot_token);
+        }
+        else if (match_any(state, postfix_op_syntaxes))
+        {
+            assert_assignment_target(expression);
+            const auto operator_token = *previous_token(state);
+            expression = PostfixUnaryOp::create(operator_token, std::move(expression));
         }
         else
             break;
@@ -377,11 +424,7 @@ static expression_ptr_t parse_assignment(ParseState& state)
     auto left = parse_logical_or(state);
     while (match_any(state, assignment_syntaxes))
     {
-        if (!is_assignment_target(left))
-        {
-            // TODO: error
-        }
-        
+        assert_assignment_target(left);
         const auto operator_token = *previous_token(state);
         auto right = parse_assignment(state);
         left = AssignmentOp::create(operator_token, std::move(left), std::move(right));
@@ -390,14 +433,41 @@ static expression_ptr_t parse_assignment(ParseState& state)
     return left;
 }
 
+static expression_ptr_t parse_ternary_op(ParseState& state)
+{
+    auto condition = parse_assignment(state);
+    while (match(state, SyntaxKind::Question))
+    {
+        const auto question_token = *previous_token(state);
+        auto when_true = parse_expression(state);
+        const auto colon_token = consume(state, SyntaxKind::Colon);
+        auto when_false = parse_expression(state);
+        
+        condition = TernaryOp::create(question_token, colon_token, std::move(condition), std::move(when_true), std::move(when_false));
+    }
+
+    return condition;
+}
+
 expression_ptr_t parse_expression(ParseState& state)
 {
-    return parse_assignment(state);
+    return parse_ternary_op(state);
+}
+
+static statement_ptr_t parse_block(ParseState& state)
+{
+    const auto statements = new std::vector<statement_ptr_t>;
+    const auto l_brace = *previous_token(state);
+    while (!check(state, SyntaxKind::RBrace))
+        statements->push_back(parse_statement(state));
+
+    const auto r_brace = consume(state, SyntaxKind::RBrace);
+    return Block::create(statements);
 }
 
 static statement_ptr_t parse_variable_declaration(ParseState& state)
 {
-    const auto keyword = *previous_token(state);
+    const auto let_keyword = *previous_token(state);
     const auto name = consume(state, SyntaxKind::Identifier);
     std::optional<Token> equals_token = std::nullopt;
     std::optional<expression_ptr_t> initializer = std::nullopt;
@@ -407,7 +477,7 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
         initializer = parse_expression(state);
     }
 
-    return VariableDeclaration::create(keyword, name, std::move(equals_token), std::move(initializer));
+    return VariableDeclaration::create(let_keyword, name, std::move(equals_token), std::move(initializer));
 }
 
 static statement_ptr_t parse_if(ParseState& state)
@@ -465,19 +535,79 @@ static statement_ptr_t parse_import(ParseState& state)
     return Import::create(import_keyword, names, from_keyword, module_name);
 }
 
+static statement_ptr_t parse_return(ParseState& state)
+{
+    const auto keyword = *previous_token(state);
+    std::optional<expression_ptr_t> expression = std::nullopt;
+    
+    if (!is_eof(state)) {
+        const auto next = current_token_guaranteed(state);
+        if (has_line_break_after(keyword, next))
+        {
+            // no expression,  do nothing
+        }
+        else
+            expression = parse_expression(state);
+    }
+    
+    return Return::create(keyword, std::move(expression));
+}
+
+static statement_ptr_t parse_expression_statement(ParseState& state)
+{
+    auto expression = parse_expression(state);
+    return ExpressionStatement::create(std::move(expression));
+}
+
+static statement_ptr_t parse_declaration(ParseState& state)
+{
+    std::optional<Token> export_keyword = std::nullopt;
+    if (match(state, SyntaxKind::ExportKeyword))
+        export_keyword = previous_token(state);
+    
+    // const auto is_exported = export_keyword.has_value();
+    std::optional<statement_ptr_t> statement = std::nullopt;
+    if (match(state, SyntaxKind::LetKeyword))
+        statement = parse_variable_declaration(state);
+
+    if (export_keyword.has_value())
+    {
+        if (!statement.has_value())
+        {
+            // TODO: error, can only export declarations
+        }
+
+        return Export::create(std::move(*export_keyword), std::move(*statement));
+    }
+    
+    return parse_expression_statement(state);
+}
+
 statement_ptr_t parse_statement(ParseState& state)
 {
-    if (match(state, SyntaxKind::LetKeyword))
-        return parse_variable_declaration(state);
+    if (match(state, SyntaxKind::LBrace))
+        return parse_block(state);
     if (match(state, SyntaxKind::IfKeyword))
         return parse_if(state);
     if (match(state, SyntaxKind::WhileKeyword))
         return parse_while(state);
     if (match(state, SyntaxKind::ImportKeyword))
         return parse_import(state);
+    if (match(state, SyntaxKind::ReturnKeyword))
+       return parse_return(state);
+    if (match(state, SyntaxKind::BreakKeyword))
+    {
+        const auto keyword = *previous_token(state);
+        return Break::create(keyword);
+    }
+    if (match(state, SyntaxKind::ContinueKeyword))
+    {
+        const auto keyword = *previous_token(state);
+        return Continue::create(keyword);
+    }
+    
 
-    auto expression = parse_expression(state);
-    return ExpressionStatement::create(std::move(expression));
+    return parse_declaration(state);
 }
 
 std::vector<statement_ptr_t>* parse(const SourceFile* file)
