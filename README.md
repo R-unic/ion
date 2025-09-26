@@ -6,6 +6,18 @@ Statically typed language built for use with Roblox that compiles to Luau.
 > This language **does not have a functional prototype yet**. Check out [the roadmap](#roadmap) to see current progress.
 > Check out [concept examples](#concept-examples) to see what's in store for the future.
 
+## Roadmap
+
+- [x] Lexer
+- [x] Parser
+  - [x] Literals & identifiers
+  - [x] Binary, unary, & assignment operations
+  - [x] Member access
+  - [x] Invocation
+  - [x] Variable declarations
+  - [x] If/while statements
+  - [x] Imports
+
 ## Concept Examples
 
 ### Events
