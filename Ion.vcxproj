@@ -475,6 +475,7 @@
     <ClInclude Include="include\**\*.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="README.md" />
     <Content Include="test.ion" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
