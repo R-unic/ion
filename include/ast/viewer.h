@@ -2,7 +2,10 @@
 
 #include "visitor.h"
 
-class AstViewer final : public ExpressionVisitor<void>, public StatementVisitor<void>
+class AstViewer final
+    : public ExpressionVisitor<void>,
+    public StatementVisitor<void>,
+    public TypeRefVisitor<void>
 {
     unsigned int indent_ = 0;
     
@@ -38,6 +41,12 @@ public:
         auto viewer = *this;
         statement->accept(viewer);
     }
+
+    void visit(const type_ref_ptr_t& type_ref) const
+    {
+        auto viewer = *this;
+        type_ref->accept(viewer);
+    }
     
     void write_binary_op_contents(const BinaryOp& binary_op) const;
     void write_closing_paren();
@@ -64,4 +73,8 @@ public:
     void visit_while(const While&) override;
     void visit_import(const Import&) override;
     void visit_export(const Export&) override;
+
+    void visit_primitive_type(const PrimitiveType&) override;
+    void visit_type_name(const TypeName&) override;
+    void visit_nullable_type(const NullableType&) override;
 };

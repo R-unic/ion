@@ -23,6 +23,10 @@ class While;
 class Import;
 class Export;
 
+class PrimitiveType;
+class NullableType;
+class TypeName;
+
 template <typename R>
 struct ExpressionVisitor
 {
@@ -56,4 +60,14 @@ struct StatementVisitor
     virtual R visit_export(const Export&) = 0;
 
     virtual ~StatementVisitor() = default;
+};
+
+template <typename R>
+struct TypeRefVisitor
+{
+    virtual R visit_primitive_type(const PrimitiveType&) = 0;
+    virtual R visit_type_name(const TypeName& type_name) = 0;
+    virtual R visit_nullable_type(const NullableType& nullable) = 0;
+
+    virtual ~TypeRefVisitor() = default;
 };

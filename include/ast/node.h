@@ -26,6 +26,13 @@ public:
     [[nodiscard]] virtual bool is_block() const { return false; }
 };
 
-using node_ptr_t = std::variant<SyntaxNode>;
+class TypeRef : public SyntaxNode
+{
+public:
+    virtual void accept(TypeRefVisitor<void>&) = 0;
+};
+
+using node_ptr_t = std::unique_ptr<SyntaxNode>;
 using expression_ptr_t = std::unique_ptr<Expression>;
 using statement_ptr_t = std::unique_ptr<Statement>;
+using type_ref_ptr_t = std::unique_ptr<TypeRef>;

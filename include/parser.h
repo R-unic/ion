@@ -16,4 +16,5 @@ struct ParseState
 
 static expression_ptr_t parse_expression(ParseState& state);
 static statement_ptr_t parse_statement(ParseState& state);
+static type_ref_ptr_t parse_type(ParseState& state);
 std::vector<statement_ptr_t>* parse(const SourceFile*);

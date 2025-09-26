@@ -1,1 +1,1 @@
-export 69
+let x: number? = 69

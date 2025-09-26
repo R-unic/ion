@@ -215,6 +215,11 @@ void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_d
     indent_++;
     write_line("VariableDeclaration(");
     write(variable_declaration.name.get_text());
+    if (variable_declaration.type.has_value())
+    {
+        write_line(",");
+        visit(*variable_declaration.type);
+    }
     if (variable_declaration.initializer.has_value())
     {
         write_line(",");
@@ -308,5 +313,27 @@ void AstViewer::visit_export(const Export& export_statement)
     indent_++;
     write_line("Export(");
     visit(export_statement.statement);
+    write_closing_paren();
+}
+
+void AstViewer::visit_primitive_type(const PrimitiveType& primitive_type)
+{
+    write("PrimitiveType(");
+    write(primitive_type.keyword.get_text());
+    write(")");
+}
+
+void AstViewer::visit_type_name(const TypeName& type_name)
+{
+    write("TypeName(");
+    write(type_name.name.get_text());
+    write(")");
+}
+
+void AstViewer::visit_nullable_type(const NullableType& nullable_type)
+{
+    indent_++;
+    write_line("NullableType(");
+    visit(nullable_type.non_nullable_type);
     write_closing_paren();
 }

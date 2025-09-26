@@ -6,6 +6,8 @@
 #include "diagnostics.h"
 #include "parser.h"
 
+#include <set>
+
 static bool is_eof(const ParseState& state, const int offset = 0)
 {
     const auto offset_position = state.position + offset;
@@ -111,7 +113,7 @@ static Token consume(ParseState& state, const SyntaxKind kind, const std::string
     report_expected_different_syntax(span, custom_expected.empty() ? expected : custom_expected, got, quote_expected);
 }
 
-static bool has_line_break_after(const Token& token, const Token& next)
+static bool has_line_break_between(const Token& token, const Token& next)
 {
     return token.span.end.line < next.span.start.line;
 }
@@ -141,10 +143,7 @@ static expression_ptr_t parse_primary(ParseState& state)
     const auto span = get_current_optional_span(state);
     const auto token_opt = advance(state);
     if (!token_opt.has_value())
-    {
-        const auto last_token = previous_token(state);
         report_unexpected_eof(span);
-    }
     
     const auto& token = token_opt.value();
     const auto text = token.get_text();
@@ -242,7 +241,7 @@ static expression_ptr_t parse_unary(ParseState& state)
     while (match_any(state, unary_syntaxes))
     {
         const auto operator_token = *previous_token(state);
-        auto operand = parse_unary(state);
+        auto operand = parse_postfix(state);
         return UnaryOp::create(operator_token, std::move(operand));
     }
 
@@ -457,6 +456,14 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
 {
     const auto let_keyword = *previous_token(state);
     const auto name = consume(state, SyntaxKind::Identifier);
+    std::optional<Token> colon_token = std::nullopt;
+    std::optional<type_ref_ptr_t> type = std::nullopt;
+    if (match(state, SyntaxKind::Colon))
+    {
+        colon_token = *previous_token(state);
+        type = parse_type(state);
+    }
+    
     std::optional<Token> equals_token = std::nullopt;
     std::optional<expression_ptr_t> initializer = std::nullopt;
     if (match(state, SyntaxKind::Equals))
@@ -465,7 +472,7 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
         initializer = parse_expression(state);
     }
 
-    return VariableDeclaration::create(let_keyword, name, std::move(equals_token), std::move(initializer));
+    return VariableDeclaration::create(let_keyword, name, std::move(colon_token), std::move(type), std::move(equals_token), std::move(initializer));
 }
 
 static statement_ptr_t parse_if(ParseState& state)
@@ -528,15 +535,8 @@ static statement_ptr_t parse_return(ParseState& state)
     const auto keyword = *previous_token(state);
     std::optional<expression_ptr_t> expression = std::nullopt;
     
-    if (!is_eof(state)) {
-        const auto next = current_token_guaranteed(state);
-        if (has_line_break_after(keyword, next))
-        {
-            // no expression,  do nothing
-        }
-        else
-            expression = parse_expression(state);
-    }
+    if (!is_eof(state) && !has_line_break_between(keyword, current_token_guaranteed(state)))
+        expression = parse_expression(state);
     
     return Return::create(keyword, std::move(expression));
 }
@@ -565,8 +565,10 @@ static statement_ptr_t parse_declaration(ParseState& state)
             
         return Export::create(std::move(*export_keyword), std::move(*statement));
     }
-    
-    return parse_expression_statement(state);
+
+    return statement.has_value() 
+       ? std::move(statement.value()) 
+       : parse_expression_statement(state);
 }
 
 statement_ptr_t parse_statement(ParseState& state)
@@ -594,6 +596,39 @@ statement_ptr_t parse_statement(ParseState& state)
     
 
     return parse_declaration(state);
+}
+
+const std::set<std::string> primitive_type_names = {"number", "string", "bool", "void"};
+static type_ref_ptr_t parse_primitive_type(ParseState& state)
+{
+    const auto token_opt = advance(state);
+    if (!token_opt.has_value() || token_opt.value().kind != SyntaxKind::Identifier)
+    {
+        const auto last_token = previous_token(state);
+        if (!last_token.has_value())
+            report_unexpected_eof(get_current_optional_span(state, -2));
+        
+        report_expected_different_syntax(last_token->span, "type", last_token->get_text(), false);
+    }
+
+    const auto& token = *token_opt;
+    const auto is_primitive_name = primitive_type_names.contains(token.get_text());
+    return is_primitive_name
+        ? PrimitiveType::create(token)
+        : TypeName::create(token);
+}
+
+static type_ref_ptr_t parse_nullable_type(ParseState& state)
+{
+    auto non_nullable_type = parse_primitive_type(state);
+    return match(state, SyntaxKind::Question)
+        ? NullableType::create(std::move(non_nullable_type), *previous_token(state))
+        : std::move(non_nullable_type);
+}
+
+type_ref_ptr_t parse_type(ParseState& state)
+{
+    return parse_nullable_type(state);
 }
 
 std::vector<statement_ptr_t>* parse(const SourceFile* file)
