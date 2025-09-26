@@ -4,6 +4,7 @@
 #include <string>
 
 #include "token.h"
+#include "ast/node.h"
 
 enum class DiagnosticSeverity : uint8_t
 {
@@ -49,6 +50,11 @@ struct InvalidAssignment
     std::string lexeme;
 };
 
+struct InvalidExport
+{
+    std::string lexeme;
+};
+
 using diagnostic_data_t = std::variant<
     UnexpectedCharacter, 
     MalformedNumber, 
@@ -56,7 +62,8 @@ using diagnostic_data_t = std::variant<
     UnexpectedSyntax,
     UnexpectedEOF,
     ExpectedDifferentSyntax,
-    InvalidAssignment
+    InvalidAssignment,
+    InvalidExport
 >;
 
 struct Diagnostic
@@ -71,9 +78,18 @@ struct Diagnostic
 [[noreturn]] void report_unexpected_character(const FileSpan&, char);
 [[noreturn]] void report_malformed_number(const FileSpan&, const std::string&);
 [[noreturn]] void report_unterminated_string(const FileSpan&, const std::string&);
-[[noreturn]] void report_unexpected_syntax(const FileSpan&, const std::string&);
+[[noreturn]] void report_unexpected_syntax(const expression_ptr_t&);
+[[noreturn]] void report_unexpected_syntax(const statement_ptr_t&);
 [[noreturn]] void report_unexpected_syntax(const Token&);
+[[noreturn]] void report_unexpected_syntax(const FileSpan&, const std::string&);
 [[noreturn]] void report_unexpected_eof(const FileSpan&);
 [[noreturn]] void report_expected_different_syntax(const FileSpan&, const std::string&, const std::string&, bool = true);
+[[noreturn]] void report_invalid_assignment(const expression_ptr_t&);
+[[noreturn]] void report_invalid_assignment(const statement_ptr_t&);
+[[noreturn]] void report_invalid_assignment(const Token&);
 [[noreturn]] void report_invalid_assignment(const FileSpan&, const std::string&);
+[[noreturn]] void report_invalid_export(const expression_ptr_t&);
+[[noreturn]] void report_invalid_export(const statement_ptr_t&);
+[[noreturn]] void report_invalid_export(const Token&);
+[[noreturn]] void report_invalid_export(const FileSpan&, const std::string&);
 std::string format_diagnostic(const Diagnostic&);

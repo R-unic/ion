@@ -561,10 +561,8 @@ static statement_ptr_t parse_declaration(ParseState& state)
     if (export_keyword.has_value())
     {
         if (!statement.has_value())
-        {
-            // TODO: error, can only export declarations
-        }
-
+            report_invalid_export(parse_expression_statement(state));
+            
         return Export::create(std::move(*export_keyword), std::move(*statement));
     }
     

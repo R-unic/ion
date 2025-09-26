@@ -68,6 +68,16 @@ static std::string format_severity(const DiagnosticSeverity severity)
     report_error(0002, span, UnterminatedString { body });
 }
 
+[[noreturn]] void report_unexpected_syntax(const expression_ptr_t& node)
+{
+    report_unexpected_syntax(node->get_span(), node->get_text());
+}
+
+[[noreturn]] void report_unexpected_syntax(const statement_ptr_t& node)
+{
+    report_unexpected_syntax(node->get_span(), node->get_text());
+}
+
 [[noreturn]] void report_unexpected_syntax(const Token& token)
 {
     report_unexpected_syntax(token.span, token.get_text());
@@ -88,9 +98,44 @@ static std::string format_severity(const DiagnosticSeverity severity)
     report_error(0005, span, ExpectedDifferentSyntax { .expected = expected, .got = got, .quote_expected = quote_expected });
 }
 
+[[noreturn]] void report_invalid_assignment(const expression_ptr_t& node)
+{
+    report_invalid_assignment(node->get_span(), node->get_text());
+}
+
+[[noreturn]] void report_invalid_assignment(const statement_ptr_t& node)
+{
+    report_invalid_assignment(node->get_span(), node->get_text());
+}
+
+[[noreturn]] void report_invalid_assignment(const Token& token)
+{
+    report_invalid_assignment(token.span, token.get_text());
+}
+
 [[noreturn]] void report_invalid_assignment(const FileSpan& span, const std::string& got)
 {
     report_error(0006, span, InvalidAssignment { .lexeme = got });
+}
+
+[[noreturn]] void report_invalid_export(const expression_ptr_t& node)
+{
+    report_invalid_export(node->get_span(), node->get_text());
+}
+
+[[noreturn]] void report_invalid_export(const statement_ptr_t& node)
+{
+    report_invalid_export(node->get_span(), node->get_text());
+}
+
+[[noreturn]] void report_invalid_export(const Token& token)
+{
+    report_invalid_export(token.span, token.get_text());
+}
+
+[[noreturn]] void report_invalid_export(const FileSpan& span, const std::string& got)
+{
+    report_error(0007, span, InvalidExport { .lexeme = got });
 }
 
 std::string format_diagnostic(const Diagnostic& diagnostic)
@@ -122,6 +167,8 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
         }
         else if constexpr (std::is_same_v<type_t, InvalidAssignment>)
             return "Cannot assign to '" + arg.lexeme + '\'';
+        else if constexpr (std::is_same_v<type_t, InvalidExport>)
+            return "Only declarations may be exported, got '" + arg.lexeme + '\'';
     }, diagnostic.data);
 
     return location + " - " + severity + " ION" + code + ": " + message;

@@ -10,7 +10,7 @@
 inline void assert_assignment_target(const expression_ptr_t& expression)
 {
     if (expression->is_assignment_target()) return;
-    report_invalid_assignment(expression->get_span(), expression->get_text());
+    report_invalid_assignment(expression);
 }
 
 inline std::string join_strings_by(const std::vector<std::string>& texts, const std::string& separator)

@@ -26,6 +26,6 @@ public:
     [[nodiscard]] virtual bool is_block() const { return false; }
 };
 
-using node_ptr_t = std::unique_ptr<SyntaxNode>;
+using node_ptr_t = std::variant<SyntaxNode>;
 using expression_ptr_t = std::unique_ptr<Expression>;
 using statement_ptr_t = std::unique_ptr<Statement>;
