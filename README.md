@@ -2,7 +2,7 @@
 
 Statically typed language built for use with Roblox that compiles to Luau.
 
-> [! IMPORTANT]
+> [!IMPORTANT]
 > This language **does not have a functional prototype yet**. Check out [the roadmap](#roadmap) to see current progress.
 > Check out [concept examples](#concept-examples) to see what's in store for the future.
 
