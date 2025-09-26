@@ -2,13 +2,10 @@
 #include <iomanip>
 #include <complex>
 #include <format>
-
-#include "diagnostics.h"
-
 #include <regex>
 
-#include "source_file.h"
-
+#include "ion/diagnostics.h"
+#include "ion/source_file.h"
 
 [[noreturn]] static void error(const std::string& message, const uint8_t code)
 {

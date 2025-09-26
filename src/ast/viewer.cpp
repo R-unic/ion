@@ -1,7 +1,7 @@
 #include <iostream>
 #include <ostream>
 
-#include "ast/viewer.h"
+#include "ion/ast/viewer.h"
 
 void AstViewer::write(const std::string& text)
 {

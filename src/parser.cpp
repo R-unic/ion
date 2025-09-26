@@ -3,8 +3,8 @@
 #include <algorithm>
 #include <utility>
 
-#include "diagnostics.h"
-#include "parser.h"
+#include "ion/diagnostics.h"
+#include "ion/parser.h"
 
 #include <set>
 

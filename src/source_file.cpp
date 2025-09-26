@@ -1,8 +1,8 @@
 #include <fstream>
 #include <string>
 
-#include "diagnostics.h"
-#include "source_file.h"
+#include "ion/diagnostics.h"
+#include "ion/source_file.h"
 
 static std::string read_file(const std::string& path)
 {

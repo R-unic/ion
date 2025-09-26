@@ -1,5 +1,5 @@
-#include "lexer.h"
-#include "source_file.h"
+#include "ion/lexer.h"
+#include "ion/source_file.h"
 
 std::string Token::get_text() const
 {
@@ -16,7 +16,7 @@ std::string Token::get_text() const
     return span.start.file->text.substr(start_position, span.end.position - start_position);
 }
 
-std::string Token::format()
+std::string Token::format() const
 {
     return get_text() + " (" + std::to_string(static_cast<int>(kind)) + ") - " + format_location(span.start);
 }

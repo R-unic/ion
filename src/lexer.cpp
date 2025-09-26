@@ -2,9 +2,9 @@
 #include <optional>
 #include <vector>
 
-#include "diagnostics.h"
-#include "lexer.h"
-#include "source_file.h"
+#include "ion/diagnostics.h"
+#include "ion/lexer.h"
+#include "ion/source_file.h"
 
 static bool is_eof(const LexState& state)
 {

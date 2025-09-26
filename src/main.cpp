@@ -1,6 +1,6 @@
-#include "parser.h"
-#include "source_file.h"
-#include "ast/viewer.h"
+#include "ion/parser.h"
+#include "ion/source_file.h"
+#include "ion/ast/viewer.h"
 
 int main(int argc, char* argv[])
 {
