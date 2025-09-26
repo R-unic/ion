@@ -23,4 +23,14 @@ public:
     {
         return visitor.visit_unary_op(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return create_span(operator_token.span.start, operand->get_span().end);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        return operator_token.get_text() + operand->get_text();
+    }
 };

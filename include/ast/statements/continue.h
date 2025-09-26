@@ -21,4 +21,14 @@ public:
     {
         return visitor.visit_continue(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return keyword.span;
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        return keyword.get_text();
+    }
 };

@@ -1,5 +1,10 @@
 #pragma once
+#include <sstream>
+#include <ranges>
+#include <vector>
+
 #include "token.h"
+#include "utility.h"
 #include "ast/node.h"
 
 class Invocation : public Expression
@@ -27,5 +32,16 @@ public:
     void accept(ExpressionVisitor<void>& visitor) override
     {
         return visitor.visit_invocation(*this);
+    }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return create_span(callee->get_span().start, r_paren.span.end);
+    }
+
+    [[nodiscard]] std::string get_text() const override
+    {
+        const auto args_string = join_by(*arguments, ", ");
+        return callee->get_text() + (bang_token.has_value() ? "!" : "") + '(' + args_string + ')';
     }
 };

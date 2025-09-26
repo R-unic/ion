@@ -26,4 +26,14 @@ public:
     {
         return visitor.visit_ternary_op(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return create_span(condition->get_span().start, when_false->get_span().end);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        return condition->get_text() + " ? " + when_true->get_text() + " : " + when_false->get_text();
+    }
 };

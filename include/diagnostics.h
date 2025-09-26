@@ -44,13 +44,19 @@ struct ExpectedDifferentSyntax
     bool quote_expected;
 };
 
+struct InvalidAssignment
+{
+    std::string lexeme;
+};
+
 using diagnostic_data_t = std::variant<
     UnexpectedCharacter, 
     MalformedNumber, 
     UnterminatedString, 
     UnexpectedSyntax,
     UnexpectedEOF,
-    ExpectedDifferentSyntax
+    ExpectedDifferentSyntax,
+    InvalidAssignment
 >;
 
 struct Diagnostic
@@ -69,4 +75,5 @@ struct Diagnostic
 [[noreturn]] void report_unexpected_syntax(const Token&);
 [[noreturn]] void report_unexpected_eof(const FileSpan&);
 [[noreturn]] void report_expected_different_syntax(const FileSpan&, const std::string&, const std::string&, bool = true);
+[[noreturn]] void report_invalid_assignment(const FileSpan&, const std::string&);
 std::string format_diagnostic(const Diagnostic&);

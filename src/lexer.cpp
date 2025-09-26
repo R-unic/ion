@@ -4,8 +4,7 @@
 
 #include "diagnostics.h"
 #include "lexer.h"
-
-#include <algorithm>
+#include "source_file.h"
 
 static bool is_eof(const LexState& state)
 {

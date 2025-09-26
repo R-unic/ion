@@ -80,18 +80,6 @@ static bool match_any(ParseState& state, const std::vector<SyntaxKind>& characte
     return is_match;
 }
 
-static bool is_assignment_target(const expression_ptr_t& expression)
-{
-    // TODO: implement
-    return true;
-}
-
-static void assert_assignment_target(const expression_ptr_t& expression)
-{
-    if (is_assignment_target(expression)) return;
-    // TODO: error
-}
-
 static FileSpan empty_span(const ParseState& state)
 {
     return create_span(get_start_location(state.file), get_start_location(state.file));
@@ -119,7 +107,7 @@ static Token consume(ParseState& state, const SyntaxKind kind, const std::string
 
     const auto quote_expected = kind != SyntaxKind::Identifier;
     const auto expected = !quote_expected ? "identifier" : std::to_string(static_cast<int>(kind));
-    const auto got = token.has_value() ? get_text(*token) : "EOF";
+    const auto got = token.has_value() ? token->get_text() : "EOF";
     report_expected_different_syntax(span, custom_expected.empty() ? expected : custom_expected, got, quote_expected);
 }
 
@@ -159,24 +147,24 @@ static expression_ptr_t parse_primary(ParseState& state)
     }
     
     const auto& token = token_opt.value();
-    const auto text = get_text(token);
+    const auto text = token.get_text();
     switch (token.kind)
     {
     case SyntaxKind::Identifier:
-        return Identifier::create(text);
+        return Identifier::create(token);
     case SyntaxKind::LParen:
         return parse_parenthesized(state);
         
     case SyntaxKind::TrueKeyword:
-        return Literal::create(true);
+        return Literal::create(token, true);
     case SyntaxKind::FalseKeyword:
-        return Literal::create(false);
+        return Literal::create(token, false);
     case SyntaxKind::NullKeyword:
-        return Literal::create(std::nullopt);
+        return Literal::create(token, std::nullopt);
     case SyntaxKind::StringLiteral:
-        return Literal::create(text.substr(1, text.size() - 2));
+        return Literal::create(token, text.substr(1, text.size() - 2));
     case SyntaxKind::NumberLiteral:
-        return Literal::create(to_number(text));
+        return Literal::create(token, to_number(text));
         
     default:
         report_unexpected_syntax(token);
@@ -462,7 +450,7 @@ static statement_ptr_t parse_block(ParseState& state)
         statements->push_back(parse_statement(state));
 
     const auto r_brace = consume(state, SyntaxKind::RBrace);
-    return Block::create(statements);
+    return Block::create(l_brace, r_brace, statements);
 }
 
 static statement_ptr_t parse_variable_declaration(ParseState& state)
@@ -526,7 +514,7 @@ static statement_ptr_t parse_import(ParseState& state)
         else
         {
             const auto token = current_token(state).value_or(import_keyword);
-            report_expected_different_syntax(import_keyword.span, "import name", get_text(token), false);
+            report_expected_different_syntax(import_keyword.span, "import name", token.get_text(), false);
         }
     }
     

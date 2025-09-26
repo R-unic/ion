@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "source_file.h"
 #include "ast/viewer.h"
 
 int main(int argc, char* argv[])

@@ -1,6 +1,4 @@
 #pragma once
-#include <optional>
-#include <variant>
 #include <string>
 
 #include "ast/node.h"
@@ -8,20 +6,30 @@
 class Identifier final : public Expression
 {
 public:
-    std::string name;
+    Token name;
 
-    explicit Identifier(std::string name)
+    explicit Identifier(Token name)
         : name(std::move(name))
     {
     }
     
-    static expression_ptr_t create(const std::string& value)
+    static expression_ptr_t create(Token value)
     {
-        return std::make_unique<Identifier>(value);
+        return std::make_unique<Identifier>(std::move(value));
     }
     
     void accept(ExpressionVisitor<void>& visitor) override
     {
         return visitor.visit_identifier(*this);
+    }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return name.span;
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+       return name.get_text();
     }
 };

@@ -1,23 +1,13 @@
 #pragma once
-#include <unordered_map>
 
 #include "token.h"
+#include "utility.h"
 
 struct LexState : FileLocation
 {
     FileLocation lexeme_start;
     std::vector<Token> tokens;
 };
-
-template <typename K, typename V>
-static std::unordered_map<V, K> inverse_map(const std::unordered_map<K, V>& forward_map)
-{
-    std::unordered_map<V, K> map;
-    for (auto& [lexeme, kind] : forward_map)
-        map.emplace(kind, lexeme);
-    
-    return map;
-}
 
 const std::unordered_map<char, SyntaxKind> single_char_syntaxes = {
     {';', SyntaxKind::Semicolon},

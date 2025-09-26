@@ -28,4 +28,15 @@ public:
     {
         return visitor.visit_while(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return create_span(while_keyword.span.start, body->get_span().end);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        const auto separator = is_block(body) ? ' ' : '\n';
+        return "while " + condition->get_text() + separator + body->get_text();
+    }
 };

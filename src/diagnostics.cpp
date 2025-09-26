@@ -7,6 +7,8 @@
 
 #include <regex>
 
+#include "source_file.h"
+
 
 [[noreturn]] static void error(const std::string& message, const uint8_t code)
 {
@@ -68,7 +70,7 @@ static std::string format_severity(const DiagnosticSeverity severity)
 
 [[noreturn]] void report_unexpected_syntax(const Token& token)
 {
-    report_unexpected_syntax(token.span, get_text(token));
+    report_unexpected_syntax(token.span, token.get_text());
 }
 
 [[noreturn]] void report_unexpected_syntax(const FileSpan& span, const std::string& lexeme)
@@ -84,6 +86,11 @@ static std::string format_severity(const DiagnosticSeverity severity)
 [[noreturn]] void report_expected_different_syntax(const FileSpan& span, const std::string& expected, const std::string& got, const bool quote_expected)
 {
     report_error(0005, span, ExpectedDifferentSyntax { .expected = expected, .got = got, .quote_expected = quote_expected });
+}
+
+[[noreturn]] void report_invalid_assignment(const FileSpan& span, const std::string& got)
+{
+    report_error(0006, span, InvalidAssignment { .lexeme = got });
 }
 
 std::string format_diagnostic(const Diagnostic& diagnostic)
@@ -113,6 +120,8 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
             const std::string quote = arg.quote_expected ? "'" : "";
             return "Expected " + quote + arg.expected + quote + ", got '" + arg.got + '\'';
         }
+        else if constexpr (std::is_same_v<type_t, InvalidAssignment>)
+            return "Cannot assign to '" + arg.lexeme + '\'';
     }, diagnostic.data);
 
     return location + " - " + severity + " ION" + code + ": " + message;

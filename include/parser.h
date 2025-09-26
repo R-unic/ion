@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "lexer.h"
+#include "source_file.h"
 #include "ast/node.h"
 #include "ast/ast.h"
 

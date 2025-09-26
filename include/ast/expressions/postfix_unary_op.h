@@ -20,4 +20,14 @@ public:
     {
         return visitor.visit_postfix_unary_op(*this);
     }
+    
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return create_span(operand->get_span().start, operator_token.span.end);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        return operand->get_text() + operator_token.get_text();
+    }
 };

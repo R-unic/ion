@@ -32,4 +32,17 @@ public:
     {
         return visitor.visit_if(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        const auto end_span = else_branch.has_value() ? else_branch.value()->get_span() : then_branch->get_span();
+        return create_span(if_keyword.span.start, end_span.end);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        const auto separator = is_block(then_branch) ? ' ' : '\n';
+        const auto else_text = else_branch.has_value() ? std::string("else ") + separator + else_branch.value()->get_text() : "";
+        return "if " + condition->get_text() + separator + then_branch->get_text() + else_text;
+    }
 };

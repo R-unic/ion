@@ -46,7 +46,7 @@ void AstViewer::write_binary_op_contents(const BinaryOp& binary_op) const
 {
     visit(binary_op.left);
     write_line(",");
-    write_line('"' + get_text(binary_op.operator_token) + "\",");
+    write_line('"' + binary_op.operator_token.get_text() + "\",");
     visit(binary_op.right);
 }
 
@@ -58,16 +58,7 @@ void AstViewer::visit_literal(const Literal& literal)
     else
     {
         const auto literal_value = literal.value.value();
-        std::visit([]<typename T>(T& arg)
-        {
-            using type_t = std::decay_t<T>;
-            if constexpr (std::is_same_v<type_t, double>)
-                write(std::to_string(arg));
-            else if constexpr (std::is_same_v<type_t, std::string>)
-                write('"' + arg + '"');
-            else if constexpr (std::is_same_v<type_t, bool>)
-                write(arg ? "true" : "false");
-        }, literal_value);
+        write(literal.get_text());
     }
     write(")");
 }
@@ -75,7 +66,7 @@ void AstViewer::visit_literal(const Literal& literal)
 void AstViewer::visit_identifier(const Identifier& identifier)
 {
     write("Identifier(");
-    write(identifier.name);
+    write(identifier.name.get_text());
     write(")");
 }
 
@@ -99,7 +90,7 @@ void AstViewer::visit_unary_op(const UnaryOp& unary_op)
 {
     indent_++;
     write_line("UnaryOp(");
-    write_line('"' + get_text(unary_op.operator_token) + "\",");
+    write_line('"' + unary_op.operator_token.get_text() + "\",");
     visit(unary_op.operand);
     write_closing_paren();
 }
@@ -109,7 +100,7 @@ void AstViewer::visit_postfix_unary_op(const PostfixUnaryOp& postfix_unary_op)
     write_line("PostfixUnaryOp(");
     visit(postfix_unary_op.operand);
     write_line(",");
-    write('"' + get_text(postfix_unary_op.operator_token) + '"');
+    write('"' + postfix_unary_op.operator_token.get_text() + '"');
     write_closing_paren();
 }
 
@@ -172,7 +163,7 @@ void AstViewer::visit_member_access(const MemberAccess& member_access)
     write_line("MemberAccess(");
     visit(member_access.expression);
     write_line(",");
-    write(get_text(member_access.name));
+    write(member_access.name.get_text());
     write_closing_paren();
 }
 
@@ -223,7 +214,7 @@ void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_d
 {
     indent_++;
     write_line("VariableDeclaration(");
-    write(get_text(variable_declaration.name));
+    write(variable_declaration.name.get_text());
     if (variable_declaration.initializer.has_value())
     {
         write_line(",");
@@ -294,7 +285,7 @@ void AstViewer::visit_import(const Import& import)
     for (const auto& argument : import.names)
     {
         write_line();
-        write(get_text(argument));
+        write(argument.get_text());
         if (++i < import.names.size())
             write(",");
         else
@@ -308,7 +299,7 @@ void AstViewer::visit_import(const Import& import)
         indent_--;
     
     write_line("],");
-    write(get_text(import.module_name));
+    write(import.module_name.get_text());
     write_closing_paren();
 }
 

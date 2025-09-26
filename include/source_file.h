@@ -25,3 +25,4 @@ struct SourceFile
 };
 
 SourceFile* create_file(const std::string&);
+std::string format_location(const FileLocation&, bool = true);

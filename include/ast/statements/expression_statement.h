@@ -22,4 +22,14 @@ public:
     {
         return visitor.visit_expression_statement(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return expression->get_span();
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        return expression->get_text();
+    }
 };

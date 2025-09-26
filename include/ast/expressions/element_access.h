@@ -25,4 +25,14 @@ public:
     {
         return visitor.visit_element_access(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return create_span(expression->get_span().start, r_bracket.span.end);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        return expression->get_text() + '[' + index_expression->get_text() + ']';
+    }
 };

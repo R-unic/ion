@@ -2,7 +2,7 @@
 #include <optional>
 #include <string>
 
-#include "source_file.h"
+#include "file_location.h"
 
 enum class SyntaxKind : uint8_t
 {
@@ -86,28 +86,11 @@ enum class SyntaxKind : uint8_t
     NullKeyword
 };
 
-struct FileLocation
-{
-    int position = 0;
-    int line = 1;
-    int column = 0;
-    const SourceFile* file;
-};
-
-struct FileSpan
-{
-    FileLocation start;
-    FileLocation end;
-};
-
 struct Token {
     SyntaxKind kind;
     FileSpan span;
     std::optional<std::string> text = std::nullopt;
-};
 
-std::string format_location(const FileLocation&, bool = true);
-FileLocation get_start_location(const SourceFile*);
-FileSpan create_span(const FileLocation&, const FileLocation&);
-std::string get_text(const Token&);
-std::string format_token(const Token&);
+    [[nodiscard]] std::string get_text() const;
+    std::string format();
+};

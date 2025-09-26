@@ -23,4 +23,15 @@ public:
     {
         return visitor.visit_return(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        const auto end_location = expression.has_value() ? expression.value()->get_span().end : keyword.span.end;
+        return create_span(keyword.span.start, end_location);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        return keyword.get_text() + (expression.has_value() ? ' ' + expression.value()->get_text() : "");
+    }
 };

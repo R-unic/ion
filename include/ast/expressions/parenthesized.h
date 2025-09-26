@@ -24,4 +24,14 @@ public:
     {
         return visitor.visit_parenthesized(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return create_span(l_paren.span.start, r_paren.span.end);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        return l_paren.get_text() + expression->get_text() + r_paren.get_text();
+    }
 };

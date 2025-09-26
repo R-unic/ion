@@ -26,4 +26,14 @@ public:
     {
         return visitor.visit_export(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return create_span(export_keyword.span.start, statement->get_span().end);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        return "export " + statement->get_text();
+    }
 };

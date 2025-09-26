@@ -30,4 +30,15 @@ public:
     {
         return visitor.visit_variable_declaration(*this);
     }
+
+    [[nodiscard]] FileSpan get_span() const override
+    {
+        return create_span(let_keyword.span.start, initializer.has_value() ? initializer.value()->get_span().end : name.span.end);
+    }
+    
+    [[nodiscard]] std::string get_text() const override
+    {
+        const auto initializer_text = initializer.has_value() ? " = " + initializer.value()->get_text() : "";
+        return "let " + name.get_text() + initializer_text;
+    }
 };
