@@ -35,4 +35,9 @@ public:
     {
         return expression->get_text() + '[' + index_expression->get_text() + ']';
     }
+
+    [[nodiscard]] bool is_assignment_target() const override
+    {
+        return true;
+    }
 };

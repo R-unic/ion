@@ -16,12 +16,14 @@ class Expression : public SyntaxNode
 {
 public:
     virtual void accept(ExpressionVisitor<void>&) = 0;
+    [[nodiscard]] virtual bool is_assignment_target() const { return false; }
 };
 
 class Statement : public SyntaxNode
 {
 public:
     virtual void accept(StatementVisitor<void>&) = 0;
+    [[nodiscard]] virtual bool is_block() const { return false; }
 };
 
 using node_ptr_t = std::unique_ptr<SyntaxNode>;

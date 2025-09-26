@@ -38,4 +38,9 @@ public:
     {
         return "{\n\t" + join_by(*statements, "\n\t") + "\n}";
     }
+
+    [[nodiscard]] bool is_block() const override
+    {
+        return true;
+    }
 };

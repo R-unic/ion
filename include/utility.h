@@ -7,27 +7,9 @@
 #include "diagnostics.h"
 #include "ast/node.h"
 
-inline bool is_block(const statement_ptr_t& statement)
-{
-    using type_t = std::decay_t<decltype(statement)>;
-    if constexpr (std::is_same_v<type_t, Block>)
-        return true;
-    
-    return false;
-}
-
-inline bool is_assignment_target(const expression_ptr_t& expression)
-{
-    using type_t = std::decay_t<decltype(expression)>;
-    if constexpr (std::is_same_v<type_t, Identifier> || std::is_same_v<type_t, MemberAccess> || std::is_same_v<type_t, Identifier>)
-        return true;
-    
-    return false;
-}
-
 inline void assert_assignment_target(const expression_ptr_t& expression)
 {
-    if (is_assignment_target(expression)) return;
+    if (expression->is_assignment_target()) return;
     report_invalid_assignment(expression->get_span(), expression->get_text());
 }
 

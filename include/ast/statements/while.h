@@ -36,7 +36,7 @@ public:
     
     [[nodiscard]] std::string get_text() const override
     {
-        const auto separator = is_block(body) ? ' ' : '\n';
+        const auto separator = body->is_block() ? ' ' : '\n';
         return "while " + condition->get_text() + separator + body->get_text();
     }
 };
