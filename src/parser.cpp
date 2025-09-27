@@ -610,7 +610,6 @@ statement_ptr_t parse_statement(ParseState& state)
         return Continue::create(keyword);
     }
 
-
     return parse_declaration(state);
 }
 

@@ -180,7 +180,7 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
     const auto line_number = std::to_string(diagnostic.span.start.line);
     const auto gutter_width = line_number.size();
     const auto line_info = " " + line_number + " | " + line_text + '\n'
-         + std::string(gutter_width + 3, ' ') + underline;
+                           + std::string(gutter_width + 3, ' ') + underline;
 
     return location + " - " + severity + " ION" + code + ": " + message + "\n\n" + line_info + '\n';
 }

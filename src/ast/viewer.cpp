@@ -131,28 +131,11 @@ void AstViewer::visit_invocation(const Invocation& invocation)
     write_line("Invocation(");
     visit(invocation.callee);
     write_line(",");
-
-    const auto starting_indent = indent_++;
-    write("[");
-
-    size_t i = 0;
-    for (const auto& argument: *invocation.arguments)
+    write_list<expression_ptr_t>(*invocation.arguments, [&](const auto& argument)
     {
-        write_line();
         visit(argument);
-        if (++i < invocation.arguments->size())
-            write(",");
-        else
-        {
-            indent_--;
-            write_line();
-        }
-    }
+    });
 
-    if (indent_ != starting_indent)
-        indent_--;
-
-    write_line("],");
     write("Special: ");
     write(invocation.bang_token.has_value() ? "true" : "false");
     write_closing_paren();
@@ -192,7 +175,7 @@ void AstViewer::visit_block(const Block& block)
     write("Block([");
 
     size_t i = 0;
-    for (const auto& statement: *block.statements)
+    for (const auto& statement : *block.statements)
     {
         write_line();
         visit(statement);
@@ -226,6 +209,24 @@ void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_d
         write_line(",");
         visit(*variable_declaration.initializer);
     }
+
+    write_closing_paren();
+}
+
+void AstViewer::visit_event_declaration(const EventDeclaration& event_declaration)
+{
+    indent_++;
+    write_line("EventDeclaration(");
+    write_line(event_declaration.name.get_text() + ',');
+    write_list<type_ref_ptr_t>(*event_declaration.type_parameters, [&](const auto& type_parameter)
+    {
+        visit(type_parameter);
+    });
+    write_line(",");
+    write_list<type_ref_ptr_t>(*event_declaration.parameter_types, [&](const auto& parameter_type)
+    {
+        visit(parameter_type);
+    });
 
     write_closing_paren();
 }
@@ -280,20 +281,19 @@ void AstViewer::visit_while(const While& while_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_import(const Import& import)
+template<typename T>
+void AstViewer::write_list(const std::vector<T>& list, const std::function<void (const T&)>& write_item)
 {
-    indent_++;
-    write_line("Import(");
-
     const auto starting_indent = indent_++;
     write("[");
 
+    const auto size = list.size();
     size_t i = 0;
-    for (const auto& argument: import.names)
+    for (const auto& item : list)
     {
         write_line();
-        write(argument.get_text());
-        if (++i < import.names.size())
+        write_item(item);
+        if (++i < size)
             write(",");
         else
         {
@@ -305,10 +305,23 @@ void AstViewer::visit_import(const Import& import)
     if (indent_ != starting_indent)
         indent_--;
 
+    write("]");
+}
+
+void AstViewer::visit_import(const Import& import)
+{
+    indent_++;
+    write_line("Import(");
+    write_list<Token>(import.names, [](const auto& token)
+    {
+        write(token.get_text());
+    });
+
     write_line("],");
     write(import.module_name.get_text());
     write_closing_paren();
 }
+
 
 void AstViewer::visit_export(const Export& export_statement)
 {
