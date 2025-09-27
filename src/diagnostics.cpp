@@ -171,5 +171,16 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
             return "Only declarations may be exported, got '" + arg.lexeme + '\'';
     }, diagnostic.data);
 
-    return location + " - " + severity + " ION" + code + ": " + message;
+    const auto line_text = diagnostic.span.get_line();
+    const auto span_text = diagnostic.span.get_text();
+    const auto start_column = diagnostic.span.start.column;
+    auto underline = std::string(start_column + 1, ' ');
+    underline.append(std::max<size_t>(1, diagnostic.span.end.column - start_column), '^');
+
+    const auto line_number = std::to_string(diagnostic.span.start.line);
+    const auto gutter_width = line_number.size();
+    const auto line_info = " " + line_number + " | " + line_text + '\n'
+         + std::string(gutter_width + 3, ' ') + underline;
+
+    return location + " - " + severity + " ION" + code + ": " + message + "\n\n" + line_info + '\n';
 }

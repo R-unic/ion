@@ -12,8 +12,7 @@ std::string Token::get_text() const
     if (single_char_lexemes.contains(kind))
         return { 1, single_char_lexemes.at(kind) };
 
-    const auto start_position = span.start.position;
-    return span.start.file->text.substr(start_position, span.end.position - start_position);
+    return span.get_text();
 }
 
 std::string Token::format() const
