@@ -10,18 +10,18 @@ Statically typed language built for use with Roblox that compiles to Luau.
 
 - [x] Lexer
 - [x] Parser
-  - [x] Literals & identifiers
-  - [x] Binary, unary, postfix unary, ternary, & assignment operations
-  - [x] Parenthesized expressions
-  - [x] Member access & element access
-  - [x] Invocation
-  - [x] Variable declarations
-  - [x] If/while statements
-  - [x] Imports & exports
-  - [x] Breaks/continues
-  - [x] Returns
-  - [x] Blocks
-  - [x] Primitive types, type names, & nullable types
+    - [x] Literals & identifiers
+    - [x] Binary, unary, postfix unary, ternary, & assignment operations
+    - [x] Parenthesized expressions
+    - [x] Member access & element access
+    - [x] Invocation
+    - [x] Variable declarations
+    - [x] If/while statements
+    - [x] Imports & exports
+    - [x] Breaks/continues
+    - [x] Returns
+    - [x] Blocks
+    - [x] Primitive types, type names, & nullable types
 
 ## Concept Examples
 

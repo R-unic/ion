@@ -96,7 +96,8 @@ void AstViewer::visit_unary_op(const UnaryOp& unary_op)
 }
 
 void AstViewer::visit_postfix_unary_op(const PostfixUnaryOp& postfix_unary_op)
-{indent_++;
+{
+    indent_++;
     write_line("PostfixUnaryOp(");
     visit(postfix_unary_op.operand);
     write_line(",");
@@ -133,9 +134,9 @@ void AstViewer::visit_invocation(const Invocation& invocation)
 
     const auto starting_indent = indent_++;
     write("[");
-    
+
     size_t i = 0;
-    for (const auto& argument : *invocation.arguments)
+    for (const auto& argument: *invocation.arguments)
     {
         write_line();
         visit(argument);
@@ -150,7 +151,7 @@ void AstViewer::visit_invocation(const Invocation& invocation)
 
     if (indent_ != starting_indent)
         indent_--;
-    
+
     write_line("],");
     write("Special: ");
     write(invocation.bang_token.has_value() ? "true" : "false");
@@ -191,7 +192,7 @@ void AstViewer::visit_block(const Block& block)
     write("Block([");
 
     size_t i = 0;
-    for (const auto& statement : *block.statements)
+    for (const auto& statement: *block.statements)
     {
         write_line();
         visit(statement);
@@ -206,7 +207,7 @@ void AstViewer::visit_block(const Block& block)
 
     if (indent_ != starting_indent)
         indent_--;
-    
+
     write("])");
 }
 
@@ -225,7 +226,7 @@ void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_d
         write_line(",");
         visit(*variable_declaration.initializer);
     }
-    
+
     write_closing_paren();
 }
 
@@ -248,7 +249,8 @@ void AstViewer::visit_return(const Return& return_statement)
         write_line("(");
         visit(*return_statement.expression);
         write_closing_paren();
-    } else
+    }
+    else
         write_line();
 }
 
@@ -264,7 +266,7 @@ void AstViewer::visit_if(const If& if_statement)
         write_line(",");
         visit(*if_statement.else_branch);
     }
-    
+
     write_closing_paren();
 }
 
@@ -282,12 +284,12 @@ void AstViewer::visit_import(const Import& import)
 {
     indent_++;
     write_line("Import(");
-    
+
     const auto starting_indent = indent_++;
     write("[");
-    
+
     size_t i = 0;
-    for (const auto& argument : import.names)
+    for (const auto& argument: import.names)
     {
         write_line();
         write(argument.get_text());
@@ -302,7 +304,7 @@ void AstViewer::visit_import(const Import& import)
 
     if (indent_ != starting_indent)
         indent_--;
-    
+
     write_line("],");
     write(import.module_name.get_text());
     write_closing_paren();

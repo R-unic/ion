@@ -4,6 +4,8 @@
 
 #include "ion/diagnostics.h"
 #include "ion/lexer.h"
+
+#include "ion/logger.h"
 #include "ion/source_file.h"
 
 static bool is_eof(const LexState& state)
@@ -15,7 +17,7 @@ static char current_character(const LexState& state)
 {
     if (is_eof(state))
         report_compiler_error("Lexer attempted to access an out of bounds file source index");
-    
+
     return state.file->text[state.position];
 }
 
@@ -26,7 +28,7 @@ static std::optional<char> advance(LexState& state)
     state.column++;
     if (is_eof(state))
         return std::nullopt;
-    
+
     return current_character(state);
 }
 
@@ -40,7 +42,7 @@ static bool match(LexState& state, const char character)
     const auto is_match = check(state, character);
     if (is_match)
         advance(state);
-    
+
     return is_match;
 }
 
@@ -50,10 +52,10 @@ static bool match_any(LexState& state, const std::vector<char>& characters)
     {
         return check(state, character);
     });
-    
+
     if (is_match)
         advance(state);
-    
+
     return is_match;
 }
 
@@ -117,10 +119,10 @@ static void push_token(LexState& state, const SyntaxKind kind)
 static bool is_whitespace(const char character)
 {
     return character == ' '
-        || character == '\t'
-        || character == '\r'
-        || character == '\v'
-        || character == '\f';
+           || character == '\t'
+           || character == '\r'
+           || character == '\v'
+           || character == '\f';
 }
 
 static void skip_whitespace(LexState& state)
@@ -147,10 +149,10 @@ static void skip_newlines(LexState& state)
 static bool is_valid_identifier_char(const char character, const bool include_numbers)
 {
     return character == '_' || (
-        include_numbers
-            ? std::isalnum(character)
-            : std::isalpha(character)
-    );
+               include_numbers
+                   ? std::isalnum(character)
+                   : std::isalpha(character)
+           );
 }
 
 static void read_identifier_or_keyword(LexState& state)
@@ -174,7 +176,7 @@ static bool is_hex_digit(const LexState& state)
     return std::isdigit(character) || (character >= 'A' && character <= 'F');
 }
 
-static void read_non_decimal_number(LexState& state, bool (*is_valid_digit)(const LexState&))
+static void read_non_decimal_number(LexState & state, bool(*is_valid_digit)(const LexState &))
 {
     bool malformed = false;
     while (!is_eof(state) && is_valid_digit(state))
@@ -182,7 +184,7 @@ static void read_non_decimal_number(LexState& state, bool (*is_valid_digit)(cons
         const auto next_character = advance(state);
         malformed = next_character.has_value() && std::isalnum(next_character.value()) && !is_valid_digit(state);
     }
-    
+
     if (malformed)
     {
         advance(state);
@@ -216,7 +218,7 @@ static void read_decimal_number(LexState& state)
             malformed = decimal_used;
             decimal_used = true;
         }
-        
+
         advance(state);
     }
 
@@ -226,9 +228,10 @@ static void read_decimal_number(LexState& state)
     push_token(state, SyntaxKind::NumberLiteral);
 }
 
-const std::vector hex_specifier = {'x', 'X'};
-const std::vector octal_specifier = {'o', 'O'};
-const std::vector binary_specifier = {'b', 'B'};
+const std::vector hex_specifier = { 'x', 'X' };
+const std::vector octal_specifier = { 'o', 'O' };
+const std::vector binary_specifier = { 'b', 'B' };
+
 static void read_number(LexState& state, const char first_character)
 {
     if (first_character == '0')
@@ -244,26 +247,44 @@ static void read_number(LexState& state, const char first_character)
     return read_decimal_number(state);
 }
 
-static std::string unescape(const std::string& s) {
+static std::string unescape(const std::string& s)
+{
     std::string result;
     result.reserve(s.size());
-    for (size_t i = 0; i < s.size(); ++i) {
-        if (s[i] == '\\' && i + 1 < s.size()) {
-            switch (s[++i]) {
-            case 'n': result += '\n'; break;
-            case 'r': result += '\r'; break;
-            case 't': result += '\t'; break;
-            case 'b': result += '\b'; break;
-            case 'f': result += '\f'; break;
-            case 'v': result += '\v'; break;
-            case 'a': result += '\a'; break;
-            case 'e': result += '\x1B'; break; // escape
-            case '\\': result += '\\'; break;
-            case '"': result += '"'; break;
-            case '\'': result += '\''; break;
-            default:  result += s[i]; break; // unknown escape: keep literal
+    for (size_t i = 0; i < s.size(); ++i)
+    {
+        if (s[i] == '\\' && i + 1 < s.size())
+        {
+            switch (s[++i])
+            {
+                case 'n': result += '\n';
+                    break;
+                case 'r': result += '\r';
+                    break;
+                case 't': result += '\t';
+                    break;
+                case 'b': result += '\b';
+                    break;
+                case 'f': result += '\f';
+                    break;
+                case 'v': result += '\v';
+                    break;
+                case 'a': result += '\a';
+                    break;
+                case 'e': result += '\x1B';
+                    break; // escape
+                case '\\': result += '\\';
+                    break;
+                case '"': result += '"';
+                    break;
+                case '\'': result += '\'';
+                    break;
+                default: result += s[i];
+                    break; // unknown escape: keep literal
             }
-        } else {
+        }
+        else
+        {
             result += s[i];
         }
     }
@@ -280,7 +301,7 @@ static void read_string(LexState& state, const char terminator)
 
     const auto last_character = current_character(state);
     advance(state);
-    
+
     const auto text = unescape(current_lexeme(state));
     if (last_character != terminator)
         report_unterminated_string(current_span(state), text);
@@ -304,7 +325,7 @@ static void lex(LexState& state)
     // ReSharper disable once CppDefaultCaseNotHandledInSwitchStatement
     switch (character) // NOLINT(hicpp-multiway-paths-covered)
     {
-    case '+':
+        case '+':
         {
             auto kind = SyntaxKind::Plus;
             if (match(state, '+'))
@@ -314,7 +335,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '-':
+        case '-':
         {
             auto kind = SyntaxKind::Minus;
             if (match(state, '-'))
@@ -324,7 +345,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '*':
+        case '*':
         {
             auto kind = SyntaxKind::Star;
             if (match(state, '='))
@@ -332,7 +353,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '/':
+        case '/':
         {
             auto kind = SyntaxKind::Slash;
             if (match(state, '='))
@@ -340,7 +361,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '^':
+        case '^':
         {
             auto kind = SyntaxKind::Carat;
             if (match(state, '='))
@@ -348,7 +369,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '&':
+        case '&':
         {
             auto kind = SyntaxKind::Ampersand;
             if (match(state, '='))
@@ -362,7 +383,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '|':
+        case '|':
         {
             auto kind = SyntaxKind::Pipe;
             if (match(state, '='))
@@ -376,7 +397,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '~':
+        case '~':
         {
             auto kind = SyntaxKind::Tilde;
             if (match(state, '='))
@@ -384,7 +405,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '<':
+        case '<':
         {
             auto kind = SyntaxKind::LArrow;
             if (match(state, '='))
@@ -398,7 +419,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '>':
+        case '>':
         {
             auto kind = SyntaxKind::RArrow;
             if (match(state, '='))
@@ -418,7 +439,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '!':
+        case '!':
         {
             auto kind = SyntaxKind::Bang;
             if (match(state, '='))
@@ -426,7 +447,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '=':
+        case '=':
         {
             auto kind = SyntaxKind::Equals;
             if (match(state, '='))
@@ -434,7 +455,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case '?':
+        case '?':
         {
             auto kind = SyntaxKind::Question;
             if (match(state, '?'))
@@ -446,7 +467,7 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-    case ':':
+        case ':':
         {
             auto kind = SyntaxKind::Colon;
             if (match(state, ':'))
@@ -454,18 +475,18 @@ static void lex(LexState& state)
 
             return push_token(state, kind);
         }
-        
-    case '\n':
-        return skip_newlines(state);
-    case '#':
+
+        case '\n':
+            return skip_newlines(state);
+        case '#':
         {
             if (match(state, '#'))
                 return skip_single_line_comment(state);
         }
         break;
-    case '"':
-    case '\'':
-        return read_string(state, character);
+        case '"':
+        case '\'':
+            return read_string(state, character);
     }
 
     if (is_whitespace(character))
@@ -482,14 +503,16 @@ static void lex(LexState& state)
 
 std::vector<Token> tokenize(const SourceFile* file)
 {
+    logger::info("Lexing file: " + file->path);
     auto state = LexState {
         { .file = file },
         get_start_location(file),
         {}
     };
-    
+
     while (!is_eof(state))
         lex(state);
 
+    logger::info("Lexed " + std::to_string(state.tokens.size()) + " tokens");
     return state.tokens;
 }

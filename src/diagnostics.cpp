@@ -26,7 +26,7 @@ static std::string format_severity(const DiagnosticSeverity severity)
         case DiagnosticSeverity::Debug:
             return "debug";
     }
-    
+
     return "???";
 }
 
@@ -90,9 +90,11 @@ static std::string format_severity(const DiagnosticSeverity severity)
     report_error(0004, span, UnexpectedEOF {});
 }
 
-[[noreturn]] void report_expected_different_syntax(const FileSpan& span, const std::string& expected, const std::string& got, const bool quote_expected)
+[[noreturn]] void report_expected_different_syntax(const FileSpan& span, const std::string& expected,
+                                                   const std::string& got, const bool quote_expected)
 {
-    report_error(0005, span, ExpectedDifferentSyntax { .expected = expected, .got = got, .quote_expected = quote_expected });
+    report_error(
+        0005, span, ExpectedDifferentSyntax { .expected = expected, .got = got, .quote_expected = quote_expected });
 }
 
 [[noreturn]] void report_invalid_assignment(const expression_ptr_t& node)
@@ -140,17 +142,18 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
     const auto location = format_location(diagnostic.span.end);
     const auto severity = format_severity(diagnostic.severity);
     const auto code = std::format("{:04}", diagnostic.code);
-    const auto message = std::visit([&]<typename T>(T& arg) {
+    const auto message = std::visit([&]<typename T>(T& arg)
+    {
         using type_t = std::decay_t<T>;
         if constexpr (std::is_same_v<type_t, UnexpectedCharacter>)
-           return "Unexpected character: '" + std::string(1, arg.character) + '\'';
+            return "Unexpected character: '" + std::string(1, arg.character) + '\'';
         else if constexpr (std::is_same_v<type_t, MalformedNumber>)
             return "Malformed number: '" + arg.malformed + '\'';
         else if constexpr (std::is_same_v<type_t, UnterminatedString>)
         {
             auto body = static_cast<std::string>(arg.body);
             body.erase(body.find_last_not_of('\n') + 1);
-            
+
             return "Unterminated string: '" + body + '\'';
         }
         else if constexpr (std::is_same_v<type_t, UnexpectedSyntax>)
