@@ -1,3 +1,3 @@
-instance my_folder: Folder {
-    Name: "sigma",
-} -> get_storage()
+fn sum<T> {
+    return a + b
+}

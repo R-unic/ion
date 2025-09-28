@@ -155,7 +155,7 @@ void AstViewer::visit_invocation(const Invocation& invocation)
     write_line("Invocation(");
     visit(invocation.callee);
     write_line(",");
-    write_list<expression_ptr_t>(*invocation.arguments, [&](const auto& argument)
+    write_list<expression_ptr_t>(invocation.arguments, [&](const auto& argument)
     {
         visit(argument);
     });
@@ -197,7 +197,7 @@ void AstViewer::visit_expression_statement(const ExpressionStatement& expression
 void AstViewer::visit_block(const Block& block)
 {
     write("Block(");
-    write_list<statement_ptr_t>(*block.statements, [&](const auto& statement)
+    write_list<statement_ptr_t>(block.statements, [&](const auto& statement)
     {
         visit(statement);
     });
@@ -228,15 +228,64 @@ void AstViewer::visit_event_declaration(const EventDeclaration& event_declaratio
     indent_++;
     write_line("EventDeclaration(");
     write_line(event_declaration.name.get_text() + ',');
-    write_list<type_ref_ptr_t>(*event_declaration.type_parameters, [&](const auto& type_parameter)
+    write_list<type_ref_ptr_t>(event_declaration.type_parameters, [&](const auto& type_parameter)
     {
         visit(type_parameter);
     });
     write_line(",");
-    write_list<type_ref_ptr_t>(*event_declaration.parameter_types, [&](const auto& parameter_type)
+    write_list<type_ref_ptr_t>(event_declaration.parameter_types, [&](const auto& parameter_type)
     {
         visit(parameter_type);
     });
+
+    write_closing_paren();
+}
+
+void AstViewer::visit_function_declaration(const FunctionDeclaration& function_declaration)
+{
+    indent_++;
+    write_line("FunctionDeclaration(");
+    write_line(function_declaration.name.get_text() + ',');
+    write_list<type_ref_ptr_t>(function_declaration.type_parameters, [&](const auto& type_parameter)
+    {
+        visit(type_parameter);
+    });
+    write_line(",");
+    write_list<statement_ptr_t>(function_declaration.parameters, [&](const auto& parameter_type)
+    {
+        visit(parameter_type);
+    });
+
+    if (function_declaration.return_type.has_value())
+    {
+        write_line(",");
+        visit(*function_declaration.return_type);
+    }
+
+    write_line(",");
+    if (function_declaration.expression_body.has_value())
+        visit(*function_declaration.expression_body);
+    else
+        visit(*function_declaration.body);
+
+    write_closing_paren();
+}
+
+void AstViewer::visit_parameter(const Parameter& parameter)
+{
+    indent_++;
+    write_line("Parameter(");
+    write(parameter.name.get_text());
+    if (parameter.type.has_value())
+    {
+        write_line(",");
+        visit(*parameter.type);
+    }
+    if (parameter.initializer.has_value())
+    {
+        write_line(",");
+        visit(*parameter.initializer);
+    }
 
     write_closing_paren();
 }
@@ -248,7 +297,7 @@ void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_c
     write_line(instance_constructor.name.get_text() + ", ");
     visit(instance_constructor.type);
     write_line(",");
-    write_list<statement_ptr_t>(*instance_constructor.property_declarators, [&](const auto& property_declarator)
+    write_list<statement_ptr_t>(instance_constructor.property_declarators, [&](const auto& property_declarator)
     {
         visit(property_declarator);
     });
