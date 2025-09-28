@@ -3,6 +3,8 @@
 
 #include "ion/ast/viewer.h"
 
+#include "ion/ast/type_refs/type_parameter.h"
+
 void AstViewer::write(const std::string& text)
 {
     write(text.c_str());
@@ -172,26 +174,12 @@ void AstViewer::visit_expression_statement(const ExpressionStatement& expression
 void AstViewer::visit_block(const Block& block)
 {
     const auto starting_indent = indent_++;
-    write("Block([");
-
-    size_t i = 0;
-    for (const auto& statement : *block.statements)
+    write("Block(");
+    write_list<statement_ptr_t>(*block.statements, [&](const auto& statement)
     {
-        write_line();
         visit(statement);
-        if (++i < block.statements->size())
-            write(",");
-        else
-        {
-            indent_--;
-            write_line();
-        }
-    }
-
-    if (indent_ != starting_indent)
-        indent_--;
-
-    write("])");
+    });
+    write(")");
 }
 
 void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_declaration)
@@ -351,4 +339,25 @@ void AstViewer::visit_nullable_type(const NullableType& nullable_type)
     write_line("NullableType(");
     visit(nullable_type.non_nullable_type);
     write_closing_paren();
+}
+
+void AstViewer::visit_type_parameter(const TypeParameter& type_parameter)
+{
+    const auto has_base_type = type_parameter.base_type.has_value();
+    if (has_base_type)
+        indent_++;
+
+    write("TypeParameter(");
+    if (has_base_type)
+        write_line();
+
+    write(type_parameter.name.get_text());
+    if (!has_base_type)
+        write(")");
+    else
+    {
+        write_line(",");
+        visit(*type_parameter.base_type);
+        write_closing_paren();
+    }
 }

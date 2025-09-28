@@ -16,6 +16,8 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Member access & element access
     - [x] Invocation
     - [x] Variable declarations
+    - [x] Event declarations
+    - [x] Basic type parameters (has base types, no defaults yet)
     - [x] If/while statements
     - [x] Imports & exports
     - [x] Breaks/continues

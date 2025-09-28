@@ -1,1 +1,1 @@
-let 42 = x
+event resized<T: Foo>(T)

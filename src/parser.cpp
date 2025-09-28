@@ -9,6 +9,7 @@
 #include <set>
 
 #include "ion/logger.h"
+#include "ion/ast/type_refs/type_parameter.h"
 
 static bool is_eof(const ParseState& state, const int offset = 0)
 {
@@ -69,6 +70,14 @@ static bool match(ParseState& state, const SyntaxKind kind)
         advance(state);
 
     return is_match;
+}
+
+static std::optional<Token> match_token(ParseState& state, const SyntaxKind kind)
+{
+    if (match(state, kind))
+        return previous_token(state);
+
+    return std::nullopt;
 }
 
 static bool match_any(ParseState& state, const std::vector<SyntaxKind>& characters)
@@ -491,18 +500,46 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
                                        std::move(equals_token), std::move(initializer));
 }
 
+static statement_ptr_t parse_event_declaration(ParseState& state)
+{
+    const auto event_keyword = *previous_token(state);
+    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto l_arrow = match_token(state, SyntaxKind::LArrow);
+    const auto type_parameters = new std::vector<type_ref_ptr_t>;
+    while (!check(state, SyntaxKind::RArrow))
+    {
+        type_parameters->push_back(parse_type_parameter(state));
+        match(state, SyntaxKind::Comma);
+    }
+
+    std::optional<Token> r_arrow = std::nullopt;
+    if (l_arrow.has_value())
+        r_arrow = consume(state, SyntaxKind::RArrow);
+
+    const auto l_paren = match_token(state, SyntaxKind::LParen);
+    const auto parameter_types = new std::vector<type_ref_ptr_t>;
+    while (!check(state, SyntaxKind::RParen))
+    {
+        parameter_types->push_back(parse_type(state));
+        match(state, SyntaxKind::Comma);
+    }
+
+    std::optional<Token> r_paren = std::nullopt;
+    if (l_paren.has_value())
+        r_paren = consume(state, SyntaxKind::RParen);
+
+    return EventDeclaration::create(event_keyword, name, l_arrow, type_parameters, r_arrow, l_paren, parameter_types, r_paren);
+}
+
 static statement_ptr_t parse_if(ParseState& state)
 {
     const auto if_keyword = *previous_token(state);
     auto condition = parse_expression(state);
     auto then_branch = parse_statement(state);
-    std::optional<Token> else_keyword = std::nullopt;
+    const auto else_keyword = match_token(state, SyntaxKind::ElseKeyword);
     std::optional<statement_ptr_t> else_branch = std::nullopt;
-    if (match(state, SyntaxKind::ElseKeyword))
-    {
-        else_keyword = *previous_token(state);
+    if (else_keyword.has_value())
         else_branch = parse_statement(state);
-    }
 
     return If::create(if_keyword, std::move(condition), std::move(then_branch), else_keyword, std::move(else_branch));
 }
@@ -569,10 +606,11 @@ static statement_ptr_t parse_declaration(ParseState& state)
     if (match(state, SyntaxKind::ExportKeyword))
         export_keyword = previous_token(state);
 
-    // const auto is_exported = export_keyword.has_value();
     std::optional<statement_ptr_t> statement = std::nullopt;
     if (match(state, SyntaxKind::LetKeyword))
         statement = parse_variable_declaration(state);
+    else if (match(state, SyntaxKind::EventKeyword))
+        statement = parse_event_declaration(state);
 
     if (export_keyword.has_value())
     {
@@ -645,6 +683,17 @@ static type_ref_ptr_t parse_nullable_type(ParseState& state)
 type_ref_ptr_t parse_type(ParseState& state)
 {
     return parse_nullable_type(state);
+}
+
+type_ref_ptr_t parse_type_parameter(ParseState& state)
+{
+    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto colon_token = match_token(state, SyntaxKind::Colon);
+    std::optional<type_ref_ptr_t> base_type = std::nullopt;
+    if (colon_token.has_value())
+        base_type = parse_type(state);
+
+    return TypeParameter::create(name, colon_token, std::move(base_type));
 }
 
 std::vector<statement_ptr_t>* parse(const SourceFile* file)
