@@ -1,3 +1,4 @@
-fn sum<T> {
-    return a + b
+instance my_part: Part {
+    "MyPart"
+    Size: 69
 }

@@ -10,20 +10,31 @@ Statically typed language built for use with Roblox that compiles to Luau.
 
 - [x] Lexer
 - [x] Parser
-    - [x] Literals & identifiers
+    - [x] Primitive literals
+    - [x] Identifiers
     - [x] Binary, unary, postfix unary, ternary, & assignment operations
     - [x] Parenthesized expressions
     - [x] Member access & element access
     - [x] Invocation
     - [x] Variable declarations
     - [x] Event declarations
-    - [x] Basic type parameters (has base types, no defaults yet)
+    - [x] Function declarations
+    - [x] Instance constructors
+        - [ ] Attribute declarator
+        - [ ] Children declarator
+    - [ ] Enum declarations
+    - [x] Basic type parameters
+        - [ ] Defaults
     - [x] If/while statements
+    - [ ] For statements
+        - [ ] With iterables
     - [x] Imports & exports
     - [x] Breaks/continues
     - [x] Returns
     - [x] Blocks
     - [x] Primitive types, type names, & nullable types
+    - [x] Type parameters
+    - [ ] String interpolation
 
 ## Concept Examples
 
@@ -45,11 +56,22 @@ data = 420;
 data_changed!(data);
 ```
 
-### Instance creation
+### Instance construction
 
 ```swift
-instance my_folder: Folder {
-  Name: "MyFolder",
-  Parent: ReplicatedStorage
-}
+instance my_part: Part {
+  "MyPart",
+  Size: Vector3.one,
+  Position: new Vector3(0, 10, 0)
+} -> game.Workspace
+```
+
+This is equivalent to the following in Luau:
+
+```lua
+local my_part = Instance.new("Folder")
+my_part.Name = "MyPart"
+my_part.Size = Vector3.one
+my_part.Position = Vector3.new(0, 10, 0)
+my_part.Parent = game.Workspace
 ```
