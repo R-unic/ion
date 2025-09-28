@@ -10,6 +10,7 @@
 
 #include "ion/logger.h"
 #include "ion/ast/statements/function_declaration.h"
+#include "ion/ast/statements/instance_name_declarator.h"
 #include "ion/ast/type_refs/type_parameter.h"
 
 static bool is_eof(const ParseState& state, const int offset = 0)
@@ -626,6 +627,9 @@ const std::set<std::string> primitive_type_names = { "number", "string", "bool",
 
 static statement_ptr_t parse_instance_property_declarator(ParseState& state)
 {
+    if (const auto name_literal = match_token(state, SyntaxKind::StringLiteral); name_literal.has_value())
+        return InstanceNameDeclarator::create(*name_literal);
+
     const auto name = consume(state, SyntaxKind::Identifier);
     const auto colon_token = consume(state, SyntaxKind::Colon);
     auto value = parse_expression(state);

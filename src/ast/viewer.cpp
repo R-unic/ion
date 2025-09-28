@@ -1,5 +1,7 @@
 #include "ion/ast/viewer.h"
 
+#include "ion/ast/statements/instance_name_declarator.h"
+
 void AstViewer::write(const std::string& text)
 {
     write(text.c_str());
@@ -316,6 +318,13 @@ void AstViewer::visit_instance_property_declarator(const InstancePropertyDeclara
     write("InstancePropertyDeclarator(");
     write(instance_property_declarator.name.get_text() + ", ");
     visit(instance_property_declarator.value);
+    write(")");
+}
+
+void AstViewer::visit_instance_name_declarator(const InstanceNameDeclarator& instance_name_declarator)
+{
+    write("InstanceNameDeclarator(");
+    write(instance_name_declarator.name_literal.get_text());
     write(")");
 }
 
