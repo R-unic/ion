@@ -13,12 +13,17 @@ static bool is_eof(const LexState& state)
     return static_cast<int>(state.file->text.length()) <= state.position;
 }
 
+static std::string::value_type peek(const LexState& state, const int offset)
+{
+    return state.file->text[state.position + offset];
+}
+
 static char current_character(const LexState& state)
 {
     if (is_eof(state))
         report_compiler_error("Lexer attempted to access an out of bounds file source index");
 
-    return state.file->text[state.position];
+    return peek(state, 0);
 }
 
 /** Returns the next unadvanced character */
@@ -165,17 +170,6 @@ static void read_identifier_or_keyword(LexState& state)
     push_token(state, kind);
 }
 
-static bool is_numeric_char(const char character)
-{
-    return std::isdigit(character) || character == '_';
-}
-
-static bool is_hex_digit(const LexState& state)
-{
-    const auto character = current_character(state);
-    return std::isdigit(character) || (character >= 'A' && character <= 'F');
-}
-
 static void read_non_decimal_number(LexState& state, bool (*is_valid_digit)(const LexState&))
 {
     bool malformed = false;
@@ -194,6 +188,17 @@ static void read_non_decimal_number(LexState& state, bool (*is_valid_digit)(cons
     push_token(state, SyntaxKind::NumberLiteral);
 }
 
+static bool is_numeric_char(const char character)
+{
+    return std::isdigit(character) || character == '_';
+}
+
+static bool is_hex_digit(const LexState& state)
+{
+    const auto character = current_character(state);
+    return std::isdigit(character) || (character >= 'A' && character <= 'F');
+}
+
 static bool is_octal_digit(const LexState& state)
 {
     const auto character = current_character(state);
@@ -208,13 +213,16 @@ static bool is_binary_digit(const LexState& state)
 
 static void read_decimal_number(LexState& state)
 {
-    bool decimal_used = false;
-    bool malformed = false;
+    auto decimal_used = false;
+    auto malformed = false;
     char character;
     while (!is_eof(state) && (is_numeric_char(character = current_character(state)) || character == '.'))
     {
         if (character == '.')
         {
+            if (!decimal_used && peek(state, 1) == '.')
+                break;
+
             malformed = decimal_used;
             decimal_used = true;
         }
@@ -466,6 +474,14 @@ static void lex(LexState& state)
                 if (match(state, '='))
                     kind = SyntaxKind::QuestionQuestionEquals;
             }
+
+            return push_token(state, kind);
+        }
+        case '.':
+        {
+            auto kind = SyntaxKind::Dot;
+            if (match(state, '.'))
+                kind = SyntaxKind::DotDot;
 
             return push_token(state, kind);
         }

@@ -9,13 +9,19 @@ Statically typed language built for use with Roblox that compiles to Luau.
 ## Roadmap
 
 - [x] Lexer
+- [ ] Diagnostics
+    - [x] Errors
+    - [ ] Warnings
+    - [ ] Colors
+    - [x] Line info/code view
 - [x] Parser
     - [x] Primitive literals
+    - [x] Range literals
     - [ ] Vector literals
     - [ ] Color literals
         - [ ] RGB
+        - [ ] HSV
         - [ ] Hex
-    - [ ] Range literals
     - [x] Identifiers
     - [x] Binary, unary, postfix unary, ternary, & assignment operations
     - [x] Parenthesized expressions

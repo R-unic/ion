@@ -169,15 +169,15 @@ static expression_ptr_t parse_primary(ParseState& state)
             return parse_parenthesized(state);
 
         case SyntaxKind::TrueKeyword:
-            return Literal::create(token, true);
+            return PrimitiveLiteral::create(token, true);
         case SyntaxKind::FalseKeyword:
-            return Literal::create(token, false);
+            return PrimitiveLiteral::create(token, false);
         case SyntaxKind::NullKeyword:
-            return Literal::create(token, std::nullopt);
+            return PrimitiveLiteral::create(token, std::nullopt);
         case SyntaxKind::StringLiteral:
-            return Literal::create(token, text.substr(1, text.size() - 2));
+            return PrimitiveLiteral::create(token, text.substr(1, text.size() - 2));
         case SyntaxKind::NumberLiteral:
-            return Literal::create(token, to_number(text));
+            return PrimitiveLiteral::create(token, to_number(text));
 
         default:
             report_unexpected_syntax(token);
@@ -337,10 +337,11 @@ static expression_ptr_t parse_bitwise_and(ParseState& state)
     return left;
 }
 
-static expression_ptr_t parse_bitwise_or(ParseState& state)
+
+static expression_ptr_t parse_bitwise_xor(ParseState& state)
 {
     auto left = parse_bitwise_and(state);
-    while (match(state, SyntaxKind::Pipe))
+    while (match(state, SyntaxKind::Tilde))
     {
         const auto operator_token = *previous_token(state);
         auto right = parse_bitwise_and(state);
@@ -350,14 +351,27 @@ static expression_ptr_t parse_bitwise_or(ParseState& state)
     return left;
 }
 
-static expression_ptr_t parse_bitwise_xor(ParseState& state)
+static expression_ptr_t parse_bitwise_or(ParseState& state)
 {
-    auto left = parse_bitwise_or(state);
-    while (match(state, SyntaxKind::Tilde))
+    auto left = parse_bitwise_xor(state);
+    while (match(state, SyntaxKind::Pipe))
     {
         const auto operator_token = *previous_token(state);
-        auto right = parse_bitwise_or(state);
+        auto right = parse_bitwise_xor(state);
         left = BinaryOp::create(operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+static expression_ptr_t parse_range_literal(ParseState& state)
+{
+    auto left = parse_bitwise_or(state);
+    while (match(state, SyntaxKind::DotDot))
+    {
+        const auto dot_dot_token = *previous_token(state);
+        auto right = parse_bitwise_or(state);
+        left = RangeLiteral::create(std::move(left), dot_dot_token, std::move(right));
     }
 
     return left;
@@ -374,11 +388,11 @@ const std::vector comparison_syntaxes = {
 
 static expression_ptr_t parse_comparison(ParseState& state)
 {
-    auto left = parse_bitwise_xor(state);
+    auto left = parse_range_literal(state);
     while (match_any(state, comparison_syntaxes))
     {
         const auto operator_token = *previous_token(state);
-        auto right = parse_bitwise_xor(state);
+        auto right = parse_range_literal(state);
         left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 

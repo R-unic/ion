@@ -76,7 +76,7 @@ void AstViewer::write_list(const std::vector<T>& list, const std::function<void 
     write("]");
 }
 
-void AstViewer::visit_literal(const Literal& literal)
+void AstViewer::visit_primitive_literal(const PrimitiveLiteral& literal)
 {
     write("Literal(");
     if (!literal.value.has_value())
@@ -87,6 +87,16 @@ void AstViewer::visit_literal(const Literal& literal)
         write(literal.get_text());
     }
     write(")");
+}
+
+void AstViewer::visit_range_literal(const RangeLiteral& range_literal)
+{
+    indent_++;
+    write_line("RangeLiteral(");
+    visit(range_literal.minimum);
+    write_line(",");
+    visit(range_literal.maximum);
+    write_closing_paren();
 }
 
 void AstViewer::visit_identifier(const Identifier& identifier)
