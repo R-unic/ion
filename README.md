@@ -11,6 +11,11 @@ Statically typed language built for use with Roblox that compiles to Luau.
 - [x] Lexer
 - [x] Parser
     - [x] Primitive literals
+    - [ ] Vector literals
+    - [ ] Color literals
+        - [ ] RGB
+        - [ ] Hex
+    - [ ] Range literals
     - [x] Identifiers
     - [x] Binary, unary, postfix unary, ternary, & assignment operations
     - [x] Parenthesized expressions
@@ -26,8 +31,8 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Basic type parameters
         - [ ] Defaults
     - [x] If/while statements
+    - [ ] Switch statements
     - [ ] For statements
-        - [ ] With iterables
     - [x] Imports & exports
     - [x] Breaks/continues
     - [x] Returns
@@ -60,10 +65,36 @@ data_changed!(data);
 
 ```swift
 instance my_part: Part {
-  "MyPart",
-  Size: Vector3.one,
-  Position: new Vector3(0, 10, 0)
+  "MyPart"
+  Size: Vector3.one
+  Position: <0, 10, 0>
+  Color: #ff0000
+  
+  #Lava
+  @LavaKind: "very very hot"
 } -> game.Workspace
+```
+
+This is equivalent to the following in Luau:
+
+```lua
+local my_part = Instance.new("Folder")
+my_part.Name = "MyPart"
+my_part.Size = Vector3.one
+my_part.Position = Vector3.new(0, 10, 0)
+my_part.Color = Color3.fromRGB(255, 0, 0) -- #ff0000 is parsed at compile-time to avoid .fromHex()
+my_part:SetAttribute("LavaKind", "very very hot")
+my_part.Parent = game.Workspace
+my_part:AddTag("Lava")
+```
+
+### Shorthand attributes
+
+```rs
+zombie_model
+let health = zombie_model@Health
+print(health)
+zombie_model@Health = 0
 ```
 
 This is equivalent to the following in Luau:

@@ -192,9 +192,8 @@ static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t cal
     if (!check(state, SyntaxKind::RParen))
     {
         do
-        {
             arguments.push_back(parse_expression(state));
-        } while (match(state, SyntaxKind::Comma));
+        while (match(state, SyntaxKind::Comma));
     }
 
     const auto r_paren = consume(state, SyntaxKind::RParen);
@@ -504,11 +503,9 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
 static std::vector<type_ref_ptr_t> parse_type_parameters(ParseState& state)
 {
     std::vector<type_ref_ptr_t> type_parameters;
-    while (!check(state, SyntaxKind::RArrow))
-    {
+    do
         type_parameters.push_back(parse_type_parameter(state));
-        match(state, SyntaxKind::Comma);
-    }
+    while (match(state, SyntaxKind::Comma));
 
     return type_parameters;
 }
@@ -535,11 +532,10 @@ static statement_ptr_t parse_event_declaration(ParseState& state)
     std::optional<Token> r_paren = std::nullopt;
     if (l_paren.has_value())
     {
-        while (!check(state, SyntaxKind::RParen))
-        {
+        do
             parameter_types.push_back(parse_type(state));
-            match(state, SyntaxKind::Comma);
-        }
+        while (match(state, SyntaxKind::Comma));
+
         r_paren = consume(state, SyntaxKind::RParen);
     }
 
@@ -585,11 +581,10 @@ static statement_ptr_t parse_function_declaration(ParseState& state)
     std::optional<Token> r_paren = std::nullopt;
     if (l_paren.has_value())
     {
-        while (!check(state, SyntaxKind::RParen))
-        {
+        do
             parameters.push_back(parse_parameter(state));
-            match(state, SyntaxKind::Comma);
-        }
+        while (match(state, SyntaxKind::Comma));
+
         r_paren = consume(state, SyntaxKind::RParen);
     }
 
@@ -695,12 +690,11 @@ static statement_ptr_t parse_import(ParseState& state)
 {
     const auto import_keyword = *previous_token(state);
     std::vector<Token> names;
-    while (match(state, SyntaxKind::Identifier))
+    do
     {
-        const auto name = *previous_token(state);
+        const auto name = consume(state, SyntaxKind::Identifier);
         names.push_back(name);
-        match(state, SyntaxKind::Comma);
-    }
+    } while (match(state, SyntaxKind::Comma));
 
     if (names.empty())
     {
