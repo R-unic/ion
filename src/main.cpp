@@ -8,6 +8,7 @@ int main()
     const auto statements = parse(file);
     const auto viewer = new AstViewer;
     logger::info("Running AstViewer on parsed statements...");
+    std::cout << '\n';
     viewer->visit(statements);
 
     return 0;

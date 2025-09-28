@@ -1,9 +1,4 @@
-#include <iostream>
-#include <ostream>
-
 #include "ion/ast/viewer.h"
-
-#include "ion/ast/type_refs/type_parameter.h"
 
 void AstViewer::write(const std::string& text)
 {
@@ -37,6 +32,14 @@ void AstViewer::write_line(const char* text) const
     write_indent();
 }
 
+void AstViewer::write_binary_op_contents(const BinaryOp& binary_op) const
+{
+    visit(binary_op.left);
+    write_line(",");
+    write_line('"' + binary_op.operator_token.get_text() + "\",");
+    visit(binary_op.right);
+}
+
 void AstViewer::write_closing_paren()
 {
     indent_--;
@@ -44,12 +47,31 @@ void AstViewer::write_closing_paren()
     write(")");
 }
 
-void AstViewer::write_binary_op_contents(const BinaryOp& binary_op) const
+template<typename T>
+void AstViewer::write_list(const std::vector<T>& list, const std::function<void (const T&)>& write_item)
 {
-    visit(binary_op.left);
-    write_line(",");
-    write_line('"' + binary_op.operator_token.get_text() + "\",");
-    visit(binary_op.right);
+    const auto starting_indent = indent_++;
+    write("[");
+
+    const auto size = list.size();
+    size_t i = 0;
+    for (const auto& item : list)
+    {
+        write_line();
+        write_item(item);
+        if (++i < size)
+            write(",");
+        else
+        {
+            indent_--;
+            write_line();
+        }
+    }
+
+    if (indent_ != starting_indent)
+        indent_--;
+
+    write("]");
 }
 
 void AstViewer::visit_literal(const Literal& literal)
@@ -137,6 +159,7 @@ void AstViewer::visit_invocation(const Invocation& invocation)
     {
         visit(argument);
     });
+    write_line(",");
 
     write("Special: ");
     write(invocation.bang_token.has_value() ? "true" : "false");
@@ -173,7 +196,6 @@ void AstViewer::visit_expression_statement(const ExpressionStatement& expression
 
 void AstViewer::visit_block(const Block& block)
 {
-    const auto starting_indent = indent_++;
     write("Block(");
     write_list<statement_ptr_t>(*block.statements, [&](const auto& statement)
     {
@@ -217,6 +239,35 @@ void AstViewer::visit_event_declaration(const EventDeclaration& event_declaratio
     });
 
     write_closing_paren();
+}
+
+void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_constructor)
+{
+    indent_++;
+    write_line("InstanceConstructor(");
+    write_line(instance_constructor.name.get_text() + ", ");
+    visit(instance_constructor.type);
+    write_line(",");
+    write_list<statement_ptr_t>(*instance_constructor.property_declarators, [&](const auto& property_declarator)
+    {
+        visit(property_declarator);
+    });
+
+    if (instance_constructor.parent.has_value())
+    {
+        write_line(",");
+        visit(*instance_constructor.parent);
+    }
+
+    write_closing_paren();
+}
+
+void AstViewer::visit_instance_property_declarator(const InstancePropertyDeclarator& instance_property_declarator)
+{
+    write("InstancePropertyDeclarator(");
+    write(instance_property_declarator.name.get_text() + ", ");
+    visit(instance_property_declarator.value);
+    write(")");
 }
 
 void AstViewer::visit_break(const Break&)
@@ -269,33 +320,6 @@ void AstViewer::visit_while(const While& while_statement)
     write_closing_paren();
 }
 
-template<typename T>
-void AstViewer::write_list(const std::vector<T>& list, const std::function<void (const T&)>& write_item)
-{
-    const auto starting_indent = indent_++;
-    write("[");
-
-    const auto size = list.size();
-    size_t i = 0;
-    for (const auto& item : list)
-    {
-        write_line();
-        write_item(item);
-        if (++i < size)
-            write(",");
-        else
-        {
-            indent_--;
-            write_line();
-        }
-    }
-
-    if (indent_ != starting_indent)
-        indent_--;
-
-    write("]");
-}
-
 void AstViewer::visit_import(const Import& import)
 {
     indent_++;
@@ -304,8 +328,7 @@ void AstViewer::visit_import(const Import& import)
     {
         write(token.get_text());
     });
-
-    write_line("],");
+    write_line(",");
     write(import.module_name.get_text());
     write_closing_paren();
 }

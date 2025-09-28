@@ -1,1 +1,3 @@
-event resized<T: Foo>(T)
+instance my_folder: Folder {
+    Name: "sigma",
+} -> get_storage()

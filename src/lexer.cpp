@@ -176,7 +176,7 @@ static bool is_hex_digit(const LexState& state)
     return std::isdigit(character) || (character >= 'A' && character <= 'F');
 }
 
-static void read_non_decimal_number(LexState & state, bool(*is_valid_digit)(const LexState &))
+static void read_non_decimal_number(LexState& state, bool (*is_valid_digit)(const LexState&))
 {
     bool malformed = false;
     while (!is_eof(state) && is_valid_digit(state))
@@ -342,6 +342,8 @@ static void lex(LexState& state)
                 kind = SyntaxKind::MinusMinus;
             else if (match(state, '='))
                 kind = SyntaxKind::MinusEquals;
+            else if (match(state, '>'))
+                kind = SyntaxKind::LongArrow;
 
             return push_token(state, kind);
         }

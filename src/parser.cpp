@@ -531,6 +531,49 @@ static statement_ptr_t parse_event_declaration(ParseState& state)
     return EventDeclaration::create(event_keyword, name, l_arrow, type_parameters, r_arrow, l_paren, parameter_types, r_paren);
 }
 
+const std::set<std::string> primitive_type_names = { "number", "string", "bool", "void" };
+
+static statement_ptr_t parse_instance_property_declarator(ParseState& state)
+{
+    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto colon_token = consume(state, SyntaxKind::Colon);
+    auto value = parse_expression(state);
+
+    return InstancePropertyDeclarator::create(name, colon_token, std::move(value));
+}
+
+static statement_ptr_t parse_instance_constructor(ParseState& state)
+{
+    const auto instance_keyword = *previous_token(state);
+    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto colon_token = consume(state, SyntaxKind::Colon);
+    auto type = parse_primitive_type(state);
+    if (primitive_type_names.contains(type->get_text()))
+        report_expected_different_syntax(type->get_span(), "instance type", type->get_text(), false);
+
+    const auto l_brace = match_token(state, SyntaxKind::LBrace);
+    const auto property_declarators = new std::vector<statement_ptr_t>;
+    std::optional<Token> r_brace = std::nullopt;
+    if (l_brace.has_value())
+    {
+        while (!check(state, SyntaxKind::RBrace))
+        {
+            property_declarators->push_back(parse_instance_property_declarator(state));
+            match(state, SyntaxKind::Comma);
+        }
+
+        r_brace = consume(state, SyntaxKind::RBrace);
+    }
+
+    const auto long_arrow = match_token(state, SyntaxKind::LongArrow);
+    std::optional<expression_ptr_t> parent = std::nullopt;
+    if (long_arrow.has_value())
+        parent = parse_expression(state);
+
+    return InstanceConstructor::create(instance_keyword, name, colon_token, std::move(type),
+                                       l_brace, property_declarators, r_brace, long_arrow, std::move(parent));
+}
+
 static statement_ptr_t parse_if(ParseState& state)
 {
     const auto if_keyword = *previous_token(state);
@@ -611,6 +654,8 @@ static statement_ptr_t parse_declaration(ParseState& state)
         statement = parse_variable_declaration(state);
     else if (match(state, SyntaxKind::EventKeyword))
         statement = parse_event_declaration(state);
+    else if (match(state, SyntaxKind::InstanceKeyword))
+        statement = parse_instance_constructor(state);
 
     if (export_keyword.has_value())
     {
@@ -651,9 +696,7 @@ statement_ptr_t parse_statement(ParseState& state)
     return parse_declaration(state);
 }
 
-const std::set<std::string> primitive_type_names = { "number", "string", "bool", "void" };
-
-static type_ref_ptr_t parse_primitive_type(ParseState& state)
+type_ref_ptr_t parse_primitive_type(ParseState& state)
 {
     const auto token_opt = advance(state);
     if (!token_opt.has_value() || token_opt.value().kind != SyntaxKind::Identifier)
