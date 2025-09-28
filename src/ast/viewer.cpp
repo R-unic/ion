@@ -299,7 +299,7 @@ void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_c
     write_line(instance_constructor.name.get_text() + ", ");
     visit(instance_constructor.type);
     write_line(",");
-    write_list<statement_ptr_t>(instance_constructor.property_declarators, [&](const auto& property_declarator)
+    write_list<statement_ptr_t>(instance_constructor.declarators, [&](const auto& property_declarator)
     {
         visit(property_declarator);
     });
@@ -324,7 +324,22 @@ void AstViewer::visit_instance_property_declarator(const InstancePropertyDeclara
 void AstViewer::visit_instance_name_declarator(const InstanceNameDeclarator& instance_name_declarator)
 {
     write("InstanceNameDeclarator(");
-    write(instance_name_declarator.name_literal.get_text());
+    write(instance_name_declarator.name.get_text());
+    write(")");
+}
+
+void AstViewer::visit_instance_attribute_declarator(const InstanceAttributeDeclarator& instance_attribute_declarator)
+{
+    write("InstanceAttributeDeclarator(");
+    write(instance_attribute_declarator.name.get_text() + ", ");
+    visit(instance_attribute_declarator.value);
+    write(")");
+}
+
+void AstViewer::visit_instance_tag_declarator(const InstanceTagDeclarator& instance_tag_declarator)
+{
+    write("InstanceTagDeclarator(");
+    write(instance_tag_declarator.name.get_text());
     write(")");
 }
 

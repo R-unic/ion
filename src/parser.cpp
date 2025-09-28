@@ -620,16 +620,27 @@ static statement_ptr_t parse_function_declaration(ParseState& state)
 
 const std::set<std::string> primitive_type_names = { "number", "string", "bool", "void" };
 
-static statement_ptr_t parse_instance_property_declarator(ParseState& state)
+static statement_ptr_t parse_instance_declarator_with_initializer(ParseState& state)
 {
-    if (const auto name_literal = match_token(state, SyntaxKind::StringLiteral); name_literal.has_value())
-        return InstanceNameDeclarator::create(*name_literal);
-
+    const auto at_token = match_token(state, SyntaxKind::At);
     const auto name = consume(state, SyntaxKind::Identifier);
     const auto colon_token = consume(state, SyntaxKind::Colon);
     auto value = parse_expression(state);
 
-    return InstancePropertyDeclarator::create(name, colon_token, std::move(value));
+    return at_token.has_value()
+               ? InstanceAttributeDeclarator::create(*at_token, name, colon_token, std::move(value))
+               : InstancePropertyDeclarator::create(name, colon_token, std::move(value));
+}
+
+static statement_ptr_t parse_instance_declarator(ParseState& state)
+{
+    if (const auto name_literal = match_token(state, SyntaxKind::StringLiteral); name_literal.has_value())
+        return InstanceNameDeclarator::create(*name_literal);
+
+    if (const auto hashtag_token = match_token(state, SyntaxKind::Hashtag); hashtag_token.has_value())
+        return InstanceTagDeclarator::create(*hashtag_token, consume(state, SyntaxKind::Identifier));
+
+    return parse_instance_declarator_with_initializer(state);
 }
 
 static statement_ptr_t parse_instance_constructor(ParseState& state)
@@ -648,7 +659,7 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
     {
         while (!check(state, SyntaxKind::RBrace))
         {
-            property_declarators.push_back(parse_instance_property_declarator(state));
+            property_declarators.push_back(parse_instance_declarator(state));
             match(state, SyntaxKind::Comma);
         }
 

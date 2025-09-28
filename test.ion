@@ -2,4 +2,7 @@ instance my_part: Part {
     "MyPart"
     Size: 69
     Position: 420
+
+    #Lava
+    @Poop: true
 }
