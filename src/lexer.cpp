@@ -8,12 +8,14 @@
 #include "ion/logger.h"
 #include "ion/source_file.h"
 
+/** Is at end of file? */
 static bool is_eof(const LexState& state)
 {
     return static_cast<int>(state.file->text.length()) <= state.position;
 }
 
-static std::string::value_type peek(const LexState& state, const int offset)
+/** Returns the character `offset` characters ahead of the current position */
+static char peek(const LexState& state, const int offset)
 {
     return state.file->text[state.position + offset];
 }
@@ -37,11 +39,13 @@ static std::optional<char> advance(LexState& state)
     return current_character(state);
 }
 
+/** Returns whether the current character is `character` */
 static bool check(const LexState& state, const char character)
 {
     return !is_eof(state) && current_character(state) == character;
 }
 
+/** Returns whether the current character is `character`, and advances if it is */
 static bool match(LexState& state, const char character)
 {
     const auto is_match = check(state, character);
@@ -51,6 +55,7 @@ static bool match(LexState& state, const char character)
     return is_match;
 }
 
+/** Returns whether the current character is in `characters`, and advances if it is */
 static bool match_any(LexState& state, const std::vector<char>& characters)
 {
     const auto is_match = !is_eof(state) && std::ranges::any_of(characters, [&](const auto character)
@@ -64,11 +69,13 @@ static bool match_any(LexState& state, const std::vector<char>& characters)
     return is_match;
 }
 
+/** Creates a `FileLocation` from the current lexer position */
 static FileLocation current_location(const LexState& state)
 {
     return static_cast<FileLocation>(state);
 }
 
+/** Creates a `FileSpan` from the start of the current lexeme to the current location */
 static FileSpan current_span(const LexState& state)
 {
     return create_span(state.lexeme_start, current_location(state));
@@ -80,11 +87,13 @@ static std::string current_lexeme(const LexState& state)
     return state.file->text.substr(start_position, state.position - start_position);
 }
 
+/** Reset `lexeme_start` back to the current location */
 static void start_new_lexeme(LexState& state)
 {
     state.lexeme_start = current_location(state);
 }
 
+/** Returns the current lexeme and starts a new one */
 static std::string consume_lexeme(LexState& state)
 {
     const auto lexeme = current_lexeme(state);
@@ -98,6 +107,7 @@ static std::string consume_lexeme(LexState& state)
     report_malformed_number(current_span(state), current_lexeme(state));
 }
 
+/** Push a token with custom text not from the file */
 static void push_token_override_text(LexState& state, const SyntaxKind kind, const std::string& text)
 {
     const auto token = Token {
@@ -138,6 +148,7 @@ static void skip_whitespace(LexState& state)
     const auto text = consume_lexeme(state);
 }
 
+/** Advances until the current character is not a line feed */
 static void skip_newlines(LexState& state)
 {
     state.line++;
@@ -172,7 +183,7 @@ static void read_identifier_or_keyword(LexState& state)
 
 static void read_non_decimal_number(LexState& state, bool (*is_valid_digit)(const LexState&))
 {
-    bool malformed = false;
+    auto malformed = false;
     while (!is_eof(state) && is_valid_digit(state))
     {
         const auto next_character = advance(state);
@@ -303,9 +314,7 @@ static void read_string(LexState& state, const char terminator)
 {
     char character;
     while (!is_eof(state) && (character = current_character(state)) != terminator && character != '\n')
-    {
         advance(state);
-    }
 
     const auto last_character = current_character(state);
     advance(state);
@@ -514,7 +523,7 @@ static void lex(LexState& state)
     if (is_numeric_char(character))
         return read_number(state, character);
     if (single_char_syntaxes.contains(character))
-        return push_token(state, single_char_syntaxes.at(character));
+        return push_token_override_text(state, single_char_syntaxes.at(character), std::string(1, character));
 
     report_unexpected_character(current_span(state), character);
 }
