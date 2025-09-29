@@ -1,1 +1,1 @@
-type X<T> = number | T
+type X<A, B> = number

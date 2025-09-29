@@ -5,6 +5,9 @@
 
 #include "ion/diagnostics.h"
 #include "ion/parser.h"
+
+#include <iostream>
+
 #include "ion/logger.h"
 
 static bool is_eof(const ParseState& state, const int offset = 0)
@@ -551,14 +554,14 @@ static statement_ptr_t parse_block(ParseState& state)
     return Block::create(l_brace, r_brace, std::move(statements));
 }
 
-static std::pair<std::optional<Token>, std::optional<expression_ptr_t> > parse_equals_value_clause(ParseState& state)
+static std::optional<EqualsValueClause*> parse_equals_value_clause(ParseState& state)
 {
     const auto equals_token = match_token(state, SyntaxKind::Equals);
-    std::optional<expression_ptr_t> initializer = std::nullopt;
-    if (equals_token.has_value())
-        initializer = parse_expression(state);
+    if (!equals_token.has_value())
+        return std::nullopt;
 
-    return { equals_token, std::move(initializer) };
+    auto value = parse_expression(state);
+    return new EqualsValueClause(*equals_token, std::move(value));
 }
 
 static statement_ptr_t parse_variable_declaration(ParseState& state)
@@ -573,60 +576,44 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
         type = parse_type(state);
     }
 
-    auto [equals_token, initializer] = parse_equals_value_clause(state);
-    return VariableDeclaration::create(let_keyword, name, std::move(colon_token), std::move(type),
-                                       std::move(equals_token), std::move(initializer));
+    const auto equals_value_clause = parse_equals_value_clause(state);
+    return VariableDeclaration::create(let_keyword, name, std::move(colon_token), std::move(type), equals_value_clause);
 }
 
-static std::vector<type_ref_ptr_t> parse_type_parameters(ParseState& state)
+static std::optional<TypeParametersClause*> parse_type_parameters(ParseState& state)
 {
-    std::vector<type_ref_ptr_t> type_parameters;
+    const auto l_arrow = match_token(state, SyntaxKind::LArrow);
+    if (!l_arrow.has_value())
+        return std::nullopt;
+
+    std::vector<type_ref_ptr_t> list;
     do
-        type_parameters.push_back(parse_type_parameter(state));
+        list.push_back(parse_type_parameter(state));
     while (match(state, SyntaxKind::Comma));
 
-    return type_parameters;
+    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+    if (list.empty())
+        report_expected_different_syntax(r_arrow.span, "type parameter", r_arrow.get_text(), false);
+
+    return new TypeParametersClause(*l_arrow, std::move(list), r_arrow);
 }
 
 static statement_ptr_t parse_type_declaration(ParseState& state)
 {
     const auto type_keyword = *previous_token(state);
     const auto name = consume(state, SyntaxKind::Identifier);
-    const auto l_arrow = match_token(state, SyntaxKind::LArrow);
-    std::vector<type_ref_ptr_t> type_parameters;
-    if (l_arrow.has_value())
-        type_parameters = parse_type_parameters(state);
-
-    std::optional<Token> r_arrow = std::nullopt;
-    if (l_arrow.has_value())
-    {
-        r_arrow = consume(state, SyntaxKind::RArrow);
-        if (r_arrow.has_value() && type_parameters.empty())
-            report_expected_different_syntax(r_arrow->span, "type parameter", r_arrow->get_text(), false);
-    }
-
+    const auto type_parameters = parse_type_parameters(state);
     const auto equals_token = consume(state, SyntaxKind::Equals);
     auto type = parse_type(state);
-    return TypeDeclaration::create(type_keyword, name, l_arrow, std::move(type_parameters), r_arrow, equals_token, std::move(type));
+
+    return TypeDeclaration::create(type_keyword, name, type_parameters, equals_token, std::move(type));
 }
 
 static statement_ptr_t parse_event_declaration(ParseState& state)
 {
     const auto event_keyword = *previous_token(state);
     const auto name = consume(state, SyntaxKind::Identifier);
-    const auto l_arrow = match_token(state, SyntaxKind::LArrow);
-    std::vector<type_ref_ptr_t> type_parameters;
-    if (l_arrow.has_value())
-        type_parameters = parse_type_parameters(state);
-
-    std::optional<Token> r_arrow = std::nullopt;
-    if (l_arrow.has_value())
-    {
-        r_arrow = consume(state, SyntaxKind::RArrow);
-        if (r_arrow.has_value() && type_parameters.empty())
-            report_expected_different_syntax(r_arrow->span, "type parameter", r_arrow->get_text(), false);
-    }
-
+    const auto type_parameters = parse_type_parameters(state);
     const auto l_paren = match_token(state, SyntaxKind::LParen);
     std::vector<type_ref_ptr_t> parameter_types;
     std::optional<Token> r_paren = std::nullopt;
@@ -639,15 +626,14 @@ static statement_ptr_t parse_event_declaration(ParseState& state)
         r_paren = consume(state, SyntaxKind::RParen);
     }
 
-    return EventDeclaration::create(event_keyword, name, l_arrow, std::move(type_parameters), r_arrow,
-                                    l_paren, std::move(parameter_types), r_paren);
+    return EventDeclaration::create(event_keyword, name, type_parameters, l_paren, std::move(parameter_types), r_paren);
 }
 
 static statement_ptr_t parse_enum_member(ParseState& state)
 {
     const auto name = consume(state, SyntaxKind::Identifier);
-    auto [equals_token, initializer] = parse_equals_value_clause(state);
-    return EnumMember::create(name, equals_token, std::move(initializer));
+    const auto equals_value_clause = parse_equals_value_clause(state);
+    return EnumMember::create(name, equals_value_clause);
 }
 
 static statement_ptr_t parse_enum_declaration(ParseState& state)
@@ -675,27 +661,15 @@ static statement_ptr_t parse_parameter(ParseState& state)
     if (colon_token.has_value())
         type = parse_type(state);
 
-    auto [equals_token, initializer] = parse_equals_value_clause(state);
-    return Parameter::create(name, colon_token, std::move(type), equals_token, std::move(initializer));
+    const auto equals_value_clause = parse_equals_value_clause(state);
+    return Parameter::create(name, colon_token, std::move(type), equals_value_clause);
 }
 
 static statement_ptr_t parse_function_declaration(ParseState& state)
 {
     const auto fn_keyword = *previous_token(state);
     const auto name = consume(state, SyntaxKind::Identifier);
-    const auto l_arrow = match_token(state, SyntaxKind::LArrow);
-    std::vector<type_ref_ptr_t> type_parameters;
-    if (l_arrow.has_value())
-        type_parameters = parse_type_parameters(state);
-
-    std::optional<Token> r_arrow = std::nullopt;
-    if (l_arrow.has_value())
-    {
-        r_arrow = consume(state, SyntaxKind::RArrow);
-        if (r_arrow.has_value() && type_parameters.empty())
-            report_expected_different_syntax(r_arrow->span, "type parameter", r_arrow->get_text(), false);
-    }
-
+    const auto type_parameters = parse_type_parameters(state);
     const auto l_paren = match_token(state, SyntaxKind::LParen);
     std::vector<statement_ptr_t> parameters;
     std::optional<Token> r_paren = std::nullopt;
@@ -723,18 +697,26 @@ static statement_ptr_t parse_function_declaration(ParseState& state)
         expression_body = parse_expression(state);
     else if (match(state, SyntaxKind::LBrace))
     {
-        l_brace = previous_token(state);
+        l_brace = *previous_token(state);
         body = parse_block(state);
-        r_brace = previous_token(state);
+        r_brace = *previous_token(state);
     }
     else
     {
-        const auto last_token = r_paren.value_or(r_arrow.value_or(name));
-        report_expected_different_syntax(last_token.span, "function body", last_token.get_text(), false);
+        const auto last_token = r_paren.value_or(type_parameters.has_value() ? type_parameters.value()->r_arrow : name);
+        const auto has_return_type = return_type.has_value();
+        const auto text = has_return_type
+                              ? return_type.value()->get_text()
+                              : last_token.get_text();
+        const auto span = has_return_type
+                              ? return_type.value()->get_span()
+                              : last_token.span;
+
+        report_expected_different_syntax(span, "function body", text, false);
     }
 
-    return FunctionDeclaration::create(fn_keyword, name, l_arrow, std::move(type_parameters), r_arrow, l_paren, std::move(parameters),
-                                       r_paren, colon_token, std::move(return_type), long_arrow, l_brace, std::move(body),
+    return FunctionDeclaration::create(fn_keyword, name, type_parameters, l_paren, std::move(parameters), r_paren,
+                                       colon_token, std::move(return_type), long_arrow, l_brace, std::move(body),
                                        std::move(expression_body), r_brace);
 }
 

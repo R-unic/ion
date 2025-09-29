@@ -76,6 +76,18 @@ void AstViewer::write_list(const std::vector<T>& list, const std::function<void 
     write("]");
 }
 
+void AstViewer::write_type_parameters(const std::optional<TypeParametersClause*>& type_parameters)
+{
+    if (!type_parameters.has_value())
+        return;
+
+    write_line(",");
+    write_list<type_ref_ptr_t>(type_parameters.value()->list, [&](const auto& type_parameter)
+    {
+        visit(type_parameter);
+    });
+}
+
 void AstViewer::visit_primitive_literal(const PrimitiveLiteral& literal)
 {
     write("Literal(");
@@ -272,11 +284,7 @@ void AstViewer::visit_type_declaration(const TypeDeclaration& type_declaration)
     indent_++;
     write_line("TypeDeclaration(");
     write(type_declaration.name.get_text());
-    write_line(",");
-    write_list<type_ref_ptr_t>(type_declaration.type_parameters, [&](const auto& type_parameter)
-    {
-        visit(type_parameter);
-    });
+    write_type_parameters(type_declaration.type_parameters);
     write_line(",");
     visit(type_declaration.type);
     write_closing_paren();
@@ -292,10 +300,10 @@ void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_d
         write_line(",");
         visit(*variable_declaration.type);
     }
-    if (variable_declaration.initializer.has_value())
+    if (variable_declaration.equals_value.has_value())
     {
         write_line(",");
-        visit(*variable_declaration.initializer);
+        visit(variable_declaration.equals_value.value()->value);
     }
 
     write_closing_paren();
@@ -305,11 +313,8 @@ void AstViewer::visit_event_declaration(const EventDeclaration& event_declaratio
 {
     indent_++;
     write_line("EventDeclaration(");
-    write_line(event_declaration.name.get_text() + ',');
-    write_list<type_ref_ptr_t>(event_declaration.type_parameters, [&](const auto& type_parameter)
-    {
-        visit(type_parameter);
-    });
+    write(event_declaration.name.get_text());
+    write_type_parameters(event_declaration.type_parameters);
     write_line(",");
     write_list<type_ref_ptr_t>(event_declaration.parameter_types, [&](const auto& parameter_type)
     {
@@ -333,7 +338,7 @@ void AstViewer::visit_enum_declaration(const EnumDeclaration& enum_declaration)
 
 void AstViewer::visit_enum_member(const EnumMember& enum_member)
 {
-    const auto has_initializer = enum_member.initializer.has_value();
+    const auto has_initializer = enum_member.equals_value.has_value();
     if (has_initializer)
         indent_++;
 
@@ -347,7 +352,7 @@ void AstViewer::visit_enum_member(const EnumMember& enum_member)
     else
     {
         write_line(",");
-        visit(*enum_member.initializer);
+        visit(enum_member.equals_value.value()->value);
         write_closing_paren();
     }
 }
@@ -356,11 +361,8 @@ void AstViewer::visit_function_declaration(const FunctionDeclaration& function_d
 {
     indent_++;
     write_line("FunctionDeclaration(");
-    write_line(function_declaration.name.get_text() + ',');
-    write_list<type_ref_ptr_t>(function_declaration.type_parameters, [&](const auto& type_parameter)
-    {
-        visit(type_parameter);
-    });
+    write(function_declaration.name.get_text());
+    write_type_parameters(function_declaration.type_parameters);
     write_line(",");
     write_list<statement_ptr_t>(function_declaration.parameters, [&](const auto& parameter_type)
     {
@@ -392,10 +394,10 @@ void AstViewer::visit_parameter(const Parameter& parameter)
         write_line(",");
         visit(*parameter.type);
     }
-    if (parameter.initializer.has_value())
+    if (parameter.equals_value.has_value())
     {
         write_line(",");
-        visit(*parameter.initializer);
+        visit(parameter.equals_value.value()->value);
     }
 
     write_closing_paren();
