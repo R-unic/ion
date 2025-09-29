@@ -200,10 +200,10 @@ static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t cal
     return Invocation::create(l_paren, r_paren, std::move(callee), bang_token, std::move(arguments));
 }
 
-static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression, const Token& dot_token)
+static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression, const Token& token)
 {
     const auto name = consume(state, SyntaxKind::Identifier);
-    return MemberAccess::create(dot_token, std::move(expression), name);
+    return MemberAccess::create(token, std::move(expression), name);
 }
 
 static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t expression, const Token& l_bracket)
@@ -214,6 +214,7 @@ static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t
     return ElementAccess::create(l_bracket, r_bracket, std::move(expression), std::move(index_expression));
 }
 
+const std::vector member_access_syntaxes = { SyntaxKind::Dot, SyntaxKind::ColonColon };
 const std::vector postfix_op_syntaxes = { SyntaxKind::PlusPlus, SyntaxKind::MinusMinus };
 
 static expression_ptr_t parse_postfix(ParseState& state)
@@ -232,10 +233,10 @@ static expression_ptr_t parse_postfix(ParseState& state)
             const auto l_bracket = *previous_token(state);
             expression = parse_element_access(state, std::move(expression), l_bracket);
         }
-        else if (match(state, SyntaxKind::Dot))
+        else if (match_any(state, member_access_syntaxes))
         {
-            const auto dot_token = *previous_token(state);
-            expression = parse_member_access(state, std::move(expression), dot_token);
+            const auto token = *previous_token(state);
+            expression = parse_member_access(state, std::move(expression), token);
         }
         else if (match_any(state, postfix_op_syntaxes))
         {
