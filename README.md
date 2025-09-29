@@ -16,9 +16,9 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Line info/code view
 - [x] Parser
     - [x] Primitive literals
-    - [x] Range literals
-    - [ ] Vector literals
-    - [ ] Color literals
+    - [x] Range literals (see examples)
+    - [ ] Vector literals (see examples)
+    - [ ] Color literals (see examples)
         - [ ] RGB
         - [ ] HSV
         - [ ] Hex
@@ -30,8 +30,10 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Variable declarations
     - [x] Event declarations
     - [x] Function declarations
-    - [x] Instance constructors
-        - [ ] Attribute declarator
+    - [x] Instance constructors (see examples)
+        - [x] Name declarator
+        - [x] Tag declarator
+        - [x] Attribute declarator
         - [ ] Children declarator
     - [ ] Enum declarations
     - [x] Basic type parameters
@@ -46,8 +48,9 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Primitive types, type names, & nullable types
     - [x] Type parameters
     - [ ] String interpolation
+    - [ ] Shorthand attributes (see examples)
 
-## Concept Examples
+## Examples
 
 ### Events
 
@@ -97,18 +100,15 @@ my_part:AddTag("Lava")
 ### Shorthand attributes
 
 ```rs
-zombie_model
 let health = zombie_model@Health
 print(health)
-zombie_model@Health = 0
+zombie_model@Health -= 10
 ```
 
 This is equivalent to the following in Luau:
 
 ```lua
-local my_part = Instance.new("Folder")
-my_part.Name = "MyPart"
-my_part.Size = Vector3.one
-my_part.Position = Vector3.new(0, 10, 0)
-my_part.Parent = game.Workspace
+local health = zombie_model:GetAttribute("Health")
+print(health)
+zombie_model:SetAttribute("Health", zombie_model:GetAttribute("Health") - 10)
 ```
