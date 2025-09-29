@@ -134,8 +134,8 @@ zombie_model:SetAttribute("Health", zombie_model:GetAttribute("Health") - 10)
 enum Abc {
     A
     B
-    C,
-    D = 69,
+    C
+    D = 69
     E
 }
 
