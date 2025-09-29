@@ -1,4 +1,5 @@
-let range = 1..10
-let vec = <(3, 2, 1)>
-let rgb_color = rgb<(255, 0, 0)>
-let hsv_color = hsv<(0, 1, 1)>
+enum Abc {
+    A
+    B
+    C
+}

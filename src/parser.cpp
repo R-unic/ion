@@ -537,6 +537,16 @@ static statement_ptr_t parse_block(ParseState& state)
     return Block::create(l_brace, r_brace, std::move(statements));
 }
 
+static std::pair<std::optional<Token>, std::optional<expression_ptr_t> > parse_equals_value_clause(ParseState& state)
+{
+    const auto equals_token = match_token(state, SyntaxKind::Equals);
+    std::optional<expression_ptr_t> initializer = std::nullopt;
+    if (equals_token.has_value())
+        initializer = parse_expression(state);
+
+    return { equals_token, std::move(initializer) };
+}
+
 static statement_ptr_t parse_variable_declaration(ParseState& state)
 {
     const auto let_keyword = *previous_token(state);
@@ -549,14 +559,7 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
         type = parse_type(state);
     }
 
-    std::optional<Token> equals_token = std::nullopt;
-    std::optional<expression_ptr_t> initializer = std::nullopt;
-    if (match(state, SyntaxKind::Equals))
-    {
-        equals_token = *previous_token(state);
-        initializer = parse_expression(state);
-    }
-
+    auto [equals_token, initializer] = parse_equals_value_clause(state);
     return VariableDeclaration::create(let_keyword, name, std::move(colon_token), std::move(type),
                                        std::move(equals_token), std::move(initializer));
 }
@@ -600,8 +603,32 @@ static statement_ptr_t parse_event_declaration(ParseState& state)
         r_paren = consume(state, SyntaxKind::RParen);
     }
 
-    return EventDeclaration::create(event_keyword, name, l_arrow, std::move(type_parameters), r_arrow, l_paren, std::move(parameter_types),
-                                    r_paren);
+    return EventDeclaration::create(event_keyword, name, l_arrow, std::move(type_parameters), r_arrow,
+                                    l_paren, std::move(parameter_types), r_paren);
+}
+
+static statement_ptr_t parse_enum_member(ParseState& state)
+{
+    const auto name = consume(state, SyntaxKind::Identifier);
+    auto [equals_token, initializer] = parse_equals_value_clause(state);
+    return EnumMember::create(name, equals_token, std::move(initializer));
+}
+
+static statement_ptr_t parse_enum_declaration(ParseState& state)
+{
+    const auto enum_keyword = *previous_token(state);
+    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto l_brace = consume(state, SyntaxKind::LBrace);
+    std::vector<statement_ptr_t> members;
+
+    while (!check(state, SyntaxKind::RBrace))
+    {
+        members.push_back(parse_enum_member(state));
+        match(state, SyntaxKind::Comma);
+    }
+
+    const auto r_brace = consume(state, SyntaxKind::RBrace);
+    return EnumDeclaration::create(enum_keyword, name, l_brace, std::move(members), r_brace);
 }
 
 static statement_ptr_t parse_parameter(ParseState& state)
@@ -612,11 +639,7 @@ static statement_ptr_t parse_parameter(ParseState& state)
     if (colon_token.has_value())
         type = parse_type(state);
 
-    const auto equals_token = match_token(state, SyntaxKind::Equals);
-    std::optional<expression_ptr_t> initializer = std::nullopt;
-    if (equals_token.has_value())
-        initializer = parse_expression(state);
-
+    auto [equals_token, initializer] = parse_equals_value_clause(state);
     return Parameter::create(name, colon_token, std::move(type), equals_token, std::move(initializer));
 }
 
@@ -817,6 +840,8 @@ static statement_ptr_t parse_declaration(ParseState& state)
         statement = parse_function_declaration(state);
     else if (match(state, SyntaxKind::EventKeyword))
         statement = parse_event_declaration(state);
+    else if (match(state, SyntaxKind::EnumKeyword))
+        statement = parse_enum_declaration(state);
     else if (match(state, SyntaxKind::InstanceKeyword))
         statement = parse_instance_constructor(state);
 

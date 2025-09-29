@@ -34,7 +34,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
         - [x] Tag declarator
         - [x] Attribute declarator
         - [ ] Children declarator
-    - [ ] Enum declarations
+    - [x] Enum declarations
     - [x] Basic type parameters
         - [ ] Defaults
     - [x] If/while statements

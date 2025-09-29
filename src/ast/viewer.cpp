@@ -289,6 +289,39 @@ void AstViewer::visit_event_declaration(const EventDeclaration& event_declaratio
     write_closing_paren();
 }
 
+void AstViewer::visit_enum_declaration(const EnumDeclaration& enum_declaration)
+{
+    indent_++;
+    write_line("EnumDeclaration(");
+    write_line(enum_declaration.name.get_text() + ',');
+    write_list<statement_ptr_t>(enum_declaration.members, [&](const auto& member)
+    {
+        visit(member);
+    });
+    write_closing_paren();
+}
+
+void AstViewer::visit_enum_member(const EnumMember& enum_member)
+{
+    const auto has_initializer = enum_member.initializer.has_value();
+    if (has_initializer)
+        indent_++;
+
+    write("EnumMember(");
+    if (has_initializer)
+        write_line();
+
+    write(enum_member.name.get_text());
+    if (!has_initializer)
+        write(")");
+    else
+    {
+        write_line(",");
+        visit(*enum_member.initializer);
+        write_closing_paren();
+    }
+}
+
 void AstViewer::visit_function_declaration(const FunctionDeclaration& function_declaration)
 {
     indent_++;
