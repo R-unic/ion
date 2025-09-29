@@ -39,8 +39,8 @@ Statically typed language built for use with Roblox that compiles to Luau.
         - [ ] Defaults
     - [x] If/while statements
     - [ ] Switch statements
-    - [x] For statements
-    - [x] Imports & exports
+    - [x] For statements (see examples)
+    - [x] Imports & exports (see examples)
     - [x] Breaks/continues
     - [x] Returns
     - [x] Blocks
@@ -52,6 +52,9 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] `nameof`
     - [ ] String interpolation
     - [x] Shorthand attributes (see examples)
+- [ ] Scope resolution
+- [ ] Symbol binding
+- [ ] Type solving/checking
 
 ## Examples
 
@@ -149,4 +152,37 @@ This is equivalent to the following in Luau:
 
 ```luau
 print(0, 1, 2, 69, 70)
+```
+
+### Imports/exports
+
+```ts
+export let x = 69;
+```
+
+This is equivalent to the following in Luau:
+
+```luau
+local x = 69
+
+return {
+  x = x
+}
+```
+
+### Improved for loops
+
+For loops can be used in combination with range literals, and when used with range literals they emit a Luau for-i loop.
+
+```rs
+for i : 1..10
+  print(i)
+```
+
+This is equivalent to the following in Luau:
+
+```luau
+for i = 1, 10 do
+  print(i)
+end
 ```
