@@ -1,17 +1,11 @@
-#include <iostream>
 #include <memory>
 #include <algorithm>
 #include <utility>
+#include <set>
 
 #include "ion/diagnostics.h"
 #include "ion/parser.h"
-
-#include <set>
-
 #include "ion/logger.h"
-#include "ion/ast/statements/function_declaration.h"
-#include "ion/ast/statements/instance_name_declarator.h"
-#include "ion/ast/type_refs/type_parameter.h"
 
 static bool is_eof(const ParseState& state, const int offset = 0)
 {
@@ -145,11 +139,58 @@ static double to_number(const std::string& s)
 
 static expression_ptr_t parse_parenthesized(ParseState& state)
 {
-    const auto l_paren = *previous_token(state);
+    const auto l_paren = peek(state, -2);
     auto expression = parse_expression(state);
     const auto r_paren = consume(state, SyntaxKind::RParen);
 
     return Parenthesized::create(l_paren, r_paren, std::move(expression));
+}
+
+static expression_ptr_t parse_rgb_literal(ParseState& state)
+{
+    const auto keyword = peek(state, -2);
+    const auto l_arrow = consume(state, SyntaxKind::LArrow);
+    const auto l_paren = consume(state, SyntaxKind::LParen);
+    auto r = parse_expression(state);
+    consume(state, SyntaxKind::Comma);
+    auto g = parse_expression(state);
+    consume(state, SyntaxKind::Comma);
+    auto b = parse_expression(state);
+    const auto r_paren = consume(state, SyntaxKind::RParen);
+    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+
+    return RgbLiteral::create(keyword, l_arrow, r_arrow, std::move(r), std::move(g), std::move(b));
+}
+
+static expression_ptr_t parse_hsv_literal(ParseState& state)
+{
+    const auto keyword = peek(state, -2);
+    const auto l_arrow = consume(state, SyntaxKind::LArrow);
+    const auto l_paren = consume(state, SyntaxKind::LParen);
+    auto h = parse_expression(state);
+    consume(state, SyntaxKind::Comma);
+    auto s = parse_expression(state);
+    consume(state, SyntaxKind::Comma);
+    auto v = parse_expression(state);
+    const auto r_paren = consume(state, SyntaxKind::RParen);
+    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+
+    return HsvLiteral::create(keyword, l_arrow, r_arrow, std::move(h), std::move(s), std::move(v));
+}
+
+static expression_ptr_t parse_vector_literal(ParseState& state)
+{
+    const auto l_arrow = *previous_token(state);
+    const auto l_paren = consume(state, SyntaxKind::LParen);
+    auto x = parse_expression(state);
+    consume(state, SyntaxKind::Comma);
+    auto y = parse_expression(state);
+    consume(state, SyntaxKind::Comma);
+    auto z = parse_expression(state);
+    const auto r_paren = consume(state, SyntaxKind::RParen);
+    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+
+    return VectorLiteral::create(l_arrow, r_arrow, std::move(x), std::move(y), std::move(z));
 }
 
 static expression_ptr_t parse_primary(ParseState& state)
@@ -159,12 +200,18 @@ static expression_ptr_t parse_primary(ParseState& state)
     if (!token_opt.has_value())
         report_unexpected_eof(span);
 
-    const auto& token = token_opt.value();
+    const auto& token = *token_opt;
     const auto text = token.get_text();
     switch (token.kind)
     {
         case SyntaxKind::Identifier:
             return Identifier::create(token);
+        case SyntaxKind::RgbKeyword:
+            return parse_rgb_literal(state);
+        case SyntaxKind::HsvKeyword:
+            return parse_hsv_literal(state);
+        case SyntaxKind::LArrow:
+            return parse_vector_literal(state);
         case SyntaxKind::LParen:
             return parse_parenthesized(state);
 
@@ -337,7 +384,6 @@ static expression_ptr_t parse_bitwise_and(ParseState& state)
 
     return left;
 }
-
 
 static expression_ptr_t parse_bitwise_xor(ParseState& state)
 {

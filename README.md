@@ -17,11 +17,10 @@ Statically typed language built for use with Roblox that compiles to Luau.
 - [x] Parser
     - [x] Primitive literals
     - [x] Range literals (see examples)
-    - [ ] Vector literals (see examples)
-    - [ ] Color literals (see examples)
-        - [ ] RGB
-        - [ ] HSV
-        - [ ] Hex
+    - [x] Vector literals (see examples)
+    - [x] Color literals (see examples)
+        - [x] RGB
+        - [x] HSV
     - [x] Identifiers
     - [x] Binary, unary, postfix unary, ternary, & assignment operations
     - [x] Parenthesized expressions
@@ -91,8 +90,8 @@ on_data_change_conn:Disconnect()
 instance my_part: Part {
   "MyPart"
   Size: Vector3.one
-  Position: <0, 10, 0>
-  Color: #ff0000
+  Position: <(0, 10, 0)>
+  Color: rgb<(255, 0, 0)>
   
   #Lava
   @LavaKind: "very very hot"
@@ -106,7 +105,7 @@ local my_part = Instance.new("Part")
 my_part.Name = "MyPart"
 my_part.Size = Vector3.one
 my_part.Position = Vector3.new(0, 10, 0)
-my_part.Color = Color3.fromRGB(255, 0, 0) -- #ff0000 is parsed at compile-time to avoid .fromHex()
+my_part.Color = Color3.fromRGB(255, 0, 0)
 my_part:SetAttribute("LavaKind", "very very hot")
 my_part.Parent = game.Workspace
 my_part:AddTag("Lava")

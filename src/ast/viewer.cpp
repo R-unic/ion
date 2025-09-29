@@ -99,6 +99,42 @@ void AstViewer::visit_range_literal(const RangeLiteral& range_literal)
     write_closing_paren();
 }
 
+void AstViewer::visit_rgb_literal(const RgbLiteral& rgb_literal)
+{
+    indent_++;
+    write_line("RgbLiteral(");
+    visit(rgb_literal.r);
+    write_line(",");
+    visit(rgb_literal.g);
+    write_line(",");
+    visit(rgb_literal.b);
+    write_closing_paren();
+}
+
+void AstViewer::visit_hsv_literal(const HsvLiteral& hsv_literal)
+{
+    indent_++;
+    write_line("HsvLiteral(");
+    visit(hsv_literal.h);
+    write_line(",");
+    visit(hsv_literal.s);
+    write_line(",");
+    visit(hsv_literal.v);
+    write_closing_paren();
+}
+
+void AstViewer::visit_vector_literal(const VectorLiteral& vector_literal)
+{
+    indent_++;
+    write_line("VectorLiteral(");
+    visit(vector_literal.x);
+    write_line(",");
+    visit(vector_literal.y);
+    write_line(",");
+    visit(vector_literal.z);
+    write_closing_paren();
+}
+
 void AstViewer::visit_identifier(const Identifier& identifier)
 {
     write("Identifier(");
