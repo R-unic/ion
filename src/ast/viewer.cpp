@@ -214,6 +214,21 @@ void AstViewer::visit_invocation(const Invocation& invocation)
     write_closing_paren();
 }
 
+void AstViewer::visit_name_of(const NameOf& name_of)
+{
+    write("NameOf(");
+    write(name_of.identifier.get_text());
+    write(")");
+}
+
+void AstViewer::visit_type_of(const TypeOf& type_of)
+{
+    indent_++;
+    write_line("TypeOf(");
+    visit(type_of.expression);
+    write_closing_paren();
+}
+
 void AstViewer::visit_member_access(const MemberAccess& member_access)
 {
     indent_++;
@@ -250,6 +265,21 @@ void AstViewer::visit_block(const Block& block)
         visit(statement);
     });
     write(")");
+}
+
+void AstViewer::visit_type_declaration(const TypeDeclaration& type_declaration)
+{
+    indent_++;
+    write_line("TypeDeclaration(");
+    write(type_declaration.name.get_text());
+    write_line(",");
+    write_list<type_ref_ptr_t>(type_declaration.type_parameters, [&](const auto& type_parameter)
+    {
+        visit(type_parameter);
+    });
+    write_line(",");
+    visit(type_declaration.type);
+    write_closing_paren();
 }
 
 void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_declaration)
@@ -535,4 +565,26 @@ void AstViewer::visit_type_parameter(const TypeParameter& type_parameter)
         visit(*type_parameter.base_type);
         write_closing_paren();
     }
+}
+
+void AstViewer::visit_union_type(const UnionType& union_type)
+{
+    indent_++;
+    write_line("UnionType(");
+    write_list<type_ref_ptr_t>(union_type.types, [&](const auto& type_ref)
+    {
+        visit(type_ref);
+    });
+    write_closing_paren();
+}
+
+void AstViewer::visit_intersection_type(const IntersectionType& intersection_type)
+{
+    indent_++;
+    write_line("IntersectionType(");
+    write_list<type_ref_ptr_t>(intersection_type.types, [&](const auto& type_ref)
+    {
+        visit(type_ref);
+    });
+    write_closing_paren();
 }

@@ -302,6 +302,20 @@ const std::vector unary_syntaxes = { SyntaxKind::Bang, SyntaxKind::Tilde, Syntax
 
 static expression_ptr_t parse_unary(ParseState& state)
 {
+    if (match(state, SyntaxKind::NameOfKeyword))
+    {
+        const auto keyword = *previous_token(state);
+        const auto identifier = consume(state, SyntaxKind::Identifier);
+        return NameOf::create(keyword, identifier);
+    }
+
+    if (match(state, SyntaxKind::TypeOfKeyword))
+    {
+        const auto keyword = *previous_token(state);
+        auto expression = parse_expression(state);
+        return TypeOf::create(keyword, std::move(expression));
+    }
+
     while (match_any(state, unary_syntaxes))
     {
         const auto operator_token = *previous_token(state);
@@ -574,6 +588,28 @@ static std::vector<type_ref_ptr_t> parse_type_parameters(ParseState& state)
     return type_parameters;
 }
 
+static statement_ptr_t parse_type_declaration(ParseState& state)
+{
+    const auto type_keyword = *previous_token(state);
+    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto l_arrow = match_token(state, SyntaxKind::LArrow);
+    std::vector<type_ref_ptr_t> type_parameters;
+    if (l_arrow.has_value())
+        type_parameters = parse_type_parameters(state);
+
+    std::optional<Token> r_arrow = std::nullopt;
+    if (l_arrow.has_value())
+    {
+        r_arrow = consume(state, SyntaxKind::RArrow);
+        if (r_arrow.has_value() && type_parameters.empty())
+            report_expected_different_syntax(r_arrow->span, "type parameter", r_arrow->get_text(), false);
+    }
+
+    const auto equals_token = consume(state, SyntaxKind::Equals);
+    auto type = parse_type(state);
+    return TypeDeclaration::create(type_keyword, name, l_arrow, std::move(type_parameters), r_arrow, equals_token, std::move(type));
+}
+
 static statement_ptr_t parse_event_declaration(ParseState& state)
 {
     const auto event_keyword = *previous_token(state);
@@ -840,6 +876,8 @@ static statement_ptr_t parse_declaration(ParseState& state)
         statement = parse_function_declaration(state);
     else if (match(state, SyntaxKind::EventKeyword))
         statement = parse_event_declaration(state);
+    else if (match(state, SyntaxKind::TypeKeyword))
+        statement = parse_type_declaration(state);
     else if (match(state, SyntaxKind::EnumKeyword))
         statement = parse_enum_declaration(state);
     else if (match(state, SyntaxKind::InstanceKeyword))
@@ -903,9 +941,53 @@ type_ref_ptr_t parse_primitive_type(ParseState& state)
                : TypeName::create(token);
 }
 
+static type_ref_ptr_t parse_union_type(ParseState& state)
+{
+    const auto first_pipe_token = match_token(state, SyntaxKind::Pipe);
+    std::vector<Token> pipe_tokens;
+    std::vector<type_ref_ptr_t> types;
+    types.push_back(parse_primitive_type(state));
+    if (first_pipe_token.has_value())
+        pipe_tokens.push_back(*first_pipe_token);
+
+    while (match(state, SyntaxKind::Pipe))
+    {
+        const auto pipe_token = *previous_token(state);
+        pipe_tokens.push_back(pipe_token);
+        types.push_back(parse_primitive_type(state));
+    }
+
+    if (types.size() > 1)
+        return UnionType::create(pipe_tokens, std::move(types));
+
+    return std::move(types.front());
+}
+
+static type_ref_ptr_t parse_intersection_type(ParseState& state)
+{
+    const auto first_ampersand_token = match_token(state, SyntaxKind::Ampersand);
+    std::vector<Token> ampersand_tokens;
+    std::vector<type_ref_ptr_t> types;
+    types.push_back(parse_union_type(state));
+    if (first_ampersand_token.has_value())
+        ampersand_tokens.push_back(*first_ampersand_token);
+
+    while (match(state, SyntaxKind::Ampersand))
+    {
+        const auto ampersand_token = *previous_token(state);
+        ampersand_tokens.push_back(ampersand_token);
+        types.push_back(parse_union_type(state));
+    }
+
+    if (types.size() > 1)
+        return IntersectionType::create(ampersand_tokens, std::move(types));
+
+    return std::move(types.front());
+}
+
 static type_ref_ptr_t parse_nullable_type(ParseState& state)
 {
-    auto non_nullable_type = parse_primitive_type(state);
+    auto non_nullable_type = parse_intersection_type(state);
     return match(state, SyntaxKind::Question)
                ? NullableType::create(std::move(non_nullable_type), *previous_token(state))
                : std::move(non_nullable_type);

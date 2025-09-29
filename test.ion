@@ -1,5 +1,1 @@
-enum Abc {
-    A
-    B
-    C
-}
+type X<T> = number | T
