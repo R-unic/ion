@@ -63,11 +63,26 @@ fn on_data_change<T>(new_data: T): void {
 
 data_changed += on_data_change;
 
-let data = 69;
-// do something
-
-data = 420;
+let data = 420;
 data_changed!(data);
+
+data_changed -= on_data_change
+```
+
+This is equivalent to the following in Luau:
+
+```luau
+local data_changed = Signal.new()
+function on_data_change<T>(new_data: T): ()
+    print(`New data: {new_data}`)
+end
+
+local on_data_change_conn = data_changed:Connect(on_data_change)
+
+local data = 420
+data_changed:Fire(data)
+
+on_data_change_conn:Disconnect()
 ```
 
 ### Instance construction
@@ -86,8 +101,8 @@ instance my_part: Part {
 
 This is equivalent to the following in Luau:
 
-```lua
-local my_part = Instance.new("Folder")
+```luau
+local my_part = Instance.new("Part")
 my_part.Name = "MyPart"
 my_part.Size = Vector3.one
 my_part.Position = Vector3.new(0, 10, 0)
@@ -107,8 +122,28 @@ zombie_model@Health -= 10
 
 This is equivalent to the following in Luau:
 
-```lua
+```luau
 local health = zombie_model:GetAttribute("Health")
 print(health)
 zombie_model:SetAttribute("Health", zombie_model:GetAttribute("Health") - 10)
+```
+
+### Enums
+
+```rs
+enum Abc {
+    A
+    B
+    C,
+    D = 69,
+    E
+}
+
+print(Abc::A, Abc::B, Abc::C, Abc::D, Abc::E)
+```
+
+This is equivalent to the following in Luau:
+
+```luau
+print(0, 1, 2, 69, 70)
 ```
