@@ -37,10 +37,14 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Enum declarations
     - [x] Basic type parameters
         - [ ] Defaults
-    - [x] If/while statements
+    - [x] If statements
+    - [x] For loops (see examples)
+    - [x] While loops
+    - [ ] Repeat loops
     - [ ] Switch statements
-    - [x] For statements (see examples)
     - [x] Imports & exports (see examples)
+    - [ ] Time literals (see examples)
+    - [ ] After statements (see examples)
     - [x] Breaks/continues
     - [x] Returns
     - [x] Blocks
@@ -197,4 +201,35 @@ This is equivalent to the following in Luau:
 for i = 1, 10 do
   print(i)
 end
+```
+
+### Time literals
+
+```rs
+let cooldown = 50ms
+let hour = 1h
+let update_rate = 20hz
+```
+
+This is equivalent to the following in Luau:
+
+```luau
+local cooldown = 0.05
+local hour = 3600
+local update_rate = 0.333333333
+```
+
+### After statements
+
+After statements are a direct syntactic equivalent to `task.delay()`
+
+```swift
+after 100ms
+  print("delayed result")
+```
+
+```luau
+task.delay(0.1, function()
+  print("delayed result")
+end)
 ```
