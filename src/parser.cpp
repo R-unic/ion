@@ -748,6 +748,11 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
     if (primitive_type_names.contains(type->get_text()))
         report_expected_different_syntax(type->get_span(), "instance type", type->get_text(), false);
 
+    const auto clone_keyword = match_token(state, SyntaxKind::CloneKeyword);
+    std::optional<expression_ptr_t> clone_target = std::nullopt;
+    if (clone_keyword.has_value())
+        clone_target = parse_expression(state);
+
     const auto l_brace = match_token(state, SyntaxKind::LBrace);
     std::vector<statement_ptr_t> property_declarators;
     std::optional<Token> r_brace = std::nullopt;
@@ -768,7 +773,8 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
         parent = parse_expression(state);
 
     return InstanceConstructor::create(instance_keyword, name, colon_token, std::move(type),
-                                       l_brace, std::move(property_declarators), r_brace, long_arrow, std::move(parent));
+                                       clone_keyword, std::move(clone_target), l_brace, std::move(property_declarators), r_brace,
+                                       long_arrow, std::move(parent));
 }
 
 static statement_ptr_t parse_if(ParseState& state)

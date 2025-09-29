@@ -80,7 +80,7 @@ This is equivalent to the following in Luau:
 ```luau
 local data_changed = Signal.new()
 function on_data_change<T>(new_data: T): ()
-    print(`New data: {new_data}`)
+  print(`New data: {new_data}`)
 end
 
 local on_data_change_conn = data_changed:Connect(on_data_change)
@@ -105,7 +105,19 @@ instance my_part: Part {
 } -> game.Workspace
 ```
 
+You can also clone instances using this syntax.
+
+```swift
+instance zombie_model: Model clone ReplicatedStorage.ZombieModel -> game.Workspace
+
+```
+
 This is equivalent to the following in Luau:
+
+```luau
+local zombie_model = ReplicatedStorage.ZombieModel:Clone()
+my_part.Parent = game.Workspace
+```
 
 ```luau
 local my_part = Instance.new("Part")
@@ -138,11 +150,11 @@ zombie_model:SetAttribute("Health", zombie_model:GetAttribute("Health") - 10)
 
 ```rs
 enum Abc {
-    A
-    B
-    C
-    D = 69
-    E
+  A
+  B
+  C
+  D = 69
+  E
 }
 
 print(Abc::A, Abc::B, Abc::C, Abc::D, Abc::E)

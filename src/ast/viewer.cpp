@@ -409,6 +409,12 @@ void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_c
     write_line("InstanceConstructor(");
     write_line(instance_constructor.name.get_text() + ", ");
     visit(instance_constructor.type);
+    if (instance_constructor.clone_target.has_value())
+    {
+        write_line(",");
+        visit(*instance_constructor.clone_target);
+    }
+
     write_line(",");
     write_list<statement_ptr_t>(instance_constructor.declarators, [&](const auto& property_declarator)
     {
