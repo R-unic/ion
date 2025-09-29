@@ -234,8 +234,10 @@ static expression_ptr_t parse_primary(ParseState& state)
     }
 }
 
-static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t callee, const std::optional<Token>& bang_token)
+static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t callee)
 {
+    const auto bang_token = match_token(state, SyntaxKind::Bang);
+
     consume(state, SyntaxKind::LParen);
     const auto l_paren = *previous_token(state);
     std::vector<expression_ptr_t> arguments;
@@ -250,21 +252,23 @@ static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t cal
     return Invocation::create(l_paren, r_paren, std::move(callee), bang_token, std::move(arguments));
 }
 
-static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression, const Token& token)
+static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression)
 {
+    const auto token = *previous_token(state);
     const auto name = consume(state, SyntaxKind::Identifier);
     return MemberAccess::create(token, std::move(expression), name);
 }
 
-static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t expression, const Token& l_bracket)
+static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t expression)
 {
+    const auto l_bracket = *previous_token(state);
     auto index_expression = parse_expression(state);
     const auto r_bracket = consume(state, SyntaxKind::RBracket);
 
     return ElementAccess::create(l_bracket, r_bracket, std::move(expression), std::move(index_expression));
 }
 
-const std::vector member_access_syntaxes = { SyntaxKind::Dot, SyntaxKind::ColonColon };
+const std::vector member_access_syntaxes = { SyntaxKind::Dot, SyntaxKind::ColonColon, SyntaxKind::At };
 const std::vector postfix_op_syntaxes = { SyntaxKind::PlusPlus, SyntaxKind::MinusMinus };
 
 static expression_ptr_t parse_postfix(ParseState& state)
@@ -273,21 +277,11 @@ static expression_ptr_t parse_postfix(ParseState& state)
     while (true)
     {
         if ((check(state, SyntaxKind::Bang) && check(state, SyntaxKind::LParen, 1)) || check(state, SyntaxKind::LParen))
-        {
-            const auto is_special = match(state, SyntaxKind::Bang);
-            const auto bang_token = is_special ? previous_token(state) : std::nullopt;
-            expression = parse_invocation(state, std::move(expression), bang_token);
-        }
+            expression = parse_invocation(state, std::move(expression));
         else if (match(state, SyntaxKind::LBracket))
-        {
-            const auto l_bracket = *previous_token(state);
-            expression = parse_element_access(state, std::move(expression), l_bracket);
-        }
+            expression = parse_element_access(state, std::move(expression));
         else if (match_any(state, member_access_syntaxes))
-        {
-            const auto token = *previous_token(state);
-            expression = parse_member_access(state, std::move(expression), token);
-        }
+            expression = parse_member_access(state, std::move(expression));
         else if (match_any(state, postfix_op_syntaxes))
         {
             assert_assignment_target(expression);
