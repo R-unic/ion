@@ -788,20 +788,38 @@ static statement_ptr_t parse_while(ParseState& state)
 {
     const auto keyword = *previous_token(state);
     auto condition = parse_expression(state);
-    auto body = parse_statement(state);
+    auto statement = parse_statement(state);
 
-    return While::create(keyword, std::move(condition), std::move(body));
+    return While::create(keyword, std::move(condition), std::move(statement));
+}
+
+static std::vector<Token> parse_name_list(ParseState& state)
+{
+    std::vector<Token> names;
+    do
+    {
+        const auto name = match_token(state, SyntaxKind::Star).value_or(consume(state, SyntaxKind::Identifier));
+        names.push_back(name);
+    } while (match(state, SyntaxKind::Comma));
+
+    return names;
+}
+
+static statement_ptr_t parse_for(ParseState& state)
+{
+    const auto keyword = *previous_token(state);
+    const auto names = parse_name_list(state);
+    const auto colon_token = consume(state, SyntaxKind::Colon);
+    auto iterable = parse_expression(state);
+    auto statement = parse_statement(state);
+
+    return For::create(keyword, names, colon_token, std::move(iterable), std::move(statement));
 }
 
 static statement_ptr_t parse_import(ParseState& state)
 {
     const auto import_keyword = *previous_token(state);
-    std::vector<Token> names;
-    do
-    {
-        const auto name = consume(state, SyntaxKind::Identifier);
-        names.push_back(name);
-    } while (match(state, SyntaxKind::Comma));
+    auto names = parse_name_list(state);
 
     if (names.empty())
     {
@@ -880,6 +898,8 @@ statement_ptr_t parse_statement(ParseState& state)
         return parse_if(state);
     if (match(state, SyntaxKind::WhileKeyword))
         return parse_while(state);
+    if (match(state, SyntaxKind::ForKeyword))
+        return parse_for(state);
     if (match(state, SyntaxKind::ImportKeyword))
         return parse_import(state);
     if (match(state, SyntaxKind::ReturnKeyword))

@@ -500,7 +500,22 @@ void AstViewer::visit_while(const While& while_statement)
     write_line("While(");
     visit(while_statement.condition);
     write_line(",");
-    visit(while_statement.body);
+    visit(while_statement.statement);
+    write_closing_paren();
+}
+
+void AstViewer::visit_for(const For& for_statement)
+{
+    indent_++;
+    write_line("For(");
+    write_list<Token>(for_statement.names, [&](const auto& name)
+    {
+        write(name.get_text());
+    });
+    write_line(",");
+    visit(for_statement.iterable);
+    write_line(",");
+    visit(for_statement.statement);
     write_closing_paren();
 }
 

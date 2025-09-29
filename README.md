@@ -39,7 +39,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
         - [ ] Defaults
     - [x] If/while statements
     - [ ] Switch statements
-    - [ ] For statements
+    - [x] For statements
     - [x] Imports & exports
     - [x] Breaks/continues
     - [x] Returns
@@ -48,10 +48,10 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Union & intersection types
     - [x] Type parameters
     - [x] Type alias declarations
-    - [x] typeof
-    - [x] nameof
+    - [x] `typeof`
+    - [x] `nameof`
     - [ ] String interpolation
-    - [ ] Shorthand attributes (see examples)
+    - [x] Shorthand attributes (see examples)
 
 ## Examples
 

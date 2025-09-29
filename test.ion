@@ -1,1 +1,2 @@
-type X<A, B> = number
+for k, v : map
+    print(k, v)
