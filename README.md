@@ -47,8 +47,8 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Repeat loops
     - [ ] Match statements (see examples)
     - [x] Imports & exports (see examples)
-    - [ ] After statements (see examples)
-    - [ ] Every statements (see examples)
+    - [x] After statements (see examples)
+    - [x] Every statements (see examples)
     - [x] Async/await
     - [x] Breaks/continues
     - [x] Returns

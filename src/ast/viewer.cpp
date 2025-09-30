@@ -544,6 +544,26 @@ void AstViewer::visit_for(const For& for_statement)
     write_closing_paren();
 }
 
+void AstViewer::visit_after(const After& after_statement)
+{
+    indent_++;
+    write_line("After(");
+    visit(after_statement.time_expression);
+    write_line(",");
+    visit(after_statement.statement);
+    write_closing_paren();
+}
+
+void AstViewer::visit_every(const Every& every_statement)
+{
+    indent_++;
+    write_line("Every(");
+    visit(every_statement.time_expression);
+    write_line(",");
+    visit(every_statement.statement);
+    write_closing_paren();
+}
+
 void AstViewer::visit_import(const Import& import)
 {
     indent_++;

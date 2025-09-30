@@ -908,6 +908,24 @@ static statement_ptr_t parse_for(ParseState& state)
     return For::create(keyword, names, colon_token, std::move(iterable), std::move(statement));
 }
 
+static statement_ptr_t parse_after(ParseState& state)
+{
+    const auto keyword = *previous_token(state);
+    auto time_expression = parse_expression(state);
+    auto statement = parse_statement(state);
+
+    return After::create(keyword, std::move(time_expression), std::move(statement));
+}
+
+static statement_ptr_t parse_every(ParseState& state)
+{
+    const auto keyword = *previous_token(state);
+    auto time_expression = parse_expression(state);
+    auto statement = parse_statement(state);
+
+    return Every::create(keyword, std::move(time_expression), std::move(statement));
+}
+
 static statement_ptr_t parse_import(ParseState& state)
 {
     const auto import_keyword = *previous_token(state);
@@ -998,6 +1016,10 @@ statement_ptr_t parse_statement(ParseState& state)
         return parse_repeat(state);
     if (match(state, SyntaxKind::ForKeyword))
         return parse_for(state);
+    if (match(state, SyntaxKind::AfterKeyword))
+        return parse_after(state);
+    if (match(state, SyntaxKind::EveryKeyword))
+        return parse_every(state);
     if (match(state, SyntaxKind::ImportKeyword))
         return parse_import(state);
     if (match(state, SyntaxKind::ReturnKeyword))
