@@ -16,6 +16,9 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Line info/code view
 - [x] Parser
     - [x] Primitive literals
+    - [ ] Extended number literals (see examples)
+        - Time literals
+        - Percent literals
     - [x] Range literals (see examples)
     - [x] Vector literals (see examples)
     - [x] Color literals (see examples)
@@ -23,6 +26,8 @@ Statically typed language built for use with Roblox that compiles to Luau.
         - [x] HSV
     - [x] Identifiers
     - [x] Binary, unary, postfix unary, ternary, & assignment operations
+    - [ ] Null coalescing
+    - [ ] Optional member access
     - [x] Parenthesized expressions
     - [x] Member access & element access
     - [x] Invocation
@@ -43,8 +48,9 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [ ] Repeat loops
     - [ ] Switch statements
     - [x] Imports & exports (see examples)
-    - [ ] Time literals (see examples)
     - [ ] After statements (see examples)
+    - [ ] Every statements (see examples)
+    - [ ] Async/await
     - [x] Breaks/continues
     - [x] Returns
     - [x] Blocks
@@ -65,16 +71,16 @@ Statically typed language built for use with Roblox that compiles to Luau.
 ### Events
 
 ```rs
-event data_changed<T>(T);
+event data_changed<T>(T)
 
 fn on_data_change<T>(new_data: T): void {
-  print("New data: {new_data}");
+  print("New data: %{new_data}")
 }
 
-data_changed += on_data_change;
+data_changed += on_data_change
 
-let data = 420;
-data_changed!(data);
+let data = 420
+data_changed!(data)
 
 data_changed -= on_data_change
 ```
@@ -109,20 +115,6 @@ instance my_part: Part {
 } -> game.Workspace
 ```
 
-You can also clone instances using this syntax.
-
-```swift
-instance zombie_model: Model clone ReplicatedStorage.ZombieModel -> game.Workspace
-
-```
-
-This is equivalent to the following in Luau:
-
-```luau
-local zombie_model = ReplicatedStorage.ZombieModel:Clone()
-my_part.Parent = game.Workspace
-```
-
 ```luau
 local my_part = Instance.new("Part")
 my_part.Name = "MyPart"
@@ -134,6 +126,17 @@ my_part.Parent = game.Workspace
 my_part:AddTag("Lava")
 ```
 
+You can also clone instances using this syntax.
+
+```swift
+instance zombie_model: Model clone ReplicatedStorage.ZombieModel -> game.Workspace
+```
+
+```luau
+local zombie_model = ReplicatedStorage.ZombieModel:Clone()
+my_part.Parent = game.Workspace
+```
+
 ### Shorthand attributes
 
 ```rs
@@ -141,8 +144,6 @@ let health = zombie_model@Health
 print(health)
 zombie_model@Health -= 10
 ```
-
-This is equivalent to the following in Luau:
 
 ```luau
 local health = zombie_model:GetAttribute("Health")
@@ -164,8 +165,6 @@ enum Abc {
 print(Abc::A, Abc::B, Abc::C, Abc::D, Abc::E)
 ```
 
-This is equivalent to the following in Luau:
-
 ```luau
 print(0, 1, 2, 69, 70)
 ```
@@ -175,8 +174,6 @@ print(0, 1, 2, 69, 70)
 ```ts
 export let x = 69;
 ```
-
-This is equivalent to the following in Luau:
 
 ```luau
 local x = 69
@@ -195,33 +192,31 @@ for i : 1..10
   print(i)
 ```
 
-This is equivalent to the following in Luau:
-
 ```luau
 for i = 1, 10 do
   print(i)
 end
 ```
 
-### Time literals
+### Extended number literals
 
 ```rs
 let cooldown = 50ms
 let hour = 1h
 let update_rate = 20hz
+let transparency = 50%
 ```
-
-This is equivalent to the following in Luau:
 
 ```luau
 local cooldown = 0.05
 local hour = 3600
 local update_rate = 0.333333333
+local transparency = 0.5
 ```
 
-### After statements
+### `after` statements
 
-After statements are a direct syntactic equivalent to `task.delay()`
+`after` statements are a direct syntactic equivalent to `task.delay()`
 
 ```swift
 after 100ms
@@ -231,5 +226,43 @@ after 100ms
 ```luau
 task.delay(0.1, function()
   print("delayed result")
+end)
+```
+
+### `every` statements
+
+`every` statements are a direct syntactic equivalent to an async loop that waits in every iteration
+
+```swift
+every 1s
+  print("one second passed");
+```
+
+```luau
+task.spawn(function()
+  while true do
+    print("one second passed")
+    task.wait(1)
+  end
+end)
+```
+
+Using a conditional `every` statement:
+
+```swift
+let elapsed = 0;
+every 1s while elapsed < 10 {
+  print("Elapsed time:", elapsed++);
+}
+```
+
+```luau
+task.spawn(function()
+  while elapsed < 10 do
+    local _original = elapsed
+    elapsed += 1
+    print("Elapsed time:", _original)
+    task.wait(1)
+  end
 end)
 ```
