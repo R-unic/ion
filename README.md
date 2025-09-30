@@ -45,7 +45,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] For loops (see examples)
     - [x] While loops
     - [x] Repeat loops
-    - [ ] Switch statements
+    - [ ] Match statements (see examples)
     - [x] Imports & exports (see examples)
     - [ ] After statements (see examples)
     - [ ] Every statements (see examples)
@@ -229,6 +229,38 @@ after 100ms
 task.delay(0.1, function()
   print("delayed result")
 end)
+```
+
+### `match` statements
+
+```swift
+enum Abc {
+  A
+  B
+  C
+}
+
+let abc = Abc.A;
+match abc {
+  Abc.A -> print("got a"),
+  Abc.B -> print("got b"),
+  Abc.C -> print("got c"),
+  value -> print("wtf is this:", value)
+}
+```
+
+```luau
+local abc = 0
+if abc == 0 then
+  print("got a")
+else if abc == 1 then
+  print("got b")
+else if abc == 2 then
+  print("got c")
+else
+  local value = abc
+  print("wtf is this:", value)
+end
 ```
 
 ### `every` statements
