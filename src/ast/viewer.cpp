@@ -554,7 +554,7 @@ void AstViewer::visit_primitive_type(const PrimitiveType& primitive_type)
     write(")");
 }
 
-void AstViewer::visit_type_name(const TypeName& type_name)
+void AstViewer::visit_type_name(const TypeNameRef& type_name)
 {
     write("TypeName(");
     write(type_name.name.get_text());
@@ -569,7 +569,7 @@ void AstViewer::visit_nullable_type(const NullableType& nullable_type)
     write_closing_paren();
 }
 
-void AstViewer::visit_type_parameter(const TypeParameter& type_parameter)
+void AstViewer::visit_type_parameter(const TypeParameterRef& type_parameter)
 {
     const auto has_base_type = type_parameter.base_type.has_value();
     if (has_base_type)
@@ -590,7 +590,7 @@ void AstViewer::visit_type_parameter(const TypeParameter& type_parameter)
     }
 }
 
-void AstViewer::visit_union_type(const UnionType& union_type)
+void AstViewer::visit_union_type(const UnionTypeRef& union_type)
 {
     indent_++;
     write_line("UnionType(");

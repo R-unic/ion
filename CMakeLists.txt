@@ -3,11 +3,10 @@ project(Ion LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 file(GLOB_RECURSE SRC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp)
+add_executable(Ion ${SRC_FILES})
 
-add_executable(${PROJECT_NAME} ${SRC_FILES})
-
-target_include_directories(${PROJECT_NAME}
-        PRIVATE BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
+file(GLOB_RECURSE SPEC_FILES ${CMAKE_CURRENT_SOURCE_DIR}/spec/*.h)
+add_executable(IonSpec ${SPEC_FILES})

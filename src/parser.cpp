@@ -954,7 +954,7 @@ type_ref_ptr_t parse_primitive_type(ParseState& state)
     const auto is_primitive_name = primitive_type_names.contains(token.get_text());
     return is_primitive_name
                ? PrimitiveType::create(token)
-               : TypeName::create(token);
+               : TypeNameRef::create(token);
 }
 
 static type_ref_ptr_t parse_union_type(ParseState& state)
@@ -974,7 +974,7 @@ static type_ref_ptr_t parse_union_type(ParseState& state)
     }
 
     if (types.size() > 1)
-        return UnionType::create(pipe_tokens, std::move(types));
+        return UnionTypeRef::create(pipe_tokens, std::move(types));
 
     return std::move(types.front());
 }
@@ -1022,7 +1022,7 @@ type_ref_ptr_t parse_type_parameter(ParseState& state)
     if (colon_token.has_value())
         base_type = parse_type(state);
 
-    return TypeParameter::create(name, colon_token, std::move(base_type));
+    return TypeParameterRef::create(name, colon_token, std::move(base_type));
 }
 
 std::vector<statement_ptr_t> parse(SourceFile* file)

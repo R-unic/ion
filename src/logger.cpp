@@ -35,6 +35,12 @@ namespace logger
         log("WARN", message);
     }
 
+    [[noreturn]] void error(const std::string& message, const uint8_t code)
+    {
+        log("ERR", message);
+        exit(code);
+    }
+
     void debug(const std::string& message)
     {
         log("DBG", message);
