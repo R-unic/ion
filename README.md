@@ -55,7 +55,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Primitive types, type names, & nullable types
     - [x] Union & intersection types
     - [x] Type parameters
-    - [ ] Type arguments for calls and type names
+    - [x] Type arguments for calls and type names
     - [x] Type alias declarations
     - [x] `typeof`
     - [x] `nameof`

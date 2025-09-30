@@ -49,7 +49,7 @@ void AstViewer::write_closing_paren()
     write(")");
 }
 
-template<typename T>
+template <typename T>
 void AstViewer::write_list(const std::vector<T>& list, const std::function<void (const T&)>& write_item)
 {
     const auto starting_indent = indent_++;
@@ -76,15 +76,15 @@ void AstViewer::write_list(const std::vector<T>& list, const std::function<void 
     write("]");
 }
 
-void AstViewer::write_type_parameters(const std::optional<TypeParametersClause*>& type_parameters)
+void AstViewer::write_type_list_clause(const std::optional<TypeListClause*>& type_list_clause)
 {
-    if (!type_parameters.has_value())
+    if (!type_list_clause.has_value())
         return;
 
     write_line(",");
-    write_list<type_ref_ptr_t>(type_parameters.value()->list, [&](const auto& type_parameter)
+    write_list<type_ref_ptr_t>(type_list_clause.value()->list, [&](const auto& type_node)
     {
-        visit(type_parameter);
+        visit(type_node);
     });
 }
 
@@ -214,6 +214,7 @@ void AstViewer::visit_invocation(const Invocation& invocation)
     indent_++;
     write_line("Invocation(");
     visit(invocation.callee);
+    write_type_list_clause(invocation.type_arguments);
     write_line(",");
     write_list<expression_ptr_t>(invocation.arguments, [&](const auto& argument)
     {
@@ -284,7 +285,7 @@ void AstViewer::visit_type_declaration(const TypeDeclaration& type_declaration)
     indent_++;
     write_line("TypeDeclaration(");
     write(type_declaration.name.get_text());
-    write_type_parameters(type_declaration.type_parameters);
+    write_type_list_clause(type_declaration.type_parameters);
     write_line(",");
     visit(type_declaration.type);
     write_closing_paren();
@@ -314,7 +315,7 @@ void AstViewer::visit_event_declaration(const EventDeclaration& event_declaratio
     indent_++;
     write_line("EventDeclaration(");
     write(event_declaration.name.get_text());
-    write_type_parameters(event_declaration.type_parameters);
+    write_type_list_clause(event_declaration.type_parameters);
     write_line(",");
     write_list<type_ref_ptr_t>(event_declaration.parameter_types, [&](const auto& parameter_type)
     {
@@ -362,7 +363,7 @@ void AstViewer::visit_function_declaration(const FunctionDeclaration& function_d
     indent_++;
     write_line("FunctionDeclaration(");
     write(function_declaration.name.get_text());
-    write_type_parameters(function_declaration.type_parameters);
+    write_type_list_clause(function_declaration.type_parameters);
     write_line(",");
     write_list<statement_ptr_t>(function_declaration.parameters, [&](const auto& parameter_type)
     {
@@ -547,24 +548,26 @@ void AstViewer::visit_export(const Export& export_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_primitive_type(const PrimitiveType& primitive_type)
+void AstViewer::visit_primitive_type(const PrimitiveTypeRef& primitive_type)
 {
-    write("PrimitiveType(");
+    write("PrimitiveTypeRef(");
     write(primitive_type.keyword.get_text());
     write(")");
 }
 
 void AstViewer::visit_type_name(const TypeNameRef& type_name)
 {
-    write("TypeName(");
+    indent_++;
+    write_line("TypeNameRef(");
     write(type_name.name.get_text());
-    write(")");
+    write_type_list_clause(type_name.type_arguments);
+    write_closing_paren();
 }
 
-void AstViewer::visit_nullable_type(const NullableType& nullable_type)
+void AstViewer::visit_nullable_type(const NullableTypeRef& nullable_type)
 {
     indent_++;
-    write_line("NullableType(");
+    write_line("NullableTypeRef(");
     visit(nullable_type.non_nullable_type);
     write_closing_paren();
 }
@@ -601,7 +604,7 @@ void AstViewer::visit_union_type(const UnionTypeRef& union_type)
     write_closing_paren();
 }
 
-void AstViewer::visit_intersection_type(const IntersectionType& intersection_type)
+void AstViewer::visit_intersection_type(const IntersectionTypeRef& intersection_type)
 {
     indent_++;
     write_line("IntersectionType(");

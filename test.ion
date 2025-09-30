@@ -1,5 +1,1 @@
-let time = 10s
-let cooldown = 50ms
-let hour = 1h
-let update_rate = 20hz
-let transparency = 50%
+abc<number>()

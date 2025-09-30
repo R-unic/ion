@@ -108,7 +108,10 @@ static FileSpan get_current_optional_span(const ParseState& state, const int off
     return empty_span(state);
 }
 
-static Token consume(ParseState& state, const SyntaxKind kind, const std::string& custom_expected = "")
+static Token consume(ParseState& state,
+                     const SyntaxKind kind,
+                     const std::string& custom_expected = "",
+                     const std::optional<bool> custom_quote_expected = std::nullopt)
 {
     const auto token = current_token(state);
     const auto span = get_current_optional_span(state);
@@ -117,10 +120,15 @@ static Token consume(ParseState& state, const SyntaxKind kind, const std::string
     if (token.has_value() && token.value().kind == kind)
         return *token;
 
-    const auto quote_expected = kind != SyntaxKind::Identifier;
-    const auto expected = !quote_expected ? "identifier" : std::to_string(static_cast<int>(kind));
+    const auto quote_expected = custom_quote_expected.has_value() ? *custom_quote_expected : kind != SyntaxKind::Identifier;
+    const auto expected = !custom_expected.empty()
+                              ? custom_expected
+                              : !quote_expected
+                                    ? "identifier"
+                                    : std::to_string(static_cast<int>(kind));
+
     const auto got = token.has_value() ? token->get_text() : "EOF";
-    report_expected_different_syntax(span, custom_expected.empty() ? expected : custom_expected, got, quote_expected);
+    report_expected_different_syntax(span, expected, got, quote_expected);
 }
 
 static bool has_line_break_between(const Token& token, const Token& next)
@@ -248,9 +256,25 @@ static expression_ptr_t parse_primary(ParseState& state)
     }
 }
 
+static std::optional<TypeListClause*> parse_type_arguments(ParseState& state)
+{
+    const auto l_arrow = match_token(state, SyntaxKind::LArrow);
+    if (!l_arrow.has_value())
+        return std::nullopt;
+
+    std::vector<type_ref_ptr_t> list;
+    do
+        list.push_back(parse_type(state));
+    while (match(state, SyntaxKind::Comma));
+
+    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+    return new TypeListClause(*l_arrow, std::move(list), r_arrow);
+}
+
 static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t callee)
 {
     const auto bang_token = match_token(state, SyntaxKind::Bang);
+    const auto type_arguments = parse_type_arguments(state);
 
     consume(state, SyntaxKind::LParen);
     const auto l_paren = *previous_token(state);
@@ -263,7 +287,7 @@ static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t cal
     }
 
     const auto r_paren = consume(state, SyntaxKind::RParen);
-    return Invocation::create(l_paren, r_paren, std::move(callee), bang_token, std::move(arguments));
+    return Invocation::create(l_paren, r_paren, std::move(callee), bang_token, type_arguments, std::move(arguments));
 }
 
 static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression)
@@ -282,6 +306,23 @@ static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t
     return ElementAccess::create(l_bracket, r_bracket, std::move(expression), std::move(index_expression));
 }
 
+static bool is_invocation(const ParseState& state)
+{
+    auto offset = 0;
+    if (check(state, SyntaxKind::LArrow, offset))
+    {
+        do
+            offset++;
+        while (!check(state, SyntaxKind::RArrow, offset));
+        offset++;
+    }
+
+    if (check(state, SyntaxKind::Bang, offset))
+        offset++;
+
+    return check(state, SyntaxKind::LParen, offset);
+}
+
 const std::vector member_access_syntaxes = { SyntaxKind::Dot, SyntaxKind::ColonColon, SyntaxKind::At };
 const std::vector postfix_op_syntaxes = { SyntaxKind::PlusPlus, SyntaxKind::MinusMinus };
 
@@ -290,7 +331,7 @@ static expression_ptr_t parse_postfix(ParseState& state)
     auto expression = parse_primary(state);
     while (true)
     {
-        if ((check(state, SyntaxKind::Bang) && check(state, SyntaxKind::LParen, 1)) || check(state, SyntaxKind::LParen))
+        if (is_invocation(state))
             expression = parse_invocation(state, std::move(expression));
         else if (match(state, SyntaxKind::LBracket))
             expression = parse_element_access(state, std::move(expression));
@@ -588,7 +629,7 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
     return VariableDeclaration::create(let_keyword, name, std::move(colon_token), std::move(type), equals_value_clause);
 }
 
-static std::optional<TypeParametersClause*> parse_type_parameters(ParseState& state)
+static std::optional<TypeListClause*> parse_type_parameters(ParseState& state)
 {
     const auto l_arrow = match_token(state, SyntaxKind::LArrow);
     if (!l_arrow.has_value())
@@ -600,10 +641,7 @@ static std::optional<TypeParametersClause*> parse_type_parameters(ParseState& st
     while (match(state, SyntaxKind::Comma));
 
     const auto r_arrow = consume(state, SyntaxKind::RArrow);
-    if (list.empty())
-        report_expected_different_syntax(r_arrow.span, "type parameter", r_arrow.get_text(), false);
-
-    return new TypeParametersClause(*l_arrow, std::move(list), r_arrow);
+    return new TypeListClause(*l_arrow, std::move(list), r_arrow);
 }
 
 static statement_ptr_t parse_type_declaration(ParseState& state)
@@ -711,21 +749,18 @@ static statement_ptr_t parse_function_declaration(ParseState& state)
     }
     else
     {
-        const auto last_token = r_paren.value_or(type_parameters.has_value() ? type_parameters.value()->r_arrow : name);
-        const auto has_return_type = return_type.has_value();
-        const auto text = has_return_type
-                              ? return_type.value()->get_text()
-                              : last_token.get_text();
-        const auto span = has_return_type
-                              ? return_type.value()->get_span()
-                              : last_token.span;
+        const auto last_token = peek(state, -1);
+        const auto token = current_token(state);
+        const auto location = last_token.span.end;
+        const auto span = create_span(location, location);
+        const auto text = token.has_value() ? token->get_text() : "EOF";
 
         report_expected_different_syntax(span, "function body", text, false);
     }
 
     return FunctionDeclaration::create(fn_keyword, name, type_parameters, l_paren, std::move(parameters), r_paren,
-                                       colon_token, std::move(return_type), long_arrow, l_brace, std::move(body),
-                                       std::move(expression_body), r_brace);
+                                       colon_token, std::move(return_type),
+                                       long_arrow, l_brace, std::move(body), std::move(expression_body), r_brace);
 }
 
 const std::set<std::string> primitive_type_names = { "number", "string", "bool", "void" };
@@ -951,10 +986,11 @@ type_ref_ptr_t parse_primitive_type(ParseState& state)
     }
 
     const auto& token = *token_opt;
-    const auto is_primitive_name = primitive_type_names.contains(token.get_text());
-    return is_primitive_name
-               ? PrimitiveType::create(token)
-               : TypeNameRef::create(token);
+    if (primitive_type_names.contains(token.get_text()))
+        return PrimitiveTypeRef::create(token);
+
+    const auto type_arguments = parse_type_arguments(state);
+    return TypeNameRef::create(token, type_arguments);
 }
 
 static type_ref_ptr_t parse_union_type(ParseState& state)
@@ -996,7 +1032,7 @@ static type_ref_ptr_t parse_intersection_type(ParseState& state)
     }
 
     if (types.size() > 1)
-        return IntersectionType::create(ampersand_tokens, std::move(types));
+        return IntersectionTypeRef::create(ampersand_tokens, std::move(types));
 
     return std::move(types.front());
 }
@@ -1005,7 +1041,7 @@ static type_ref_ptr_t parse_nullable_type(ParseState& state)
 {
     auto non_nullable_type = parse_intersection_type(state);
     return match(state, SyntaxKind::Question)
-               ? NullableType::create(std::move(non_nullable_type), *previous_token(state))
+               ? NullableTypeRef::create(std::move(non_nullable_type), *previous_token(state))
                : std::move(non_nullable_type);
 }
 
@@ -1016,7 +1052,7 @@ type_ref_ptr_t parse_type(ParseState& state)
 
 type_ref_ptr_t parse_type_parameter(ParseState& state)
 {
-    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto name = consume(state, SyntaxKind::Identifier, "type parameter");
     const auto colon_token = match_token(state, SyntaxKind::Colon);
     std::optional<type_ref_ptr_t> base_type = std::nullopt;
     if (colon_token.has_value())
