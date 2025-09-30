@@ -391,6 +391,13 @@ static expression_ptr_t parse_unary(ParseState& state)
         return TypeOf::create(keyword, std::move(expression));
     }
 
+    if (match(state, SyntaxKind::AwaitKeyword))
+    {
+        const auto keyword = *previous_token(state);
+        auto expression = parse_expression(state);
+        return Await::create(keyword, std::move(expression));
+    }
+
     while (match_any(state, unary_syntaxes))
     {
         const auto operator_token = *previous_token(state);

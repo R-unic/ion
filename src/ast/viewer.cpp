@@ -1,7 +1,5 @@
 #include "ion/ast/viewer.h"
 
-#include "ion/ast/statements/instance_name_declarator.h"
-
 void AstViewer::write(const std::string& text)
 {
     write(text.c_str());
@@ -227,6 +225,14 @@ void AstViewer::visit_invocation(const Invocation& invocation)
     write_closing_paren();
 }
 
+void AstViewer::visit_type_of(const TypeOf& type_of)
+{
+    indent_++;
+    write_line("TypeOf(");
+    visit(type_of.expression);
+    write_closing_paren();
+}
+
 void AstViewer::visit_name_of(const NameOf& name_of)
 {
     write("NameOf(");
@@ -234,11 +240,11 @@ void AstViewer::visit_name_of(const NameOf& name_of)
     write(")");
 }
 
-void AstViewer::visit_type_of(const TypeOf& type_of)
+void AstViewer::visit_await(const Await& await)
 {
     indent_++;
-    write_line("TypeOf(");
-    visit(type_of.expression);
+    write_line("Await(");
+    visit(await.expression);
     write_closing_paren();
 }
 

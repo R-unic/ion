@@ -49,7 +49,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Imports & exports (see examples)
     - [ ] After statements (see examples)
     - [ ] Every statements (see examples)
-    - [ ] Async/await
+    - [x] Async/await
     - [x] Breaks/continues
     - [x] Returns
     - [x] Blocks
