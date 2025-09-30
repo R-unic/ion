@@ -219,7 +219,6 @@ void AstViewer::visit_invocation(const Invocation& invocation)
         visit(argument);
     });
     write_line(",");
-
     write("Special: ");
     write(invocation.bang_token.has_value() ? "true" : "false");
     write_closing_paren();
@@ -388,6 +387,9 @@ void AstViewer::visit_function_declaration(const FunctionDeclaration& function_d
     else
         visit(*function_declaration.body);
 
+    write_line(",");
+    write("Async: ");
+    write(function_declaration.async_keyword.has_value() ? "true" : "false");
     write_closing_paren();
 }
 

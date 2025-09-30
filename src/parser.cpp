@@ -746,7 +746,7 @@ static statement_ptr_t parse_parameter(ParseState& state)
     return Parameter::create(name, colon_type_clause, equals_value_clause);
 }
 
-static statement_ptr_t parse_function_declaration(ParseState& state)
+static statement_ptr_t parse_function_declaration(ParseState& state, const std::optional<Token>& async_keyword)
 {
     const auto fn_keyword = *previous_token(state);
     const auto name = consume(state, SyntaxKind::Identifier);
@@ -789,8 +789,8 @@ static statement_ptr_t parse_function_declaration(ParseState& state)
         report_expected_different_syntax(span, "function body", text, false);
     }
 
-    return FunctionDeclaration::create(fn_keyword, name, type_parameters, l_paren, std::move(parameters), r_paren, return_type,
-                                       long_arrow, l_brace, std::move(body), std::move(expression_body), r_brace);
+    return FunctionDeclaration::create(async_keyword, fn_keyword, name, type_parameters, l_paren, std::move(parameters), r_paren,
+                                       return_type, long_arrow, l_brace, std::move(body), std::move(expression_body), r_brace);
 }
 
 const std::set<std::string> primitive_type_names = { "number", "string", "bool", "void" };
@@ -955,11 +955,15 @@ static statement_ptr_t parse_declaration(ParseState& state)
     if (match(state, SyntaxKind::ExportKeyword))
         export_keyword = previous_token(state);
 
+    std::optional<Token> async_keyword = std::nullopt;
+    if (check(state, SyntaxKind::AsyncKeyword) && check(state, SyntaxKind::FnKeyword, 1))
+        async_keyword = advance(state);
+
     std::optional<statement_ptr_t> statement = std::nullopt;
     if (match(state, SyntaxKind::LetKeyword))
         statement = parse_variable_declaration(state);
     else if (match(state, SyntaxKind::FnKeyword))
-        statement = parse_function_declaration(state);
+        statement = parse_function_declaration(state, async_keyword);
     else if (match(state, SyntaxKind::EventKeyword))
         statement = parse_event_declaration(state);
     else if (match(state, SyntaxKind::TypeKeyword))

@@ -1,1 +1,3 @@
-await nuts()
+async fn abc {
+
+}
