@@ -232,7 +232,7 @@ static void read_decimal_number(LexState& state)
         if (character == '.')
         {
             if (!decimal_used && peek(state, 1) == '.')
-                break;
+                break; // we have a range literal, stop right here and just return the current number
 
             malformed = decimal_used;
             decimal_used = true;
@@ -243,6 +243,24 @@ static void read_decimal_number(LexState& state)
 
     if (malformed)
         malformed_number(state);
+
+    if (const auto is_scientific_notation = match(state, 'e'); is_scientific_notation)
+    {
+        while (!is_eof(state) && is_numeric_char(current_character(state)))
+            advance(state);
+    }
+    else if (check(state, '%') || check(state, 's') || check(state, 'd'))
+        advance(state);
+    else if (check(state, 'm'))
+    {
+        advance(state);
+        match(state, 's');
+    }
+    else if (check(state, 'h'))
+    {
+        advance(state);
+        match(state, 'z');
+    }
 
     push_token(state, SyntaxKind::NumberLiteral);
 }

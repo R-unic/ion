@@ -16,9 +16,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Line info/code view
 - [x] Parser
     - [x] Primitive literals
-    - [ ] Extended number literals (see examples)
-        - Time literals
-        - Percent literals
+    - [x] Extended number literals (see examples)
     - [x] Range literals (see examples)
     - [x] Vector literals (see examples)
     - [x] Color literals (see examples)
@@ -201,6 +199,7 @@ end
 ### Extended number literals
 
 ```rs
+let time = 10s
 let cooldown = 50ms
 let hour = 1h
 let update_rate = 20hz
@@ -208,6 +207,7 @@ let transparency = 50%
 ```
 
 ```luau
+local time = 10
 local cooldown = 0.05
 local hour = 3600
 local update_rate = 0.333333333

@@ -137,7 +137,21 @@ static double to_number(const std::string& s)
     if (s.starts_with("0b") || s.starts_with("0B"))
         return static_cast<double>(std::stoll(s.substr(2), nullptr, 2));
 
-    return std::stod(s);
+    auto number = std::stod(s);
+    if (s.ends_with("ms"))
+        number /= 1000;
+    else if (s.ends_with("m"))
+        number *= 60;
+    else if (s.ends_with("hz"))
+        number /= 60;
+    else if (s.ends_with("h"))
+        number *= 3600;
+    else if (s.ends_with("d"))
+        number *= 86400;
+    else if (s.ends_with("%"))
+        number /= 100;
+
+    return number;
 }
 
 static expression_ptr_t parse_parenthesized(ParseState& state)

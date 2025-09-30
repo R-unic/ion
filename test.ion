@@ -1,1 +1,1 @@
-instance my_part: Part clone part_template -> game.Workspace
+print(10s)
