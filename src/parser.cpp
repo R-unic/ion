@@ -1,19 +1,18 @@
+#include <iostream>
 #include <memory>
 #include <algorithm>
 #include <utility>
 #include <set>
 
+#include "ion/logger.h"
 #include "ion/diagnostics.h"
 #include "ion/parser.h"
 
-#include <iostream>
-
-#include "ion/logger.h"
-
 static bool is_eof(const ParseState& state, const int offset = 0)
 {
+    const int stream_size = state.token_stream.size();
     const auto offset_position = state.position + offset;
-    return offset_position < 0 || static_cast<int>(state.tokens.size()) <= offset_position;
+    return offset_position < 0 || offset_position >= stream_size;
 }
 
 static std::optional<Token> maybe_peek(const ParseState& state, const int offset)
@@ -21,7 +20,7 @@ static std::optional<Token> maybe_peek(const ParseState& state, const int offset
     if (is_eof(state, offset))
         return std::nullopt;
 
-    return state.tokens.at(state.position + offset);
+    return state.token_stream.at(state.position + offset);
 }
 
 static Token peek(const ParseState& state, const int offset)
@@ -50,10 +49,24 @@ static std::optional<Token> previous_token(const ParseState& state)
 /** Returns the current token before incrementing the position */
 static std::optional<Token> advance(ParseState& state)
 {
-    auto token = current_token(state);
+    if (!state.token_stack.empty() && state.stack_position < state.token_stack.size())
+        return state.token_stack.at(state.stack_position++);
+
+    const auto token = current_token(state);
+    state.stack_position = 0;
+    state.token_stack = {};
     state.position++;
 
     return token;
+}
+
+static bool check_stack(const ParseState& state, const SyntaxKind kind)
+{
+    if (state.token_stack.empty() || state.stack_position >= state.token_stack.size())
+        return false;
+
+    const auto token = state.token_stack.at(state.stack_position);
+    return token.kind == kind;
 }
 
 static bool check(const ParseState& state, const SyntaxKind kind, const int offset = 0)
@@ -117,9 +130,8 @@ static Token consume(ParseState& state,
                      const std::string& custom_expected = "",
                      const std::optional<bool> custom_quote_expected = std::nullopt)
 {
-    const auto token = current_token(state);
     const auto span = get_current_optional_span(state);
-    advance(state);
+    const auto token = advance(state);
 
     if (token.has_value() && token.value().kind == kind)
         return *token;
@@ -135,35 +147,36 @@ static Token consume(ParseState& state,
     report_expected_different_syntax(span, expected, got, quote_expected);
 }
 
-static bool has_line_break_between(const Token& token, const Token& next)
+static Token consume_r_arrow(ParseState& state)
 {
-    return token.span.end.line < next.span.start.line;
-}
+    if (check(state, SyntaxKind::RArrow) || check_stack(state, SyntaxKind::RArrow))
+        return consume(state, SyntaxKind::RArrow);
 
-static double to_number(const std::string& s)
-{
-    if (s.starts_with("0x") || s.starts_with("0X"))
-        return static_cast<double>(std::stoll(s, nullptr, 16));
-    if (s.starts_with("0o") || s.starts_with("0O"))
-        return static_cast<double>(std::stoll(s.substr(2), nullptr, 8));
-    if (s.starts_with("0b") || s.starts_with("0B"))
-        return static_cast<double>(std::stoll(s.substr(2), nullptr, 2));
+    if (check(state, SyntaxKind::RArrowRArrow) || check_stack(state, SyntaxKind::RArrowRArrow))
+    {
+        const auto base = consume(state, SyntaxKind::RArrowRArrow);
+        const auto arrows = base.split({ 2, SyntaxKind::RArrow });
 
-    auto number = std::stod(s);
-    if (s.ends_with("ms"))
-        number /= 1000;
-    else if (s.ends_with("m"))
-        number *= 60;
-    else if (s.ends_with("hz"))
-        number /= 60;
-    else if (s.ends_with("h"))
-        number *= 3600;
-    else if (s.ends_with("d"))
-        number *= 86400;
-    else if (s.ends_with("%"))
-        number /= 100;
+        state.token_stack.push_back(arrows.back());
+        return arrows.front();
+    }
 
-    return number;
+    if (check(state, SyntaxKind::RArrowRArrowRArrow))
+    {
+        const auto base = consume(state, SyntaxKind::RArrowRArrowRArrow);
+        const auto arrows = base.split({ 3, SyntaxKind::RArrow });
+        const auto second_last = arrows.at(1);
+        const auto last = arrows.at(2);
+        state.token_stack.emplace_back(
+            SyntaxKind::RArrowRArrow,
+            create_span(second_last.span.start, last.span.end),
+            ">>"
+        );
+
+        return arrows.front();
+    }
+
+    return consume(state, SyntaxKind::RArrow);
 }
 
 static expression_ptr_t parse_parenthesized(ParseState& state)
@@ -271,7 +284,7 @@ static std::optional<TypeListClause*> parse_type_arguments(ParseState& state)
         list.push_back(parse_type(state));
     while (match(state, SyntaxKind::Comma));
 
-    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+    const auto r_arrow = consume_r_arrow(state);
     return new TypeListClause(*l_arrow, std::move(list), r_arrow);
 }
 
@@ -310,7 +323,12 @@ static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t
     return ElementAccess::create(l_bracket, r_bracket, std::move(expression), std::move(index_expression));
 }
 
-const std::vector type_argument_syntaxes = { SyntaxKind::Identifier, SyntaxKind::LArrow, SyntaxKind::RArrow, SyntaxKind::Comma };
+const std::vector type_argument_syntaxes = {
+    SyntaxKind::Identifier,
+    SyntaxKind::LArrow,
+    SyntaxKind::RArrow, SyntaxKind::RArrowRArrow, SyntaxKind::RArrowRArrowRArrow,
+    SyntaxKind::Comma
+};
 
 static bool is_invocation(const ParseState& state)
 {
@@ -912,7 +930,7 @@ static statement_ptr_t parse_return(ParseState& state)
     const auto keyword = *previous_token(state);
     std::optional<expression_ptr_t> expression = std::nullopt;
 
-    if (!is_eof(state) && !has_line_break_between(keyword, current_token_guaranteed(state)))
+    if (!is_eof(state) && !keyword.span.has_line_break_between(current_token_guaranteed(state)))
         expression = parse_expression(state);
 
     return Return::create(keyword, std::move(expression));
@@ -1079,7 +1097,7 @@ std::vector<statement_ptr_t> parse(SourceFile* file)
 {
     const auto tokens = tokenize(file);
     logger::info("Parsing file: " + file->path);
-    auto state = ParseState { .file = file, .tokens = tokens };
+    auto state = ParseState { .file = file, .token_stream = tokens };
     while (!is_eof(state))
         file->statements.push_back(parse_statement(state));
 

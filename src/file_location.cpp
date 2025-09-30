@@ -25,6 +25,11 @@ std::string FileSpan::get_line() const
     return "";
 }
 
+bool FileSpan::has_line_break_between(const FileSpan& other) const
+{
+    return end.line < other.start.line;
+}
+
 FileLocation get_start_location(const SourceFile* file)
 {
     return FileLocation { .file = file };
