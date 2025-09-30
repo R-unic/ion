@@ -296,10 +296,10 @@ void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_d
     indent_++;
     write_line("VariableDeclaration(");
     write(variable_declaration.name.get_text());
-    if (variable_declaration.type.has_value())
+    if (variable_declaration.colon_type.has_value())
     {
         write_line(",");
-        visit(*variable_declaration.type);
+        visit(variable_declaration.colon_type.value()->type);
     }
     if (variable_declaration.equals_value.has_value())
     {
@@ -373,7 +373,7 @@ void AstViewer::visit_function_declaration(const FunctionDeclaration& function_d
     if (function_declaration.return_type.has_value())
     {
         write_line(",");
-        visit(*function_declaration.return_type);
+        visit(function_declaration.return_type.value()->type);
     }
 
     write_line(",");
@@ -390,10 +390,10 @@ void AstViewer::visit_parameter(const Parameter& parameter)
     indent_++;
     write_line("Parameter(");
     write(parameter.name.get_text());
-    if (parameter.type.has_value())
+    if (parameter.colon_type.has_value())
     {
         write_line(",");
-        visit(*parameter.type);
+        visit(parameter.colon_type.value()->type);
     }
     if (parameter.equals_value.has_value())
     {
@@ -409,7 +409,7 @@ void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_c
     indent_++;
     write_line("InstanceConstructor(");
     write_line(instance_constructor.name.get_text() + ", ");
-    visit(instance_constructor.type);
+    visit(instance_constructor.colon_type->type);
     if (instance_constructor.clone_target.has_value())
     {
         write_line(",");

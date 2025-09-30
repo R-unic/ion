@@ -1,1 +1,1 @@
-abc<number>()
+let x: number = 123

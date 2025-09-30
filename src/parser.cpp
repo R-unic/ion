@@ -603,6 +603,21 @@ static statement_ptr_t parse_block(ParseState& state)
     return Block::create(l_brace, r_brace, std::move(statements));
 }
 
+static std::optional<ColonTypeClause*> parse_colon_type_clause(ParseState& state, const bool required = false)
+{
+    const auto colon_token = required ? consume(state, SyntaxKind::Colon) : match_token(state, SyntaxKind::Colon);
+    if (!colon_token.has_value())
+        return std::nullopt;
+
+    auto type = parse_type(state);
+    return new ColonTypeClause(*colon_token, std::move(type));
+}
+
+static ColonTypeClause* parse_required_colon_type_clause(ParseState& state)
+{
+    return *parse_colon_type_clause(state, true);
+}
+
 static std::optional<EqualsValueClause*> parse_equals_value_clause(ParseState& state)
 {
     const auto equals_token = match_token(state, SyntaxKind::Equals);
@@ -617,16 +632,10 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
 {
     const auto let_keyword = *previous_token(state);
     const auto name = consume(state, SyntaxKind::Identifier);
-    std::optional<Token> colon_token = std::nullopt;
-    std::optional<type_ref_ptr_t> type = std::nullopt;
-    if (match(state, SyntaxKind::Colon))
-    {
-        colon_token = *previous_token(state);
-        type = parse_type(state);
-    }
-
+    const auto colon_type_clause = parse_colon_type_clause(state);
     const auto equals_value_clause = parse_equals_value_clause(state);
-    return VariableDeclaration::create(let_keyword, name, std::move(colon_token), std::move(type), equals_value_clause);
+
+    return VariableDeclaration::create(let_keyword, name, colon_type_clause, equals_value_clause);
 }
 
 static std::optional<TypeListClause*> parse_type_parameters(ParseState& state)
@@ -702,13 +711,9 @@ static statement_ptr_t parse_enum_declaration(ParseState& state)
 static statement_ptr_t parse_parameter(ParseState& state)
 {
     const auto name = consume(state, SyntaxKind::Identifier);
-    const auto colon_token = match_token(state, SyntaxKind::Colon);
-    std::optional<type_ref_ptr_t> type = std::nullopt;
-    if (colon_token.has_value())
-        type = parse_type(state);
-
+    const auto colon_type_clause = parse_colon_type_clause(state);
     const auto equals_value_clause = parse_equals_value_clause(state);
-    return Parameter::create(name, colon_token, std::move(type), equals_value_clause);
+    return Parameter::create(name, colon_type_clause, equals_value_clause);
 }
 
 static statement_ptr_t parse_function_declaration(ParseState& state)
@@ -728,11 +733,7 @@ static statement_ptr_t parse_function_declaration(ParseState& state)
         r_paren = consume(state, SyntaxKind::RParen);
     }
 
-    const auto colon_token = match_token(state, SyntaxKind::Colon);
-    std::optional<type_ref_ptr_t> return_type = std::nullopt;
-    if (colon_token.has_value())
-        return_type = parse_type(state);
-
+    const auto return_type = parse_colon_type_clause(state);
     const auto long_arrow = match_token(state, SyntaxKind::LongArrow);
     std::optional<expression_ptr_t> expression_body = std::nullopt;
     std::optional<statement_ptr_t> body = std::nullopt;
@@ -758,8 +759,7 @@ static statement_ptr_t parse_function_declaration(ParseState& state)
         report_expected_different_syntax(span, "function body", text, false);
     }
 
-    return FunctionDeclaration::create(fn_keyword, name, type_parameters, l_paren, std::move(parameters), r_paren,
-                                       colon_token, std::move(return_type),
+    return FunctionDeclaration::create(fn_keyword, name, type_parameters, l_paren, std::move(parameters), r_paren, return_type,
                                        long_arrow, l_brace, std::move(body), std::move(expression_body), r_brace);
 }
 
@@ -792,11 +792,7 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
 {
     const auto instance_keyword = *previous_token(state);
     const auto name = consume(state, SyntaxKind::Identifier);
-    const auto colon_token = consume(state, SyntaxKind::Colon);
-    auto type = parse_primitive_type(state);
-    if (primitive_type_names.contains(type->get_text()))
-        report_expected_different_syntax(type->get_span(), "instance type", type->get_text(), false);
-
+    const auto colon_type_clause = parse_required_colon_type_clause(state);
     const auto clone_keyword = match_token(state, SyntaxKind::CloneKeyword);
     std::optional<expression_ptr_t> clone_target = std::nullopt;
     if (clone_keyword.has_value())
@@ -821,7 +817,7 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
     if (long_arrow.has_value())
         parent = parse_expression(state);
 
-    return InstanceConstructor::create(instance_keyword, name, colon_token, std::move(type),
+    return InstanceConstructor::create(instance_keyword, name, colon_type_clause,
                                        clone_keyword, std::move(clone_target), l_brace, std::move(property_declarators), r_brace,
                                        long_arrow, std::move(parent));
 }
