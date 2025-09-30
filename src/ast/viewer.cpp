@@ -511,6 +511,16 @@ void AstViewer::visit_while(const While& while_statement)
     write_closing_paren();
 }
 
+void AstViewer::visit_repeat(const Repeat& repeat_statement)
+{
+    indent_++;
+    write_line("Repeat(");
+    visit(repeat_statement.statement);
+    write_line(",");
+    visit(repeat_statement.condition);
+    write_closing_paren();
+}
+
 void AstViewer::visit_for(const For& for_statement)
 {
     indent_++;
@@ -538,7 +548,6 @@ void AstViewer::visit_import(const Import& import)
     write(import.module_name.get_text());
     write_closing_paren();
 }
-
 
 void AstViewer::visit_export(const Export& export_statement)
 {
@@ -572,27 +581,6 @@ void AstViewer::visit_nullable_type(const NullableTypeRef& nullable_type)
     write_closing_paren();
 }
 
-void AstViewer::visit_type_parameter(const TypeParameterRef& type_parameter)
-{
-    const auto has_base_type = type_parameter.base_type.has_value();
-    if (has_base_type)
-        indent_++;
-
-    write("TypeParameter(");
-    if (has_base_type)
-        write_line();
-
-    write(type_parameter.name.get_text());
-    if (!has_base_type)
-        write(")");
-    else
-    {
-        write_line(",");
-        visit(*type_parameter.base_type);
-        write_closing_paren();
-    }
-}
-
 void AstViewer::visit_union_type(const UnionTypeRef& union_type)
 {
     indent_++;
@@ -613,4 +601,25 @@ void AstViewer::visit_intersection_type(const IntersectionTypeRef& intersection_
         visit(type_ref);
     });
     write_closing_paren();
+}
+
+void AstViewer::visit_type_parameter(const TypeParameterRef& type_parameter)
+{
+    const auto has_base_type = type_parameter.base_type.has_value();
+    if (has_base_type)
+        indent_++;
+
+    write("TypeParameter(");
+    if (has_base_type)
+        write_line();
+
+    write(type_parameter.name.get_text());
+    if (!has_base_type)
+        write(")");
+    else
+    {
+        write_line(",");
+        visit(*type_parameter.base_type);
+        write_closing_paren();
+    }
 }

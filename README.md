@@ -37,13 +37,14 @@ Statically typed language built for use with Roblox that compiles to Luau.
         - [x] Tag declarator
         - [x] Attribute declarator
         - [ ] Children declarator
+        - [x] `clone` clause
     - [x] Enum declarations
     - [x] Basic type parameters
         - [ ] Defaults
     - [x] If statements
     - [x] For loops (see examples)
     - [x] While loops
-    - [ ] Repeat loops
+    - [x] Repeat loops
     - [ ] Switch statements
     - [x] Imports & exports (see examples)
     - [ ] After statements (see examples)

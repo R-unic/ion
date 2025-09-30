@@ -62,6 +62,14 @@ static bool check(const ParseState& state, const SyntaxKind kind, const int offs
     return token.has_value() && token.value().kind == kind;
 }
 
+static bool check_any(const ParseState& state, const std::vector<SyntaxKind>& syntaxes, const int offset = 0)
+{
+    return !is_eof(state) && std::ranges::any_of(syntaxes, [&](const auto syntax)
+    {
+        return check(state, syntax, offset);
+    });
+}
+
 static bool match(ParseState& state, const SyntaxKind kind)
 {
     const auto is_match = check(state, kind);
@@ -79,13 +87,9 @@ static std::optional<Token> match_token(ParseState& state, const SyntaxKind kind
     return std::nullopt;
 }
 
-static bool match_any(ParseState& state, const std::vector<SyntaxKind>& characters)
+static bool match_any(ParseState& state, const std::vector<SyntaxKind>& syntaxes)
 {
-    const auto is_match = !is_eof(state) && std::ranges::any_of(characters, [&](const auto syntax)
-    {
-        return check(state, syntax);
-    });
-
+    const auto is_match = check_any(state, syntaxes);
     if (is_match)
         advance(state);
 
@@ -306,6 +310,8 @@ static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t
     return ElementAccess::create(l_bracket, r_bracket, std::move(expression), std::move(index_expression));
 }
 
+const std::vector type_argument_syntaxes = { SyntaxKind::Identifier, SyntaxKind::LArrow, SyntaxKind::RArrow, SyntaxKind::Comma };
+
 static bool is_invocation(const ParseState& state)
 {
     auto offset = 0;
@@ -313,8 +319,7 @@ static bool is_invocation(const ParseState& state)
     {
         do
             offset++;
-        while (!check(state, SyntaxKind::RArrow, offset));
-        offset++;
+        while (!is_eof(state, offset) && check_any(state, type_argument_syntaxes, offset));
     }
 
     if (check(state, SyntaxKind::Bang, offset))
@@ -844,6 +849,17 @@ static statement_ptr_t parse_while(ParseState& state)
     return While::create(keyword, std::move(condition), std::move(statement));
 }
 
+static statement_ptr_t parse_repeat(ParseState& state)
+{
+    const auto repeat_keyword = *previous_token(state);
+    auto statement = parse_statement(state);
+    const auto while_keyword = consume(state, SyntaxKind::WhileKeyword);
+    auto condition = parse_expression(state);
+    std::cout << condition->get_text() << '\n';
+
+    return Repeat::create(repeat_keyword, std::move(statement), while_keyword, std::move(condition));
+}
+
 static std::vector<Token> parse_name_list(ParseState& state)
 {
     std::vector<Token> names;
@@ -949,6 +965,8 @@ statement_ptr_t parse_statement(ParseState& state)
         return parse_if(state);
     if (match(state, SyntaxKind::WhileKeyword))
         return parse_while(state);
+    if (match(state, SyntaxKind::RepeatKeyword))
+        return parse_repeat(state);
     if (match(state, SyntaxKind::ForKeyword))
         return parse_for(state);
     if (match(state, SyntaxKind::ImportKeyword))
