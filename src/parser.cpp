@@ -1,189 +1,20 @@
 #include <iostream>
-#include <memory>
 #include <algorithm>
+#include <functional>
 #include <utility>
 #include <set>
 
 #include "ion/logger.h"
 #include "ion/diagnostics.h"
+#include "ion/source_file.h"
+#include "ion/lexer.h"
 #include "ion/parser.h"
-
-static bool is_eof(const ParseState& state, const int offset = 0)
-{
-    const int stream_size = state.token_stream.size();
-    const auto offset_position = state.position + offset;
-    return offset_position < 0 || offset_position >= stream_size;
-}
-
-static std::optional<Token> maybe_peek(const ParseState& state, const int offset)
-{
-    if (is_eof(state, offset))
-        return std::nullopt;
-
-    return state.token_stream.at(state.position + offset);
-}
-
-static Token peek(const ParseState& state, const int offset)
-{
-    if (const auto token = maybe_peek(state, offset); token.has_value())
-        return *token;
-
-    report_compiler_error("Parser attempted to access an out of bounds token index");
-}
-
-static Token current_token_guaranteed(const ParseState& state)
-{
-    return peek(state, 0);
-}
-
-static std::optional<Token> current_token(const ParseState& state)
-{
-    return maybe_peek(state, 0);
-}
-
-static std::optional<Token> previous_token(const ParseState& state)
-{
-    return maybe_peek(state, -1);
-}
-
-/** Returns the current token before incrementing the position */
-static std::optional<Token> advance(ParseState& state)
-{
-    if (!state.token_stack.empty() && state.stack_position < state.token_stack.size())
-        return state.token_stack.at(state.stack_position++);
-
-    const auto token = current_token(state);
-    state.stack_position = 0;
-    state.token_stack = {};
-    state.position++;
-
-    return token;
-}
-
-static bool check_stack(const ParseState& state, const SyntaxKind kind)
-{
-    if (state.token_stack.empty() || state.stack_position >= state.token_stack.size())
-        return false;
-
-    const auto token = state.token_stack.at(state.stack_position);
-    return token.kind == kind;
-}
-
-static bool check(const ParseState& state, const SyntaxKind kind, const int offset = 0)
-{
-    const auto token = maybe_peek(state, offset);
-    return token.has_value() && token.value().kind == kind;
-}
-
-static bool check_any(const ParseState& state, const std::vector<SyntaxKind>& syntaxes, const int offset = 0)
-{
-    return !is_eof(state) && std::ranges::any_of(syntaxes, [&](const auto syntax)
-    {
-        return check(state, syntax, offset);
-    });
-}
-
-static bool match(ParseState& state, const SyntaxKind kind)
-{
-    const auto is_match = check(state, kind);
-    if (is_match)
-        advance(state);
-
-    return is_match;
-}
-
-static std::optional<Token> match_token(ParseState& state, const SyntaxKind kind)
-{
-    if (match(state, kind))
-        return previous_token(state);
-
-    return std::nullopt;
-}
-
-static bool match_any(ParseState& state, const std::vector<SyntaxKind>& syntaxes)
-{
-    const auto is_match = check_any(state, syntaxes);
-    if (is_match)
-        advance(state);
-
-    return is_match;
-}
-
-static FileSpan empty_span(const ParseState& state)
-{
-    return create_span(get_start_location(state.file), get_start_location(state.file));
-}
-
-static FileSpan get_current_optional_span(const ParseState& state, const int offset = 0)
-{
-    if (const auto token = maybe_peek(state, offset); token.has_value())
-        return token.value().span;
-
-    if (!is_eof(state, offset - 1))
-        return get_current_optional_span(state, offset - 1);
-
-    return empty_span(state);
-}
-
-static Token consume(ParseState& state,
-                     const SyntaxKind kind,
-                     const std::string& custom_expected = "",
-                     const std::optional<bool> custom_quote_expected = std::nullopt)
-{
-    const auto span = get_current_optional_span(state);
-    const auto token = advance(state);
-
-    if (token.has_value() && token.value().kind == kind)
-        return *token;
-
-    const auto quote_expected = custom_quote_expected.has_value() ? *custom_quote_expected : kind != SyntaxKind::Identifier;
-    const auto expected = !custom_expected.empty()
-                              ? custom_expected
-                              : !quote_expected
-                                    ? "identifier"
-                                    : std::to_string(static_cast<int>(kind));
-
-    const auto got = token.has_value() ? token->get_text() : "EOF";
-    report_expected_different_syntax(span, expected, got, quote_expected);
-}
-
-static Token consume_r_arrow(ParseState& state)
-{
-    if (check(state, SyntaxKind::RArrow) || check_stack(state, SyntaxKind::RArrow))
-        return consume(state, SyntaxKind::RArrow);
-
-    if (check(state, SyntaxKind::RArrowRArrow) || check_stack(state, SyntaxKind::RArrowRArrow))
-    {
-        const auto base = consume(state, SyntaxKind::RArrowRArrow);
-        const auto arrows = base.split({ 2, SyntaxKind::RArrow });
-
-        state.token_stack.push_back(arrows.back());
-        return arrows.front();
-    }
-
-    if (check(state, SyntaxKind::RArrowRArrowRArrow))
-    {
-        const auto base = consume(state, SyntaxKind::RArrowRArrowRArrow);
-        const auto arrows = base.split({ 3, SyntaxKind::RArrow });
-        const auto second_last = arrows.at(1);
-        const auto last = arrows.at(2);
-        state.token_stack.emplace_back(
-            SyntaxKind::RArrowRArrow,
-            create_span(second_last.span.start, last.span.end),
-            ">>"
-        );
-
-        return arrows.front();
-    }
-
-    return consume(state, SyntaxKind::RArrow);
-}
 
 static expression_ptr_t parse_parenthesized(ParseState& state)
 {
     const auto l_paren = peek(state, -2);
     auto expression = parse_expression(state);
-    const auto r_paren = consume(state, SyntaxKind::RParen);
+    const auto r_paren = expect(state, SyntaxKind::RParen);
 
     return Parenthesized::create(l_paren, r_paren, std::move(expression));
 }
@@ -191,15 +22,15 @@ static expression_ptr_t parse_parenthesized(ParseState& state)
 static expression_ptr_t parse_rgb_literal(ParseState& state)
 {
     const auto keyword = peek(state, -2);
-    const auto l_arrow = consume(state, SyntaxKind::LArrow);
-    const auto l_paren = consume(state, SyntaxKind::LParen);
+    const auto l_arrow = expect(state, SyntaxKind::LArrow);
+    const auto l_paren = expect(state, SyntaxKind::LParen);
     auto r = parse_expression(state);
-    consume(state, SyntaxKind::Comma);
+    expect(state, SyntaxKind::Comma);
     auto g = parse_expression(state);
-    consume(state, SyntaxKind::Comma);
+    expect(state, SyntaxKind::Comma);
     auto b = parse_expression(state);
-    const auto r_paren = consume(state, SyntaxKind::RParen);
-    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+    const auto r_paren = expect(state, SyntaxKind::RParen);
+    const auto r_arrow = expect(state, SyntaxKind::RArrow);
 
     return RgbLiteral::create(keyword, l_arrow, r_arrow, std::move(r), std::move(g), std::move(b));
 }
@@ -207,15 +38,15 @@ static expression_ptr_t parse_rgb_literal(ParseState& state)
 static expression_ptr_t parse_hsv_literal(ParseState& state)
 {
     const auto keyword = peek(state, -2);
-    const auto l_arrow = consume(state, SyntaxKind::LArrow);
-    const auto l_paren = consume(state, SyntaxKind::LParen);
+    const auto l_arrow = expect(state, SyntaxKind::LArrow);
+    const auto l_paren = expect(state, SyntaxKind::LParen);
     auto h = parse_expression(state);
-    consume(state, SyntaxKind::Comma);
+    expect(state, SyntaxKind::Comma);
     auto s = parse_expression(state);
-    consume(state, SyntaxKind::Comma);
+    expect(state, SyntaxKind::Comma);
     auto v = parse_expression(state);
-    const auto r_paren = consume(state, SyntaxKind::RParen);
-    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+    const auto r_paren = expect(state, SyntaxKind::RParen);
+    const auto r_arrow = expect(state, SyntaxKind::RArrow);
 
     return HsvLiteral::create(keyword, l_arrow, r_arrow, std::move(h), std::move(s), std::move(v));
 }
@@ -223,21 +54,21 @@ static expression_ptr_t parse_hsv_literal(ParseState& state)
 static expression_ptr_t parse_vector_literal(ParseState& state)
 {
     const auto l_arrow = *previous_token(state);
-    const auto l_paren = consume(state, SyntaxKind::LParen);
+    const auto l_paren = expect(state, SyntaxKind::LParen);
     auto x = parse_expression(state);
-    consume(state, SyntaxKind::Comma);
+    expect(state, SyntaxKind::Comma);
     auto y = parse_expression(state);
-    consume(state, SyntaxKind::Comma);
+    expect(state, SyntaxKind::Comma);
     auto z = parse_expression(state);
-    const auto r_paren = consume(state, SyntaxKind::RParen);
-    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+    const auto r_paren = expect(state, SyntaxKind::RParen);
+    const auto r_arrow = expect(state, SyntaxKind::RArrow);
 
     return VectorLiteral::create(l_arrow, r_arrow, std::move(x), std::move(y), std::move(z));
 }
 
 static expression_ptr_t parse_primary(ParseState& state)
 {
-    const auto span = get_current_optional_span(state);
+    const auto span = fallback_span(state);
     const auto token_opt = advance(state);
     if (!token_opt.has_value())
         report_unexpected_eof(span);
@@ -275,7 +106,7 @@ static expression_ptr_t parse_primary(ParseState& state)
 
 static std::optional<TypeListClause*> parse_type_arguments(ParseState& state)
 {
-    const auto l_arrow = match_token(state, SyntaxKind::LArrow);
+    const auto l_arrow = try_consume(state, SyntaxKind::LArrow);
     if (!l_arrow.has_value())
         return std::nullopt;
 
@@ -290,10 +121,10 @@ static std::optional<TypeListClause*> parse_type_arguments(ParseState& state)
 
 static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t callee)
 {
-    const auto bang_token = match_token(state, SyntaxKind::Bang);
+    const auto bang_token = try_consume(state, SyntaxKind::Bang);
     const auto type_arguments = parse_type_arguments(state);
 
-    consume(state, SyntaxKind::LParen);
+    expect(state, SyntaxKind::LParen);
     const auto l_paren = *previous_token(state);
     std::vector<expression_ptr_t> arguments;
     if (!check(state, SyntaxKind::RParen))
@@ -303,14 +134,14 @@ static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t cal
         while (match(state, SyntaxKind::Comma));
     }
 
-    const auto r_paren = consume(state, SyntaxKind::RParen);
+    const auto r_paren = expect(state, SyntaxKind::RParen);
     return Invocation::create(l_paren, r_paren, std::move(callee), bang_token, type_arguments, std::move(arguments));
 }
 
 static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression)
 {
     const auto token = *previous_token(state);
-    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto name = expect(state, SyntaxKind::Identifier);
     return MemberAccess::create(token, std::move(expression), name);
 }
 
@@ -318,7 +149,7 @@ static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t
 {
     const auto l_bracket = *previous_token(state);
     auto index_expression = parse_expression(state);
-    const auto r_bracket = consume(state, SyntaxKind::RBracket);
+    const auto r_bracket = expect(state, SyntaxKind::RBracket);
 
     return ElementAccess::create(l_bracket, r_bracket, std::move(expression), std::move(index_expression));
 }
@@ -380,7 +211,7 @@ static expression_ptr_t parse_unary(ParseState& state)
     if (match(state, SyntaxKind::NameOfKeyword))
     {
         const auto keyword = *previous_token(state);
-        const auto identifier = consume(state, SyntaxKind::Identifier);
+        const auto identifier = expect(state, SyntaxKind::Identifier);
         return NameOf::create(keyword, identifier);
     }
 
@@ -408,47 +239,54 @@ static expression_ptr_t parse_unary(ParseState& state)
     return parse_postfix(state);
 }
 
-static expression_ptr_t parse_exponentation(ParseState& state)
+
+static expression_ptr_t parse_binary_expression(ParseState& state,
+                                                const std::function<expression_ptr_t(ParseState&)>& subparser,
+                                                const SyntaxKind operator_kind)
 {
-    auto left = parse_unary(state);
-    while (match(state, SyntaxKind::Carat))
+    auto left = subparser(state);
+    while (match(state, operator_kind))
     {
         const auto operator_token = *previous_token(state);
-        auto right = parse_unary(state);
+        auto right = subparser(state);
         left = BinaryOp::create(operator_token, std::move(left), std::move(right));
     }
 
     return left;
+}
+
+static expression_ptr_t parse_binary_expression(ParseState& state,
+                                                const std::function<expression_ptr_t(ParseState&)>& subparser,
+                                                const std::vector<SyntaxKind>& operator_kinds)
+{
+    auto left = subparser(state);
+    while (match_any(state, operator_kinds))
+    {
+        const auto op = *previous_token(state);
+        auto right = subparser(state);
+        left = BinaryOp::create(op, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
+static expression_ptr_t parse_exponentiation(ParseState& state)
+{
+    return parse_binary_expression(state, parse_unary, SyntaxKind::Caret);
 }
 
 const std::vector multiplicative_syntaxes = { SyntaxKind::Star, SyntaxKind::Slash, SyntaxKind::Percent };
 
 static expression_ptr_t parse_multiplication(ParseState& state)
 {
-    auto left = parse_exponentation(state);
-    while (match_any(state, multiplicative_syntaxes))
-    {
-        const auto operator_token = *previous_token(state);
-        auto right = parse_exponentation(state);
-        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_binary_expression(state, parse_exponentiation, multiplicative_syntaxes);
 }
 
 const std::vector additive_syntaxes = { SyntaxKind::Plus, SyntaxKind::Minus };
 
 static expression_ptr_t parse_addition(ParseState& state)
 {
-    auto left = parse_multiplication(state);
-    while (match_any(state, additive_syntaxes))
-    {
-        const auto operator_token = *previous_token(state);
-        auto right = parse_multiplication(state);
-        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_binary_expression(state, parse_multiplication, additive_syntaxes);
 }
 
 const std::vector bit_shift_syntaxes = {
@@ -457,54 +295,22 @@ const std::vector bit_shift_syntaxes = {
 
 static expression_ptr_t parse_bit_shift(ParseState& state)
 {
-    auto left = parse_addition(state);
-    while (match_any(state, bit_shift_syntaxes))
-    {
-        const auto operator_token = *previous_token(state);
-        auto right = parse_addition(state);
-        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_binary_expression(state, parse_addition, bit_shift_syntaxes);
 }
 
 static expression_ptr_t parse_bitwise_and(ParseState& state)
 {
-    auto left = parse_bit_shift(state);
-    while (match(state, SyntaxKind::Ampersand))
-    {
-        const auto operator_token = *previous_token(state);
-        auto right = parse_bit_shift(state);
-        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_binary_expression(state, parse_bit_shift, SyntaxKind::Ampersand);
 }
 
 static expression_ptr_t parse_bitwise_xor(ParseState& state)
 {
-    auto left = parse_bitwise_and(state);
-    while (match(state, SyntaxKind::Tilde))
-    {
-        const auto operator_token = *previous_token(state);
-        auto right = parse_bitwise_and(state);
-        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_binary_expression(state, parse_bitwise_and, SyntaxKind::Tilde);
 }
 
 static expression_ptr_t parse_bitwise_or(ParseState& state)
 {
-    auto left = parse_bitwise_xor(state);
-    while (match(state, SyntaxKind::Pipe))
-    {
-        const auto operator_token = *previous_token(state);
-        auto right = parse_bitwise_xor(state);
-        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_binary_expression(state, parse_bitwise_xor, SyntaxKind::Pipe);
 }
 
 static expression_ptr_t parse_range_literal(ParseState& state)
@@ -531,41 +337,17 @@ const std::vector comparison_syntaxes = {
 
 static expression_ptr_t parse_comparison(ParseState& state)
 {
-    auto left = parse_range_literal(state);
-    while (match_any(state, comparison_syntaxes))
-    {
-        const auto operator_token = *previous_token(state);
-        auto right = parse_range_literal(state);
-        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_binary_expression(state, parse_range_literal, comparison_syntaxes);
 }
 
 static expression_ptr_t parse_logical_and(ParseState& state)
 {
-    auto left = parse_comparison(state);
-    while (match(state, SyntaxKind::AmpersandAmpersand))
-    {
-        const auto operator_token = *previous_token(state);
-        auto right = parse_comparison(state);
-        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_binary_expression(state, parse_comparison, SyntaxKind::AmpersandAmpersand);
 }
 
 static expression_ptr_t parse_logical_or(ParseState& state)
 {
-    auto left = parse_logical_and(state);
-    while (match(state, SyntaxKind::PipePipe))
-    {
-        const auto operator_token = *previous_token(state);
-        auto right = parse_logical_and(state);
-        left = BinaryOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
+    return parse_binary_expression(state, parse_logical_and, SyntaxKind::PipePipe);
 }
 
 const std::vector assignment_syntaxes = {
@@ -574,7 +356,7 @@ const std::vector assignment_syntaxes = {
     SyntaxKind::MinusEquals,
     SyntaxKind::StarEquals,
     SyntaxKind::SlashEquals,
-    SyntaxKind::CaratEquals,
+    SyntaxKind::CaretEquals,
     SyntaxKind::PercentEquals,
     SyntaxKind::AmpersandEquals,
     SyntaxKind::PipeEquals,
@@ -607,7 +389,7 @@ static expression_ptr_t parse_ternary_op(ParseState& state)
     {
         const auto question_token = *previous_token(state);
         auto when_true = parse_expression(state);
-        const auto colon_token = consume(state, SyntaxKind::Colon);
+        const auto colon_token = expect(state, SyntaxKind::Colon);
         auto when_false = parse_expression(state);
 
         condition = TernaryOp::create(question_token, colon_token, std::move(condition), std::move(when_true),
@@ -629,13 +411,13 @@ static statement_ptr_t parse_block(ParseState& state)
     while (!check(state, SyntaxKind::RBrace))
         statements.push_back(parse_statement(state));
 
-    const auto r_brace = consume(state, SyntaxKind::RBrace);
+    const auto r_brace = expect(state, SyntaxKind::RBrace);
     return Block::create(l_brace, r_brace, std::move(statements));
 }
 
 static std::optional<ColonTypeClause*> parse_colon_type_clause(ParseState& state, const bool required = false)
 {
-    const auto colon_token = required ? consume(state, SyntaxKind::Colon) : match_token(state, SyntaxKind::Colon);
+    const auto colon_token = required ? expect(state, SyntaxKind::Colon) : try_consume(state, SyntaxKind::Colon);
     if (!colon_token.has_value())
         return std::nullopt;
 
@@ -650,7 +432,7 @@ static ColonTypeClause* parse_required_colon_type_clause(ParseState& state)
 
 static std::optional<EqualsValueClause*> parse_equals_value_clause(ParseState& state)
 {
-    const auto equals_token = match_token(state, SyntaxKind::Equals);
+    const auto equals_token = try_consume(state, SyntaxKind::Equals);
     if (!equals_token.has_value())
         return std::nullopt;
 
@@ -661,7 +443,7 @@ static std::optional<EqualsValueClause*> parse_equals_value_clause(ParseState& s
 static statement_ptr_t parse_variable_declaration(ParseState& state)
 {
     const auto let_keyword = *previous_token(state);
-    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto name = expect(state, SyntaxKind::Identifier);
     const auto colon_type_clause = parse_colon_type_clause(state);
     const auto equals_value_clause = parse_equals_value_clause(state);
 
@@ -670,7 +452,7 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
 
 static std::optional<TypeListClause*> parse_type_parameters(ParseState& state)
 {
-    const auto l_arrow = match_token(state, SyntaxKind::LArrow);
+    const auto l_arrow = try_consume(state, SyntaxKind::LArrow);
     if (!l_arrow.has_value())
         return std::nullopt;
 
@@ -679,16 +461,16 @@ static std::optional<TypeListClause*> parse_type_parameters(ParseState& state)
         list.push_back(parse_type_parameter(state));
     while (match(state, SyntaxKind::Comma));
 
-    const auto r_arrow = consume(state, SyntaxKind::RArrow);
+    const auto r_arrow = expect(state, SyntaxKind::RArrow);
     return new TypeListClause(*l_arrow, std::move(list), r_arrow);
 }
 
 static statement_ptr_t parse_type_declaration(ParseState& state)
 {
     const auto type_keyword = *previous_token(state);
-    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto name = expect(state, SyntaxKind::Identifier);
     const auto type_parameters = parse_type_parameters(state);
-    const auto equals_token = consume(state, SyntaxKind::Equals);
+    const auto equals_token = expect(state, SyntaxKind::Equals);
     auto type = parse_type(state);
 
     return TypeDeclaration::create(type_keyword, name, type_parameters, equals_token, std::move(type));
@@ -697,9 +479,9 @@ static statement_ptr_t parse_type_declaration(ParseState& state)
 static statement_ptr_t parse_event_declaration(ParseState& state)
 {
     const auto event_keyword = *previous_token(state);
-    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto name = expect(state, SyntaxKind::Identifier);
     const auto type_parameters = parse_type_parameters(state);
-    const auto l_paren = match_token(state, SyntaxKind::LParen);
+    const auto l_paren = try_consume(state, SyntaxKind::LParen);
     std::vector<type_ref_ptr_t> parameter_types;
     std::optional<Token> r_paren = std::nullopt;
     if (l_paren.has_value())
@@ -708,7 +490,7 @@ static statement_ptr_t parse_event_declaration(ParseState& state)
             parameter_types.push_back(parse_type(state));
         while (match(state, SyntaxKind::Comma));
 
-        r_paren = consume(state, SyntaxKind::RParen);
+        r_paren = expect(state, SyntaxKind::RParen);
     }
 
     return EventDeclaration::create(event_keyword, name, type_parameters, l_paren, std::move(parameter_types), r_paren);
@@ -716,7 +498,7 @@ static statement_ptr_t parse_event_declaration(ParseState& state)
 
 static statement_ptr_t parse_enum_member(ParseState& state)
 {
-    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto name = expect(state, SyntaxKind::Identifier);
     const auto equals_value_clause = parse_equals_value_clause(state);
     return EnumMember::create(name, equals_value_clause);
 }
@@ -724,8 +506,8 @@ static statement_ptr_t parse_enum_member(ParseState& state)
 static statement_ptr_t parse_enum_declaration(ParseState& state)
 {
     const auto enum_keyword = *previous_token(state);
-    const auto name = consume(state, SyntaxKind::Identifier);
-    const auto l_brace = consume(state, SyntaxKind::LBrace);
+    const auto name = expect(state, SyntaxKind::Identifier);
+    const auto l_brace = expect(state, SyntaxKind::LBrace);
     std::vector<statement_ptr_t> members;
 
     while (!check(state, SyntaxKind::RBrace))
@@ -734,13 +516,13 @@ static statement_ptr_t parse_enum_declaration(ParseState& state)
         match(state, SyntaxKind::Comma);
     }
 
-    const auto r_brace = consume(state, SyntaxKind::RBrace);
+    const auto r_brace = expect(state, SyntaxKind::RBrace);
     return EnumDeclaration::create(enum_keyword, name, l_brace, std::move(members), r_brace);
 }
 
 static statement_ptr_t parse_parameter(ParseState& state)
 {
-    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto name = expect(state, SyntaxKind::Identifier);
     const auto colon_type_clause = parse_colon_type_clause(state);
     const auto equals_value_clause = parse_equals_value_clause(state);
     return Parameter::create(name, colon_type_clause, equals_value_clause);
@@ -749,9 +531,9 @@ static statement_ptr_t parse_parameter(ParseState& state)
 static statement_ptr_t parse_function_declaration(ParseState& state, const std::optional<Token>& async_keyword)
 {
     const auto fn_keyword = *previous_token(state);
-    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto name = expect(state, SyntaxKind::Identifier);
     const auto type_parameters = parse_type_parameters(state);
-    const auto l_paren = match_token(state, SyntaxKind::LParen);
+    const auto l_paren = try_consume(state, SyntaxKind::LParen);
     std::vector<statement_ptr_t> parameters;
     std::optional<Token> r_paren = std::nullopt;
     if (l_paren.has_value())
@@ -760,11 +542,11 @@ static statement_ptr_t parse_function_declaration(ParseState& state, const std::
             parameters.push_back(parse_parameter(state));
         while (match(state, SyntaxKind::Comma));
 
-        r_paren = consume(state, SyntaxKind::RParen);
+        r_paren = expect(state, SyntaxKind::RParen);
     }
 
     const auto return_type = parse_colon_type_clause(state);
-    const auto long_arrow = match_token(state, SyntaxKind::LongArrow);
+    const auto long_arrow = try_consume(state, SyntaxKind::LongArrow);
     std::optional<expression_ptr_t> expression_body = std::nullopt;
     std::optional<statement_ptr_t> body = std::nullopt;
     std::optional<Token> l_brace = std::nullopt,
@@ -797,9 +579,9 @@ const std::set<std::string> primitive_type_names = { "number", "string", "bool",
 
 static statement_ptr_t parse_instance_declarator_with_initializer(ParseState& state)
 {
-    const auto at_token = match_token(state, SyntaxKind::At);
-    const auto name = consume(state, SyntaxKind::Identifier);
-    const auto colon_token = consume(state, SyntaxKind::Colon);
+    const auto at_token = try_consume(state, SyntaxKind::At);
+    const auto name = expect(state, SyntaxKind::Identifier);
+    const auto colon_token = expect(state, SyntaxKind::Colon);
     auto value = parse_expression(state);
 
     return at_token.has_value()
@@ -809,11 +591,11 @@ static statement_ptr_t parse_instance_declarator_with_initializer(ParseState& st
 
 static statement_ptr_t parse_instance_declarator(ParseState& state)
 {
-    if (const auto name_literal = match_token(state, SyntaxKind::StringLiteral); name_literal.has_value())
+    if (const auto name_literal = try_consume(state, SyntaxKind::StringLiteral); name_literal.has_value())
         return InstanceNameDeclarator::create(*name_literal);
 
-    if (const auto hashtag_token = match_token(state, SyntaxKind::Hashtag); hashtag_token.has_value())
-        return InstanceTagDeclarator::create(*hashtag_token, consume(state, SyntaxKind::Identifier));
+    if (const auto hashtag_token = try_consume(state, SyntaxKind::Hashtag); hashtag_token.has_value())
+        return InstanceTagDeclarator::create(*hashtag_token, expect(state, SyntaxKind::Identifier));
 
     return parse_instance_declarator_with_initializer(state);
 }
@@ -821,14 +603,14 @@ static statement_ptr_t parse_instance_declarator(ParseState& state)
 static statement_ptr_t parse_instance_constructor(ParseState& state)
 {
     const auto instance_keyword = *previous_token(state);
-    const auto name = consume(state, SyntaxKind::Identifier);
+    const auto name = expect(state, SyntaxKind::Identifier);
     const auto colon_type_clause = parse_required_colon_type_clause(state);
-    const auto clone_keyword = match_token(state, SyntaxKind::CloneKeyword);
+    const auto clone_keyword = try_consume(state, SyntaxKind::CloneKeyword);
     std::optional<expression_ptr_t> clone_target = std::nullopt;
     if (clone_keyword.has_value())
         clone_target = parse_expression(state);
 
-    const auto l_brace = match_token(state, SyntaxKind::LBrace);
+    const auto l_brace = try_consume(state, SyntaxKind::LBrace);
     std::vector<statement_ptr_t> property_declarators;
     std::optional<Token> r_brace = std::nullopt;
     if (l_brace.has_value())
@@ -839,10 +621,10 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
             match(state, SyntaxKind::Comma);
         }
 
-        r_brace = consume(state, SyntaxKind::RBrace);
+        r_brace = expect(state, SyntaxKind::RBrace);
     }
 
-    const auto long_arrow = match_token(state, SyntaxKind::LongArrow);
+    const auto long_arrow = try_consume(state, SyntaxKind::LongArrow);
     std::optional<expression_ptr_t> parent = std::nullopt;
     if (long_arrow.has_value())
         parent = parse_expression(state);
@@ -857,7 +639,7 @@ static statement_ptr_t parse_if(ParseState& state)
     const auto if_keyword = *previous_token(state);
     auto condition = parse_expression(state);
     auto then_branch = parse_statement(state);
-    const auto else_keyword = match_token(state, SyntaxKind::ElseKeyword);
+    const auto else_keyword = try_consume(state, SyntaxKind::ElseKeyword);
     std::optional<statement_ptr_t> else_branch = std::nullopt;
     if (else_keyword.has_value())
         else_branch = parse_statement(state);
@@ -878,9 +660,8 @@ static statement_ptr_t parse_repeat(ParseState& state)
 {
     const auto repeat_keyword = *previous_token(state);
     auto statement = parse_statement(state);
-    const auto while_keyword = consume(state, SyntaxKind::WhileKeyword);
+    const auto while_keyword = expect(state, SyntaxKind::WhileKeyword);
     auto condition = parse_expression(state);
-    std::cout << condition->get_text() << '\n';
 
     return Repeat::create(repeat_keyword, std::move(statement), while_keyword, std::move(condition));
 }
@@ -890,7 +671,7 @@ static std::vector<Token> parse_name_list(ParseState& state)
     std::vector<Token> names;
     do
     {
-        const auto name = match_token(state, SyntaxKind::Star).value_or(consume(state, SyntaxKind::Identifier));
+        const auto name = try_consume(state, SyntaxKind::Star).value_or(expect(state, SyntaxKind::Identifier));
         names.push_back(name);
     } while (match(state, SyntaxKind::Comma));
 
@@ -901,7 +682,7 @@ static statement_ptr_t parse_for(ParseState& state)
 {
     const auto keyword = *previous_token(state);
     const auto names = parse_name_list(state);
-    const auto colon_token = consume(state, SyntaxKind::Colon);
+    const auto colon_token = expect(state, SyntaxKind::Colon);
     auto iterable = parse_expression(state);
     auto statement = parse_statement(state);
 
@@ -945,8 +726,8 @@ static statement_ptr_t parse_import(ParseState& state)
         }
     }
 
-    const auto from_keyword = consume(state, SyntaxKind::FromKeyword);
-    const auto module_name = consume(state, SyntaxKind::Identifier, "module name");
+    const auto from_keyword = expect(state, SyntaxKind::FromKeyword);
+    const auto module_name = expect(state, SyntaxKind::Identifier, "module name");
     return Import::create(import_keyword, names, from_keyword, module_name);
 }
 
@@ -1045,7 +826,7 @@ type_ref_ptr_t parse_primitive_type(ParseState& state)
     {
         const auto last_token = previous_token(state);
         if (!last_token.has_value())
-            report_unexpected_eof(get_current_optional_span(state, -2));
+            report_unexpected_eof(fallback_span(state, -2));
 
         report_expected_different_syntax(last_token->span, "type", last_token->get_text(), false);
     }
@@ -1060,7 +841,7 @@ type_ref_ptr_t parse_primitive_type(ParseState& state)
 
 static type_ref_ptr_t parse_union_type(ParseState& state)
 {
-    const auto first_pipe_token = match_token(state, SyntaxKind::Pipe);
+    const auto first_pipe_token = try_consume(state, SyntaxKind::Pipe);
     std::vector<Token> pipe_tokens;
     std::vector<type_ref_ptr_t> types;
     types.push_back(parse_primitive_type(state));
@@ -1082,7 +863,7 @@ static type_ref_ptr_t parse_union_type(ParseState& state)
 
 static type_ref_ptr_t parse_intersection_type(ParseState& state)
 {
-    const auto first_ampersand_token = match_token(state, SyntaxKind::Ampersand);
+    const auto first_ampersand_token = try_consume(state, SyntaxKind::Ampersand);
     std::vector<Token> ampersand_tokens;
     std::vector<type_ref_ptr_t> types;
     types.push_back(parse_union_type(state));
@@ -1117,8 +898,8 @@ type_ref_ptr_t parse_type(ParseState& state)
 
 type_ref_ptr_t parse_type_parameter(ParseState& state)
 {
-    const auto name = consume(state, SyntaxKind::Identifier, "type parameter");
-    const auto colon_token = match_token(state, SyntaxKind::Colon);
+    const auto name = expect(state, SyntaxKind::Identifier, "type parameter");
+    const auto colon_token = try_consume(state, SyntaxKind::Colon);
     std::optional<type_ref_ptr_t> base_type = std::nullopt;
     if (colon_token.has_value())
         base_type = parse_type(state);

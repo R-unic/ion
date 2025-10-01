@@ -22,9 +22,7 @@ static char peek(const LexState& state, const int offset)
 
 static char current_character(const LexState& state)
 {
-    if (is_eof(state))
-        report_compiler_error("Lexer attempted to access an out of bounds file source index");
-
+    COMPILER_ASSERT(!is_eof(state), "Lexer attempted to access an out of bounds character (index " + std::to_string(state.position) + ")");
     return peek(state, 0);
 }
 
@@ -400,9 +398,9 @@ static void lex(LexState& state)
         }
         case '^':
         {
-            auto kind = SyntaxKind::Carat;
+            auto kind = SyntaxKind::Caret;
             if (match(state, '='))
-                kind = SyntaxKind::CaratEquals;
+                kind = SyntaxKind::CaretEquals;
 
             return push_token(state, kind);
         }
