@@ -45,7 +45,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] For loops (see examples)
     - [x] While loops
     - [x] Repeat loops
-    - [ ] Match statements (see examples)
+    - [ ] Match statements & expressions (see examples)
     - [x] Imports & exports (see examples)
     - [x] After statements (see examples)
     - [x] Every statements (see examples)
@@ -231,38 +231,6 @@ task.delay(0.1, function()
 end)
 ```
 
-### `match` statements
-
-```swift
-enum Abc {
-  A
-  B
-  C
-}
-
-let abc = Abc.A;
-match abc {
-  Abc.A -> print("got a"),
-  Abc.B -> print("got b"),
-  Abc.C -> print("got c"),
-  value -> print("wtf is this:", value)
-}
-```
-
-```luau
-local abc = 0
-if abc == 0 then
-  print("got a")
-else if abc == 1 then
-  print("got b")
-else if abc == 2 then
-  print("got c")
-else
-  local value = abc
-  print("wtf is this:", value)
-end
-```
-
 ### `every` statements
 
 `every` statements are a direct syntactic equivalent to an async loop that waits in every iteration
@@ -299,4 +267,68 @@ task.spawn(function()
     task.wait(1)
   end
 end)
+```
+
+### `match` statements
+
+```rs
+enum Abc {
+  A
+  B
+  C
+}
+
+let abc = Abc.A;
+match abc {
+  Abc.A -> print("got a"),
+  Abc.B -> print("got b"),
+  Abc.C -> print("got c"),
+  value -> print("wtf is this:", value)
+}
+```
+
+```luau
+local abc = 0
+if abc == 0 then
+  print("got a")
+else if abc == 1 then
+  print("got b")
+else if abc == 2 then
+  print("got c")
+else
+  local value = abc
+  print("wtf is this:", value)
+end
+```
+
+### `match` expressions
+
+```rs
+enum Abc {
+  A
+  B
+  C
+}
+
+let abc = Abc.A;
+let message = abc match {
+  Abc.A -> "got a",
+  Abc.B -> "got b",
+  Abc.C -> "got c",
+  value -> "wtf is this: " + value
+}
+```
+
+```luau
+local abc = 0
+if abc == 0 then
+  print("got a")
+else if abc == 1 then
+  print("got b")
+else if abc == 2 then
+  print("got c")
+else
+  local value = abc
+  print("wtf is this:", value)
+end
 ```
