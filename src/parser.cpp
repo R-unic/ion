@@ -428,19 +428,11 @@ static statement_ptr_t parse_block(ParseState& state)
     return Block::create(braced_statement_list);
 }
 
-static std::optional<ColonTypeClause*> parse_colon_type_clause(ParseState& state, const bool required = false)
+static ColonTypeClause* parse_colon_type_clause(ParseState& state)
 {
-    const auto colon_token = required ? expect(state, SyntaxKind::Colon) : try_consume(state, SyntaxKind::Colon);
-    if (!colon_token.has_value())
-        return std::nullopt;
-
+    const auto colon_token = expect(state, SyntaxKind::Colon);
     auto type = parse_type(state);
-    return new ColonTypeClause(*colon_token, std::move(type));
-}
-
-static ColonTypeClause* parse_required_colon_type_clause(ParseState& state)
-{
-    return *parse_colon_type_clause(state, true);
+    return new ColonTypeClause(colon_token, std::move(type));
 }
 
 static std::optional<EqualsValueClause*> parse_equals_value_clause(ParseState& state)
@@ -457,9 +449,11 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
 {
     const auto let_keyword = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
-    const auto colon_type_clause = parse_colon_type_clause(state);
-    const auto equals_value_clause = parse_equals_value_clause(state);
+    std::optional<ColonTypeClause*> colon_type_clause;
+    if (check(state, SyntaxKind::Colon))
+        colon_type_clause = parse_colon_type_clause(state);
 
+    const auto equals_value_clause = parse_equals_value_clause(state);
     return VariableDeclaration::create(let_keyword, name, colon_type_clause, equals_value_clause);
 }
 
@@ -528,9 +522,11 @@ static statement_ptr_t parse_enum_declaration(ParseState& state)
 static statement_ptr_t parse_parameter(ParseState& state)
 {
     const auto name = expect(state, SyntaxKind::Identifier);
-    const auto colon_type_clause = parse_colon_type_clause(state);
-    const auto equals_value_clause = parse_equals_value_clause(state);
+    std::optional<ColonTypeClause*> colon_type_clause;
+    if (check(state, SyntaxKind::Colon))
+        colon_type_clause = parse_colon_type_clause(state);
 
+    const auto equals_value_clause = parse_equals_value_clause(state);
     return Parameter::create(name, colon_type_clause, equals_value_clause);
 }
 
@@ -579,7 +575,10 @@ static statement_ptr_t parse_function_declaration(ParseState& state, const std::
     if (check(state, SyntaxKind::LParen))
         parameters = parse_parameter_list(state);
 
-    const auto return_type = parse_colon_type_clause(state);
+    std::optional<ColonTypeClause*> return_type;
+    if (check(state, SyntaxKind::Colon))
+        return_type = parse_colon_type_clause(state);
+
     const auto body = parse_function_body(state);
     return FunctionDeclaration::create(async_keyword, fn_keyword, name, type_parameters, parameters, return_type, body);
 }
@@ -613,7 +612,7 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
 {
     const auto instance_keyword = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
-    const auto colon_type_clause = parse_required_colon_type_clause(state);
+    const auto colon_type_clause = parse_colon_type_clause(state);
     const auto clone_keyword = try_consume(state, SyntaxKind::CloneKeyword);
     std::optional<expression_ptr_t> clone_target = std::nullopt;
     if (clone_keyword.has_value())
