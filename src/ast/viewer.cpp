@@ -278,7 +278,7 @@ void AstViewer::visit_expression_statement(const ExpressionStatement& expression
 void AstViewer::visit_block(const Block& block)
 {
     write("Block(");
-    write_list<statement_ptr_t>(block.statements, [&](const auto& statement)
+    write_list<statement_ptr_t>(block.braced_statement_list->statements, [&](const auto& statement)
     {
         visit(statement);
     });
@@ -335,7 +335,7 @@ void AstViewer::visit_enum_declaration(const EnumDeclaration& enum_declaration)
     indent_++;
     write_line("EnumDeclaration(");
     write_line(enum_declaration.name.get_text() + ',');
-    write_list<statement_ptr_t>(enum_declaration.members, [&](const auto& member)
+    write_list<statement_ptr_t>(enum_declaration.members->statements, [&](const auto& member)
     {
         visit(member);
     });
@@ -369,11 +369,14 @@ void AstViewer::visit_function_declaration(const FunctionDeclaration& function_d
     write_line("FunctionDeclaration(");
     write(function_declaration.name.get_text());
     write_type_list_clause(function_declaration.type_parameters);
-    write_line(",");
-    write_list<statement_ptr_t>(function_declaration.parameters, [&](const auto& parameter_type)
+    if (function_declaration.parameters.has_value())
     {
-        visit(parameter_type);
-    });
+        write_line(",");
+        write_list<statement_ptr_t>(function_declaration.parameters.value()->list, [&](const auto& parameter_type)
+        {
+            visit(parameter_type);
+        });
+    }
 
     if (function_declaration.return_type.has_value())
     {
@@ -382,10 +385,10 @@ void AstViewer::visit_function_declaration(const FunctionDeclaration& function_d
     }
 
     write_line(",");
-    if (function_declaration.expression_body.has_value())
-        visit(*function_declaration.expression_body);
+    if (function_declaration.body->block.has_value())
+        visit(*function_declaration.body->block);
     else
-        visit(*function_declaration.body);
+        visit(function_declaration.body->expression_body.value()->expression);
 
     write_line(",");
     write("Async: ");
@@ -424,11 +427,14 @@ void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_c
         visit(*instance_constructor.clone_target);
     }
 
-    write_line(",");
-    write_list<statement_ptr_t>(instance_constructor.declarators, [&](const auto& property_declarator)
+    if (instance_constructor.declarators.has_value())
     {
-        visit(property_declarator);
-    });
+        write_line(",");
+        write_list<statement_ptr_t>(instance_constructor.declarators.value()->statements, [&](const auto& property_declarator)
+        {
+            visit(property_declarator);
+        });
+    }
 
     if (instance_constructor.parent.has_value())
     {
