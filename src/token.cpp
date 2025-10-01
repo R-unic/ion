@@ -1,9 +1,15 @@
-#include "ion/lexer.h"
+#include "ion/diagnostics.h"
 #include "ion/source_file.h"
+#include "ion/lexer.h"
 
 bool FileSpan::has_line_break_between(const Token& other) const
 {
     return has_line_break_between(other.span);
+}
+
+bool Token::is_kind(const SyntaxKind check_kind) const
+{
+    return kind == check_kind;
 }
 
 std::string Token::get_text() const
@@ -29,9 +35,8 @@ std::vector<Token> Token::split(const std::vector<SyntaxKind>& syntaxes) const
 {
     const auto text = get_text();
     const auto syntax_count = syntaxes.size();
-    if (syntax_count != text.size())
-        report_compiler_error(
-            "Failed to split token with text '" + text + "' because only " + std::to_string(syntax_count) + " syntaxes were provided");
+    COMPILER_ASSERT(syntax_count == text.size(),
+                    "Failed to split token with text '" + text + "': Only " + std::to_string(syntax_count) + " syntaxes were provided");
 
     std::vector<Token> result;
     result.reserve(syntax_count);
