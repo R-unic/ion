@@ -598,6 +598,13 @@ void AstViewer::visit_primitive_type(const PrimitiveTypeRef& primitive_type)
     write(")");
 }
 
+void AstViewer::visit_literal_type(const LiteralTypeRef& literal_type)
+{
+    write("LiteralTypeRef(");
+    write(literal_type.token.get_text());
+    write(")");
+}
+
 void AstViewer::visit_type_name(const TypeNameRef& type_name)
 {
     indent_++;
@@ -612,6 +619,14 @@ void AstViewer::visit_nullable_type(const NullableTypeRef& nullable_type)
     indent_++;
     write_line("NullableTypeRef(");
     visit(nullable_type.non_nullable_type);
+    write_closing_paren();
+}
+
+void AstViewer::visit_array_type(const ArrayTypeRef& array_type)
+{
+    indent_++;
+    write_line("ArrayTypeRef(");
+    visit(array_type.element_type);
     write_closing_paren();
 }
 

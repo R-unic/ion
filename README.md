@@ -17,6 +17,8 @@ Statically typed language built for use with Roblox that compiles to Luau.
 - [x] Parser
     - [x] Primitive literals
     - [x] Extended number literals (see examples)
+    - [ ] Array literals
+    - [ ] Object literals
     - [x] Range literals (see examples)
     - [x] Vector literals (see examples)
     - [x] Color literals (see examples)
@@ -38,6 +40,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
         - [x] Attribute declarator
         - [x] `clone` clause
     - [x] Enum declarations
+    - [ ] Interface declarations
     - [x] Basic type parameters
         - [x] Defaults
     - [x] If statements
@@ -55,8 +58,8 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Blocks
     - [x] Primitive types, type names, & nullable types
     - [x] Union & intersection types
-    - [ ] Literal types
-    - [ ] Array types
+    - [x] Literal types
+    - [x] Array types
     - [x] Type parameters
     - [x] Type arguments for calls and type names
     - [x] Type alias declarations

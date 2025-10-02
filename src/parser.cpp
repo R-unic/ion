@@ -87,15 +87,12 @@ static expression_ptr_t parse_primary(ParseState& state)
             return parse_parenthesized(state);
 
         case SyntaxKind::TrueKeyword:
-            return PrimitiveLiteral::create(token, true);
         case SyntaxKind::FalseKeyword:
-            return PrimitiveLiteral::create(token, false);
+        case SyntaxKind::StringLiteral:
+        case SyntaxKind::NumberLiteral:
+            return PrimitiveLiteral::create(token, primitive_from_string(text));
         case SyntaxKind::NullKeyword:
             return PrimitiveLiteral::create(token, std::nullopt);
-        case SyntaxKind::StringLiteral:
-            return PrimitiveLiteral::create(token, text.substr(1, text.size() - 2));
-        case SyntaxKind::NumberLiteral:
-            return PrimitiveLiteral::create(token, to_number(text));
 
         default:
             report_unexpected_syntax(token);
@@ -229,7 +226,7 @@ static expression_ptr_t parse_binary_expression(ParseState& state,
 
 static expression_ptr_t parse_binary_expression(ParseState& state,
                                                 const std::function<expression_ptr_t (ParseState&)>& subparser,
-                                                const std::vector<SyntaxKind>& operator_kinds)
+                                                const std::set<SyntaxKind>& operator_kinds)
 {
     auto left = subparser(state);
     while (match_any(state, operator_kinds))
@@ -774,19 +771,9 @@ statement_ptr_t parse_statement(ParseState& state)
     return parse_declaration(state);
 }
 
-type_ref_ptr_t parse_primitive_type(ParseState& state)
+type_ref_ptr_t parse_type_name(ParseState& state)
 {
-    const auto token_opt = advance(state);
-    if (!token_opt.has_value() || !token_opt->is_kind(SyntaxKind::Identifier))
-    {
-        const auto last_token = previous_token(state);
-        if (!last_token.has_value())
-            report_unexpected_eof(fallback_span(state, -2));
-
-        report_expected_different_syntax(last_token->span, "type", last_token->get_text(), false);
-    }
-
-    const auto& token = *token_opt;
+    const auto token = *previous_token(state);
     if (primitive_type_names.contains(token.get_text()))
         return PrimitiveTypeRef::create(token);
 
@@ -794,12 +781,33 @@ type_ref_ptr_t parse_primitive_type(ParseState& state)
     return TypeNameRef::create(token, type_arguments);
 }
 
+type_ref_ptr_t parse_literal_type(const ParseState& state)
+{
+    const auto token = *previous_token(state);
+    const auto value = primitive_from_string(token.get_text());
+    return LiteralTypeRef::create(token, value);
+}
+
+type_ref_ptr_t parse_singular_type(ParseState& state)
+{
+    if (is_eof(state))
+        report_unexpected_eof(fallback_span(state, -2));
+
+    if (match(state, SyntaxKind::Identifier))
+        return parse_type_name(state);
+    if (match_any(state, primitive_literal_syntaxes))
+        return parse_literal_type(state);
+
+    const auto token = current_token_guaranteed(state);
+    report_expected_different_syntax(token.span, "type", token.get_text(), false);
+}
+
 static type_ref_ptr_t parse_union_type(ParseState& state)
 {
     const auto first_pipe_token = try_consume(state, SyntaxKind::Pipe);
     std::vector<Token> pipe_tokens;
     std::vector<type_ref_ptr_t> types;
-    types.push_back(parse_primitive_type(state));
+    types.push_back(parse_singular_type(state));
     if (first_pipe_token.has_value())
         pipe_tokens.push_back(*first_pipe_token);
 
@@ -807,13 +815,12 @@ static type_ref_ptr_t parse_union_type(ParseState& state)
     {
         const auto pipe_token = *previous_token(state);
         pipe_tokens.push_back(pipe_token);
-        types.push_back(parse_primitive_type(state));
+        types.push_back(parse_singular_type(state));
     }
 
-    if (types.size() > 1)
-        return UnionTypeRef::create(pipe_tokens, std::move(types));
-
-    return std::move(types.front());
+    return types.size() > 1
+               ? UnionTypeRef::create(pipe_tokens, std::move(types))
+               : std::move(types.front());
 }
 
 static type_ref_ptr_t parse_intersection_type(ParseState& state)
@@ -832,15 +839,27 @@ static type_ref_ptr_t parse_intersection_type(ParseState& state)
         types.push_back(parse_union_type(state));
     }
 
-    if (types.size() > 1)
-        return IntersectionTypeRef::create(ampersand_tokens, std::move(types));
+    return types.size() > 1
+               ? IntersectionTypeRef::create(ampersand_tokens, std::move(types))
+               : std::move(types.front());
+}
 
-    return std::move(types.front());
+static type_ref_ptr_t parse_array_type(ParseState& state)
+{
+    auto element_type = parse_intersection_type(state);
+    while (match(state, SyntaxKind::LBracket))
+    {
+        const auto l_bracket = *previous_token(state);
+        const auto r_bracket = expect(state, SyntaxKind::RBracket);
+        element_type = ArrayTypeRef::create(std::move(element_type), l_bracket, r_bracket);
+    }
+
+    return std::move(element_type);
 }
 
 static type_ref_ptr_t parse_nullable_type(ParseState& state)
 {
-    auto non_nullable_type = parse_intersection_type(state);
+    auto non_nullable_type = parse_array_type(state);
     return match(state, SyntaxKind::Question)
                ? NullableTypeRef::create(std::move(non_nullable_type), *previous_token(state))
                : std::move(non_nullable_type);
