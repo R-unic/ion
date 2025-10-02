@@ -104,21 +104,6 @@ static expression_ptr_t parse_primary(ParseState& state)
     }
 }
 
-static std::optional<TypeListClause*> parse_type_arguments(ParseState& state)
-{
-    const auto l_arrow = try_consume(state, SyntaxKind::LArrow);
-    if (!l_arrow.has_value())
-        return std::nullopt;
-
-    std::vector<type_ref_ptr_t> list;
-    do
-        list.push_back(parse_type(state));
-    while (match(state, SyntaxKind::Comma));
-
-    const auto r_arrow = consume_r_arrow(state);
-    return new TypeListClause(*l_arrow, std::move(list), r_arrow);
-}
-
 static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t callee)
 {
     const auto bang_token = try_consume(state, SyntaxKind::Bang);
@@ -435,6 +420,15 @@ static ColonTypeClause* parse_colon_type_clause(ParseState& state)
     return new ColonTypeClause(colon_token, std::move(type));
 }
 
+static std::optional<ColonTypeClause*> parse_optional_colon_type_clause(ParseState& state)
+{
+    std::optional<ColonTypeClause*> colon_type_clause = std::nullopt;
+    if (check(state, SyntaxKind::Colon))
+        colon_type_clause = parse_colon_type_clause(state);
+
+    return colon_type_clause;
+}
+
 static std::optional<EqualsValueClause*> parse_equals_value_clause(ParseState& state)
 {
     const auto equals_token = try_consume(state, SyntaxKind::Equals);
@@ -449,25 +443,41 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
 {
     const auto let_keyword = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
-    std::optional<ColonTypeClause*> colon_type_clause;
-    if (check(state, SyntaxKind::Colon))
-        colon_type_clause = parse_colon_type_clause(state);
-
+    const auto colon_type_clause = parse_optional_colon_type_clause(state);
     const auto equals_value_clause = parse_equals_value_clause(state);
+
     return VariableDeclaration::create(let_keyword, name, colon_type_clause, equals_value_clause);
 }
 
-static std::optional<TypeListClause*> parse_type_parameters(ParseState& state)
+static std::vector<type_ref_ptr_t> parse_type_list(ParseState& state,
+                                                   const std::function<type_ref_ptr_t (ParseState&)>& subparser = parse_type)
+{
+    std::vector<type_ref_ptr_t> list;
+    do
+        list.push_back(subparser(state));
+    while (match(state, SyntaxKind::Comma));
+
+    return list;
+}
+
+std::optional<TypeListClause*> parse_type_arguments(ParseState& state)
 {
     const auto l_arrow = try_consume(state, SyntaxKind::LArrow);
     if (!l_arrow.has_value())
         return std::nullopt;
 
-    std::vector<type_ref_ptr_t> list;
-    do
-        list.push_back(parse_type_parameter(state));
-    while (match(state, SyntaxKind::Comma));
+    auto list = parse_type_list(state);
+    const auto r_arrow = expect_r_arrow(state);
+    return new TypeListClause(*l_arrow, std::move(list), r_arrow);
+}
 
+std::optional<TypeListClause*> parse_type_parameters(ParseState& state)
+{
+    const auto l_arrow = try_consume(state, SyntaxKind::LArrow);
+    if (!l_arrow.has_value())
+        return std::nullopt;
+
+    auto list = parse_type_list(state, parse_type_parameter);
     const auto r_arrow = expect(state, SyntaxKind::RArrow);
     return new TypeListClause(*l_arrow, std::move(list), r_arrow);
 }
@@ -493,10 +503,7 @@ static statement_ptr_t parse_event_declaration(ParseState& state)
     std::optional<Token> r_paren = std::nullopt;
     if (l_paren.has_value())
     {
-        do
-            parameter_types.push_back(parse_type(state));
-        while (match(state, SyntaxKind::Comma));
-
+        parameter_types = parse_type_list(state);
         r_paren = expect(state, SyntaxKind::RParen);
     }
 
@@ -522,11 +529,9 @@ static statement_ptr_t parse_enum_declaration(ParseState& state)
 static statement_ptr_t parse_parameter(ParseState& state)
 {
     const auto name = expect(state, SyntaxKind::Identifier);
-    std::optional<ColonTypeClause*> colon_type_clause;
-    if (check(state, SyntaxKind::Colon))
-        colon_type_clause = parse_colon_type_clause(state);
-
+    const auto colon_type_clause = parse_optional_colon_type_clause(state);
     const auto equals_value_clause = parse_equals_value_clause(state);
+
     return Parameter::create(name, colon_type_clause, equals_value_clause);
 }
 
@@ -566,20 +571,24 @@ static ParameterListClause* parse_parameter_list(ParseState& state)
     return new ParameterListClause(l_paren, std::move(list), r_paren);
 }
 
+static std::optional<ParameterListClause*> parse_optional_parameter_list(ParseState& state)
+{
+    std::optional<ParameterListClause*> parameter_list = std::nullopt;
+    if (check(state, SyntaxKind::LParen))
+        parameter_list = parse_parameter_list(state);
+
+    return parameter_list;
+}
+
 static statement_ptr_t parse_function_declaration(ParseState& state, const std::optional<Token>& async_keyword)
 {
     const auto fn_keyword = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
     const auto type_parameters = parse_type_parameters(state);
-    std::optional<ParameterListClause*> parameters = std::nullopt;
-    if (check(state, SyntaxKind::LParen))
-        parameters = parse_parameter_list(state);
-
-    std::optional<ColonTypeClause*> return_type;
-    if (check(state, SyntaxKind::Colon))
-        return_type = parse_colon_type_clause(state);
-
+    const auto parameters = parse_optional_parameter_list(state);
+    const auto return_type = parse_optional_colon_type_clause(state);
     const auto body = parse_function_body(state);
+
     return FunctionDeclaration::create(async_keyword, fn_keyword, name, type_parameters, parameters, return_type, body);
 }
 
@@ -608,6 +617,18 @@ static statement_ptr_t parse_instance_declarator(ParseState& state)
     return parse_instance_declarator_with_initializer(state);
 }
 
+static std::optional<BracedStatementList*> parse_optional_braced_statement_list(ParseState& state,
+                                                                                const std::function<statement_ptr_t(ParseState&)>&
+                                                                                parse_list_statement,
+                                                                                const bool comma_allowed = true)
+{
+    std::optional<BracedStatementList*> braced_statement_list = std::nullopt;
+    if (check(state, SyntaxKind::LBrace))
+        braced_statement_list = parse_braced_statement_list(state, parse_list_statement, comma_allowed);
+
+    return braced_statement_list;
+}
+
 static statement_ptr_t parse_instance_constructor(ParseState& state)
 {
     const auto instance_keyword = *previous_token(state);
@@ -618,11 +639,7 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
     if (clone_keyword.has_value())
         clone_target = parse_expression(state);
 
-    const auto l_brace = try_consume(state, SyntaxKind::LBrace);
-    std::optional<BracedStatementList*> declarators = std::nullopt;
-    if (l_brace.has_value())
-        declarators = parse_braced_statement_list(state, parse_instance_declarator);
-
+    const auto declarators = parse_optional_braced_statement_list(state, parse_instance_declarator);
     const auto long_arrow = try_consume(state, SyntaxKind::LongArrow);
     std::optional<expression_ptr_t> parent = std::nullopt;
     if (long_arrow.has_value())
@@ -820,7 +837,7 @@ statement_ptr_t parse_statement(ParseState& state)
 type_ref_ptr_t parse_primitive_type(ParseState& state)
 {
     const auto token_opt = advance(state);
-    if (!token_opt.has_value() || token_opt.value().kind != SyntaxKind::Identifier)
+    if (!token_opt.has_value() || !token_opt->is_kind(SyntaxKind::Identifier))
     {
         const auto last_token = previous_token(state);
         if (!last_token.has_value())
