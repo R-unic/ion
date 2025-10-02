@@ -305,23 +305,9 @@ static expression_ptr_t parse_logical_or(ParseState& state)
     return parse_binary_expression(state, parse_logical_and, SyntaxKind::PipePipe);
 }
 
-static expression_ptr_t parse_assignment(ParseState& state)
-{
-    auto left = parse_logical_or(state);
-    while (match_any(state, assignment_syntaxes))
-    {
-        assert_assignment_target(left);
-        const auto operator_token = *previous_token(state);
-        auto right = parse_assignment(state);
-        left = AssignmentOp::create(operator_token, std::move(left), std::move(right));
-    }
-
-    return left;
-}
-
 static expression_ptr_t parse_ternary_op(ParseState& state)
 {
-    auto condition = parse_assignment(state);
+    auto condition = parse_logical_or(state);
     while (match(state, SyntaxKind::Question))
     {
         const auto question_token = *previous_token(state);
@@ -336,9 +322,23 @@ static expression_ptr_t parse_ternary_op(ParseState& state)
     return condition;
 }
 
+static expression_ptr_t parse_assignment(ParseState& state)
+{
+    auto left = parse_logical_or(state);
+    while (match_any(state, assignment_syntaxes))
+    {
+        assert_assignment_target(left);
+        const auto operator_token = *previous_token(state);
+        auto right = parse_ternary_op(state);
+        left = AssignmentOp::create(operator_token, std::move(left), std::move(right));
+    }
+
+    return left;
+}
+
 expression_ptr_t parse_expression(ParseState& state)
 {
-    return parse_ternary_op(state);
+    return parse_assignment(state);
 }
 
 static BracedStatementList* parse_braced_statement_list(ParseState& state,
