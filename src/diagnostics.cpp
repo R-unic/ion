@@ -6,6 +6,7 @@
 
 #include "ion/diagnostics.h"
 #include "ion/source_file.h"
+#include "ion/utility/basic.h"
 
 [[noreturn]] static void error(const std::string& message, const uint8_t code)
 {
@@ -18,13 +19,13 @@ static std::string format_severity(const DiagnosticSeverity severity)
     switch (severity)
     {
         case DiagnosticSeverity::Error:
-            return "error";
+            return color("error", std::format("{}{}", Color::bold, Color::red).c_str());
         case DiagnosticSeverity::Warning:
-            return "warn";
+            return color("warn", std::format("{}{}", Color::bold, Color::yellow).c_str());
         case DiagnosticSeverity::Info:
-            return "info";
+            return color("info", std::format("{}{}", Color::bold, Color::cyan).c_str());
         case DiagnosticSeverity::Debug:
-            return "debug";
+            return color("debug", std::format("{}{}", Color::bold, Color::purple).c_str());
     }
 
     return "???";
@@ -139,9 +140,9 @@ static std::string format_severity(const DiagnosticSeverity severity)
 
 std::string format_diagnostic(const Diagnostic& diagnostic)
 {
-    const auto location = format_location(diagnostic.span.end);
+    const auto location = format_location(diagnostic.span.end, true, true);
     const auto severity = format_severity(diagnostic.severity);
-    const auto code = std::format("{:04}", diagnostic.code);
+    const auto code = color(std::format("ION{:04}: ", diagnostic.code), Color::gray);
     const auto message = std::visit([&]<typename T>(T& arg)
     {
         using type_t = std::decay_t<T>;
@@ -174,13 +175,15 @@ std::string format_diagnostic(const Diagnostic& diagnostic)
     const auto line_text = diagnostic.span.get_line();
     const auto span_text = diagnostic.span.get_text();
     const auto start_column = diagnostic.span.start.column;
-    auto underline = std::string(start_column + 1, ' ');
-    underline.append(std::max<size_t>(1, diagnostic.span.end.column - start_column), '^');
+    const auto underline_size = std::max<size_t>(1, diagnostic.span.end.column - start_column);
+    const auto underline = color(std::string(start_column + 1, ' ') + std::string(underline_size, '~'),
+                                 std::format("{}{}", Color::bold, Color::red).c_str());
 
     const auto line_number = std::to_string(diagnostic.span.start.line);
     const auto gutter_width = line_number.size();
-    const auto line_info = " " + line_number + " | " + line_text + '\n'
-                           + std::string(gutter_width + 3, ' ') + underline;
+    const auto colored_line_number = color(gutter_width > 1 ? line_number : line_number + " ",
+                                           std::format("{}{}", Color::background_white, Color::black).c_str());
 
-    return location + " - " + severity + " ION" + code + ": " + message + "\n\n" + line_info + '\n';
+    const auto line_info = colored_line_number + "    " + line_text + '\n' + std::string(gutter_width + 4, ' ') + underline;
+    return location + " - " + severity + " " + code + message + "\n\n" + line_info + '\n';
 }

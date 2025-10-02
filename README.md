@@ -12,7 +12,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
 - [ ] Diagnostics
     - [x] Errors
     - [ ] Warnings
-    - [ ] Colors
+    - [x] Colors
     - [x] Line info/code view
 - [x] Parser
     - [x] Primitive literals

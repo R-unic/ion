@@ -5,6 +5,7 @@
 #include "ion/source_file.h"
 
 #include "ion/logger.h"
+#include "ion/utility/basic.h"
 
 static std::string read_file(const std::string& path)
 {
@@ -29,11 +30,16 @@ SourceFile* create_file(const std::string& path)
     return new SourceFile(path, text);
 }
 
-std::string format_location(const FileLocation& location, const bool include_file_path)
+std::string format_location(const FileLocation& location, const bool include_file_path, const bool colors)
 {
-    auto numeric_location = std::to_string(location.line) + ':' + std::to_string(location.column);
+    const auto line_text = colors ? color(std::to_string(location.line), Color::yellow) : std::to_string(location.line);
+    const auto column_text = colors ? color(std::to_string(location.column), Color::yellow) : std::to_string(location.column);
+    auto numeric_location = line_text + ':' + column_text;
     if (include_file_path)
-        return location.file->path + ':' + numeric_location;
+    {
+        const auto file_path_text = colors ? color(location.file->path, Color::light_blue) : location.file->path;
+        return file_path_text + ':' + numeric_location;
+    }
 
     return numeric_location;
 }
