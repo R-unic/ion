@@ -1,8 +1,6 @@
-#include <iostream>
 #include <algorithm>
 #include <functional>
 #include <utility>
-#include <set>
 
 #include "ion/logger.h"
 #include "ion/diagnostics.h"
@@ -12,63 +10,65 @@
 
 static expression_ptr_t parse_parenthesized(ParseState& state)
 {
-    const auto l_paren = peek(state, -2);
+    const auto l_paren = peek(state, -1);
     auto expression = parse_expression(state);
     const auto r_paren = expect(state, SyntaxKind::RParen);
 
     return Parenthesized::create(l_paren, r_paren, std::move(expression));
 }
 
-static expression_ptr_t parse_rgb_literal(ParseState& state)
+/** Parses a literal with multiple components surrounded by '<(' and ')>' */
+template <typename NodeFactory, typename... Args>
+expression_ptr_t parse_components_literal(ParseState& state, int arity, NodeFactory&& make_node, Args&&... extra_args)
 {
-    const auto keyword = peek(state, -2);
     const auto l_arrow = expect(state, SyntaxKind::LArrow);
     const auto l_paren = expect(state, SyntaxKind::LParen);
-    auto r = parse_expression(state);
-    expect(state, SyntaxKind::Comma);
-    auto g = parse_expression(state);
-    expect(state, SyntaxKind::Comma);
-    auto b = parse_expression(state);
+
+    std::vector<expression_ptr_t> components;
+    for (auto i = 0; i < arity; ++i)
+    {
+        components.push_back(parse_expression(state));
+        if (i + 1 < arity)
+            expect(state, SyntaxKind::Comma);
+    }
+
     const auto r_paren = expect(state, SyntaxKind::RParen);
     const auto r_arrow = expect(state, SyntaxKind::RArrow);
+    return make_node(l_arrow, r_arrow, std::move(components), std::forward<Args>(extra_args)...);
+}
 
-    return RgbLiteral::create(keyword, l_arrow, r_arrow, std::move(r), std::move(g), std::move(b));
+static expression_ptr_t parse_rgb_literal(ParseState& state)
+{
+    const auto keyword = peek(state, -1);
+    return parse_components_literal(state, 3, [&](const auto& l_arrow, const auto& r_arrow, auto components)
+    {
+        return RgbLiteral::create(keyword, l_arrow, r_arrow, std::move(components[0]), std::move(components[1]), std::move(components[2]));
+    });
 }
 
 static expression_ptr_t parse_hsv_literal(ParseState& state)
 {
-    const auto keyword = peek(state, -2);
-    const auto l_arrow = expect(state, SyntaxKind::LArrow);
-    const auto l_paren = expect(state, SyntaxKind::LParen);
-    auto h = parse_expression(state);
-    expect(state, SyntaxKind::Comma);
-    auto s = parse_expression(state);
-    expect(state, SyntaxKind::Comma);
-    auto v = parse_expression(state);
-    const auto r_paren = expect(state, SyntaxKind::RParen);
-    const auto r_arrow = expect(state, SyntaxKind::RArrow);
-
-    return HsvLiteral::create(keyword, l_arrow, r_arrow, std::move(h), std::move(s), std::move(v));
+    const auto keyword = peek(state, -1);
+    return parse_components_literal(state, 3, [&](const auto& l_arrow, const auto& r_arrow, auto components)
+    {
+        return HsvLiteral::create(keyword, l_arrow, r_arrow, std::move(components[0]), std::move(components[1]), std::move(components[2]));
+    });
 }
 
 static expression_ptr_t parse_vector_literal(ParseState& state)
 {
-    const auto l_arrow = *previous_token(state);
-    const auto l_paren = expect(state, SyntaxKind::LParen);
-    auto x = parse_expression(state);
-    expect(state, SyntaxKind::Comma);
-    auto y = parse_expression(state);
-    expect(state, SyntaxKind::Comma);
-    auto z = parse_expression(state);
-    const auto r_paren = expect(state, SyntaxKind::RParen);
-    const auto r_arrow = expect(state, SyntaxKind::RArrow);
-
-    return VectorLiteral::create(l_arrow, r_arrow, std::move(x), std::move(y), std::move(z));
+    return parse_components_literal(state, 3, [&](const auto& l_arrow, const auto& r_arrow, auto components)
+    {
+        return VectorLiteral::create(l_arrow, r_arrow, std::move(components[0]), std::move(components[1]), std::move(components[2]));
+    });
 }
 
 static expression_ptr_t parse_primary(ParseState& state)
 {
     const auto span = fallback_span(state);
+    if (check(state, SyntaxKind::LArrow))
+        return parse_vector_literal(state);
+
     const auto token_opt = advance(state);
     if (!token_opt.has_value())
         report_unexpected_eof(span);
@@ -83,8 +83,6 @@ static expression_ptr_t parse_primary(ParseState& state)
             return parse_rgb_literal(state);
         case SyntaxKind::HsvKeyword:
             return parse_hsv_literal(state);
-        case SyntaxKind::LArrow:
-            return parse_vector_literal(state);
         case SyntaxKind::LParen:
             return parse_parenthesized(state);
 
@@ -139,13 +137,6 @@ static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t
     return ElementAccess::create(l_bracket, r_bracket, std::move(expression), std::move(index_expression));
 }
 
-const std::vector type_argument_syntaxes = {
-    SyntaxKind::Identifier,
-    SyntaxKind::LArrow,
-    SyntaxKind::RArrow, SyntaxKind::RArrowRArrow, SyntaxKind::RArrowRArrowRArrow,
-    SyntaxKind::Comma
-};
-
 static bool is_invocation(const ParseState& state)
 {
     auto offset = 0;
@@ -161,9 +152,6 @@ static bool is_invocation(const ParseState& state)
 
     return check(state, SyntaxKind::LParen, offset);
 }
-
-const std::vector member_access_syntaxes = { SyntaxKind::Dot, SyntaxKind::ColonColon, SyntaxKind::At };
-const std::vector postfix_op_syntaxes = { SyntaxKind::PlusPlus, SyntaxKind::MinusMinus };
 
 static expression_ptr_t parse_postfix(ParseState& state)
 {
@@ -189,7 +177,6 @@ static expression_ptr_t parse_postfix(ParseState& state)
     return expression;
 }
 
-const std::vector unary_syntaxes = { SyntaxKind::Bang, SyntaxKind::Tilde, SyntaxKind::Minus };
 
 static expression_ptr_t parse_unary(ParseState& state)
 {
@@ -260,23 +247,15 @@ static expression_ptr_t parse_exponentiation(ParseState& state)
     return parse_binary_expression(state, parse_unary, SyntaxKind::Caret);
 }
 
-const std::vector multiplicative_syntaxes = { SyntaxKind::Star, SyntaxKind::Slash, SyntaxKind::SlashSlash, SyntaxKind::Percent };
-
 static expression_ptr_t parse_multiplication(ParseState& state)
 {
     return parse_binary_expression(state, parse_exponentiation, multiplicative_syntaxes);
 }
 
-const std::vector additive_syntaxes = { SyntaxKind::Plus, SyntaxKind::Minus };
-
 static expression_ptr_t parse_addition(ParseState& state)
 {
     return parse_binary_expression(state, parse_multiplication, additive_syntaxes);
 }
-
-const std::vector bit_shift_syntaxes = {
-    SyntaxKind::LArrowLArrow, SyntaxKind::RArrowRArrow, SyntaxKind::RArrowRArrowRArrow
-};
 
 static expression_ptr_t parse_bit_shift(ParseState& state)
 {
@@ -311,15 +290,6 @@ static expression_ptr_t parse_range_literal(ParseState& state)
     return left;
 }
 
-const std::vector comparison_syntaxes = {
-    SyntaxKind::EqualsEquals,
-    SyntaxKind::BangEquals,
-    SyntaxKind::LArrow,
-    SyntaxKind::LArrowEquals,
-    SyntaxKind::RArrow,
-    SyntaxKind::RArrowEquals
-};
-
 static expression_ptr_t parse_comparison(ParseState& state)
 {
     return parse_binary_expression(state, parse_range_literal, comparison_syntaxes);
@@ -334,25 +304,6 @@ static expression_ptr_t parse_logical_or(ParseState& state)
 {
     return parse_binary_expression(state, parse_logical_and, SyntaxKind::PipePipe);
 }
-
-const std::vector assignment_syntaxes = {
-    SyntaxKind::Equals,
-    SyntaxKind::PlusEquals,
-    SyntaxKind::MinusEquals,
-    SyntaxKind::StarEquals,
-    SyntaxKind::SlashEquals,
-    SyntaxKind::SlashSlashEquals,
-    SyntaxKind::CaretEquals,
-    SyntaxKind::PercentEquals,
-    SyntaxKind::AmpersandEquals,
-    SyntaxKind::PipeEquals,
-    SyntaxKind::TildeEquals,
-    SyntaxKind::LArrowLArrowEquals,
-    SyntaxKind::RArrowRArrowEquals,
-    SyntaxKind::RArrowRArrowRArrowEquals,
-    SyntaxKind::AmpersandAmpersandEquals,
-    SyntaxKind::PipePipeEquals
-};
 
 static expression_ptr_t parse_assignment(ParseState& state)
 {
@@ -414,20 +365,20 @@ static statement_ptr_t parse_block(ParseState& state)
     return Block::create(braced_statement_list);
 }
 
+template <typename F>
+auto parse_optional(ParseState& state, const SyntaxKind kind, F&& parser) -> std::optional<decltype(parser(state))>
+{
+    if (check(state, kind))
+        return parser(state);
+
+    return std::nullopt;
+}
+
 static ColonTypeClause* parse_colon_type_clause(ParseState& state)
 {
     const auto colon_token = expect(state, SyntaxKind::Colon);
     auto type = parse_type(state);
     return new ColonTypeClause(colon_token, std::move(type));
-}
-
-static std::optional<ColonTypeClause*> parse_optional_colon_type_clause(ParseState& state)
-{
-    std::optional<ColonTypeClause*> colon_type_clause = std::nullopt;
-    if (check(state, SyntaxKind::Colon))
-        colon_type_clause = parse_colon_type_clause(state);
-
-    return colon_type_clause;
 }
 
 static std::optional<EqualsValueClause*> parse_equals_value_clause(ParseState& state)
@@ -444,7 +395,7 @@ static statement_ptr_t parse_variable_declaration(ParseState& state)
 {
     const auto let_keyword = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
-    const auto colon_type_clause = parse_optional_colon_type_clause(state);
+    const auto colon_type_clause = parse_optional(state, SyntaxKind::Colon, parse_colon_type_clause);
     const auto equals_value_clause = parse_equals_value_clause(state);
 
     return VariableDeclaration::create(let_keyword, name, colon_type_clause, equals_value_clause);
@@ -530,7 +481,7 @@ static statement_ptr_t parse_enum_declaration(ParseState& state)
 static statement_ptr_t parse_parameter(ParseState& state)
 {
     const auto name = expect(state, SyntaxKind::Identifier);
-    const auto colon_type_clause = parse_optional_colon_type_clause(state);
+    const auto colon_type_clause = parse_optional(state, SyntaxKind::Colon, parse_colon_type_clause);
     const auto equals_value_clause = parse_equals_value_clause(state);
 
     return Parameter::create(name, colon_type_clause, equals_value_clause);
@@ -572,28 +523,17 @@ static ParameterListClause* parse_parameter_list(ParseState& state)
     return new ParameterListClause(l_paren, std::move(list), r_paren);
 }
 
-static std::optional<ParameterListClause*> parse_optional_parameter_list(ParseState& state)
-{
-    std::optional<ParameterListClause*> parameter_list = std::nullopt;
-    if (check(state, SyntaxKind::LParen))
-        parameter_list = parse_parameter_list(state);
-
-    return parameter_list;
-}
-
 static statement_ptr_t parse_function_declaration(ParseState& state, const std::optional<Token>& async_keyword)
 {
     const auto fn_keyword = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
     const auto type_parameters = parse_type_parameters(state);
-    const auto parameters = parse_optional_parameter_list(state);
-    const auto return_type = parse_optional_colon_type_clause(state);
+    const auto parameters = parse_optional(state, SyntaxKind::LParen, parse_parameter_list);
+    const auto return_type = parse_optional(state, SyntaxKind::Colon, parse_colon_type_clause);
     const auto body = parse_function_body(state);
 
     return FunctionDeclaration::create(async_keyword, fn_keyword, name, type_parameters, parameters, return_type, body);
 }
-
-const std::set<std::string> primitive_type_names = { "number", "string", "bool", "void" };
 
 static statement_ptr_t parse_instance_declarator_with_initializer(ParseState& state)
 {
@@ -618,18 +558,6 @@ static statement_ptr_t parse_instance_declarator(ParseState& state)
     return parse_instance_declarator_with_initializer(state);
 }
 
-static std::optional<BracedStatementList*> parse_optional_braced_statement_list(ParseState& state,
-                                                                                const std::function<statement_ptr_t(ParseState&)>&
-                                                                                parse_list_statement,
-                                                                                const bool comma_allowed = true)
-{
-    std::optional<BracedStatementList*> braced_statement_list = std::nullopt;
-    if (check(state, SyntaxKind::LBrace))
-        braced_statement_list = parse_braced_statement_list(state, parse_list_statement, comma_allowed);
-
-    return braced_statement_list;
-}
-
 static statement_ptr_t parse_instance_constructor(ParseState& state)
 {
     const auto instance_keyword = *previous_token(state);
@@ -640,7 +568,10 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
     if (clone_keyword.has_value())
         clone_target = parse_expression(state);
 
-    const auto declarators = parse_optional_braced_statement_list(state, parse_instance_declarator);
+    const auto declarators = parse_optional(state, SyntaxKind::Colon, [&](ParseState&)
+    {
+        return parse_braced_statement_list(state, parse_instance_declarator);
+    });
     const auto long_arrow = try_consume(state, SyntaxKind::LongArrow);
     std::optional<expression_ptr_t> parent = std::nullopt;
     if (long_arrow.has_value())
@@ -801,36 +732,39 @@ static statement_ptr_t parse_declaration(ParseState& state)
                : parse_expression_statement(state);
 }
 
+static statement_ptr_t parse_break(const ParseState& state)
+{
+    const auto keyword = *previous_token(state);
+    return Break::create(keyword);
+}
+
+static statement_ptr_t parse_continue(const ParseState& state)
+{
+    const auto keyword = *previous_token(state);
+    return Continue::create(keyword);
+}
+
+static const std::unordered_map<SyntaxKind, std::function<statement_ptr_t (ParseState&)>> statement_parsers = {
+    { SyntaxKind::IfKeyword, parse_if },
+    { SyntaxKind::WhileKeyword, parse_while },
+    { SyntaxKind::RepeatKeyword, parse_repeat },
+    { SyntaxKind::ForKeyword, parse_for },
+    { SyntaxKind::AfterKeyword, parse_after },
+    { SyntaxKind::EveryKeyword, parse_every },
+    { SyntaxKind::ImportKeyword, parse_import },
+    { SyntaxKind::ReturnKeyword, parse_return },
+    { SyntaxKind::BreakKeyword, parse_break },
+    { SyntaxKind::ContinueKeyword, parse_continue }
+};
+
 statement_ptr_t parse_statement(ParseState& state)
 {
     if (check(state, SyntaxKind::LBrace))
         return parse_block(state);
-    if (match(state, SyntaxKind::IfKeyword))
-        return parse_if(state);
-    if (match(state, SyntaxKind::WhileKeyword))
-        return parse_while(state);
-    if (match(state, SyntaxKind::RepeatKeyword))
-        return parse_repeat(state);
-    if (match(state, SyntaxKind::ForKeyword))
-        return parse_for(state);
-    if (match(state, SyntaxKind::AfterKeyword))
-        return parse_after(state);
-    if (match(state, SyntaxKind::EveryKeyword))
-        return parse_every(state);
-    if (match(state, SyntaxKind::ImportKeyword))
-        return parse_import(state);
-    if (match(state, SyntaxKind::ReturnKeyword))
-        return parse_return(state);
-    if (match(state, SyntaxKind::BreakKeyword))
-    {
-        const auto keyword = *previous_token(state);
-        return Break::create(keyword);
-    }
-    if (match(state, SyntaxKind::ContinueKeyword))
-    {
-        const auto keyword = *previous_token(state);
-        return Continue::create(keyword);
-    }
+
+    for (const auto& [syntax, subparser] : statement_parsers)
+        if (match(state, syntax))
+            return subparser(state);
 
     return parse_declaration(state);
 }
