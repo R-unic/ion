@@ -17,7 +17,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
 - [x] Parser
     - [x] Primitive literals
     - [x] Extended number literals (see examples)
-    - [ ] Array literals
+    - [x] Array literals
     - [ ] Object literals
     - [x] Range literals (see examples)
     - [x] Vector literals (see examples)

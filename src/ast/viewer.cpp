@@ -99,6 +99,16 @@ void AstViewer::visit_primitive_literal(const PrimitiveLiteral& literal)
     write(")");
 }
 
+void AstViewer::visit_array_literal(const ArrayLiteral& array_literal)
+{
+    write("ArrayLiteral(");
+    write_list<expression_ptr_t>(array_literal.expressions, [&](const auto& expression)
+    {
+        visit(expression);
+    });
+    write(")");
+}
+
 void AstViewer::visit_range_literal(const RangeLiteral& range_literal)
 {
     indent_++;

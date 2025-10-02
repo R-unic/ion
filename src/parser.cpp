@@ -63,6 +63,19 @@ static expression_ptr_t parse_vector_literal(ParseState& state)
     });
 }
 
+static expression_ptr_t parse_array_literal(ParseState& state)
+{
+    const auto l_bracket = *previous_token(state);
+    std::vector<expression_ptr_t> expressions;
+    if (!check(state, SyntaxKind::RBracket))
+        do
+            expressions.push_back(parse_expression(state));
+        while (match(state, SyntaxKind::Comma));
+
+    const auto r_bracket = expect(state, SyntaxKind::RBracket);
+    return ArrayLiteral::create(l_bracket, r_bracket, std::move(expressions));
+}
+
 static expression_ptr_t parse_primary(ParseState& state)
 {
     const auto span = fallback_span(state);
@@ -83,6 +96,8 @@ static expression_ptr_t parse_primary(ParseState& state)
             return parse_rgb_literal(state);
         case SyntaxKind::HsvKeyword:
             return parse_hsv_literal(state);
+        case SyntaxKind::LBracket:
+            return parse_array_literal(state);
         case SyntaxKind::LParen:
             return parse_parenthesized(state);
 
@@ -517,9 +532,10 @@ static ParameterListClause* parse_parameter_list(ParseState& state)
 {
     const auto l_paren = expect(state, SyntaxKind::LParen);
     std::vector<statement_ptr_t> list;
-    do
-        list.push_back(parse_parameter(state));
-    while (match(state, SyntaxKind::Comma));
+    if (!check(state, SyntaxKind::RParen))
+        do
+            list.push_back(parse_parameter(state));
+        while (match(state, SyntaxKind::Comma));
 
     const auto r_paren = expect(state, SyntaxKind::RParen);
     return new ParameterListClause(l_paren, std::move(list), r_paren);
