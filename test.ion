@@ -1,1 +1,3 @@
-fn x
+fn abc<A : B = C> {
+
+}

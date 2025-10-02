@@ -639,21 +639,20 @@ void AstViewer::visit_intersection_type(const IntersectionTypeRef& intersection_
 
 void AstViewer::visit_type_parameter(const TypeParameterRef& type_parameter)
 {
-    const auto has_base_type = type_parameter.base_type.has_value();
-    if (has_base_type)
-        indent_++;
-
-    write("TypeParameter(");
-    if (has_base_type)
-        write_line();
-
+    indent_++;
+    write_line("TypeParameter(");
     write(type_parameter.name.get_text());
-    if (!has_base_type)
-        write(")");
-    else
+
+    if (type_parameter.base_type.has_value())
     {
         write_line(",");
         visit(*type_parameter.base_type);
-        write_closing_paren();
     }
+    if (type_parameter.default_type.has_value())
+    {
+        write_line(",");
+        visit(*type_parameter.default_type);
+    }
+
+    write_closing_paren();
 }

@@ -854,7 +854,12 @@ type_ref_ptr_t parse_type_parameter(ParseState& state)
     if (colon_token.has_value())
         base_type = parse_type(state);
 
-    return TypeParameterRef::create(name, colon_token, std::move(base_type));
+    const auto equals_token = try_consume(state, SyntaxKind::Equals);
+    std::optional<type_ref_ptr_t> default_type = std::nullopt;
+    if (equals_token.has_value())
+        default_type = parse_type(state);
+
+    return TypeParameterRef::create(name, colon_token, std::move(base_type), equals_token, std::move(default_type));
 }
 
 std::vector<statement_ptr_t> parse(SourceFile* file)

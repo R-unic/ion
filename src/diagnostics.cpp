@@ -23,7 +23,7 @@ static std::string format_severity(const DiagnosticSeverity severity)
         case DiagnosticSeverity::Warning:
             return color("warn", std::format("{}{}", Color::bold, Color::yellow).c_str());
         case DiagnosticSeverity::Info:
-            return color("info", std::format("{}{}", Color::bold, Color::cyan).c_str());
+            return color("info", std::format("{}{}", Color::bold, Color::light_blue).c_str());
         case DiagnosticSeverity::Debug:
             return color("debug", std::format("{}{}", Color::bold, Color::purple).c_str());
     }
