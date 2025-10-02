@@ -36,7 +36,6 @@ Statically typed language built for use with Roblox that compiles to Luau.
         - [x] Name declarator
         - [x] Tag declarator
         - [x] Attribute declarator
-        - [ ] Children declarator
         - [x] `clone` clause
     - [x] Enum declarations
     - [x] Basic type parameters
@@ -49,12 +48,15 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Imports & exports (see examples)
     - [x] After statements (see examples)
     - [x] Every statements (see examples)
+    - [ ] Destructuring (see examples)
     - [x] Async/await
     - [x] Breaks/continues
     - [x] Returns
     - [x] Blocks
     - [x] Primitive types, type names, & nullable types
     - [x] Union & intersection types
+    - [ ] Literal types
+    - [ ] Array types
     - [x] Type parameters
     - [x] Type arguments for calls and type names
     - [x] Type alias declarations
@@ -331,4 +333,19 @@ else
   local value = abc
   print("wtf is this:", value)
 end
+```
+
+### Destructuring
+
+Syntactic sugar for assigning variable names to properties/indexes of objects/arrays
+
+```ts
+let {my_field} = my_obj
+let [one, two] = my_arr
+```
+
+```luau
+local my_field = my_obj.my_field
+local one = my_arr[1]
+local two = my_arr[2]
 ```
