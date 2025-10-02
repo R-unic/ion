@@ -260,7 +260,7 @@ static expression_ptr_t parse_exponentiation(ParseState& state)
     return parse_binary_expression(state, parse_unary, SyntaxKind::Caret);
 }
 
-const std::vector multiplicative_syntaxes = { SyntaxKind::Star, SyntaxKind::Slash, SyntaxKind::Percent };
+const std::vector multiplicative_syntaxes = { SyntaxKind::Star, SyntaxKind::Slash, SyntaxKind::SlashSlash, SyntaxKind::Percent };
 
 static expression_ptr_t parse_multiplication(ParseState& state)
 {
@@ -341,6 +341,7 @@ const std::vector assignment_syntaxes = {
     SyntaxKind::MinusEquals,
     SyntaxKind::StarEquals,
     SyntaxKind::SlashEquals,
+    SyntaxKind::SlashSlashEquals,
     SyntaxKind::CaretEquals,
     SyntaxKind::PercentEquals,
     SyntaxKind::AmpersandEquals,
