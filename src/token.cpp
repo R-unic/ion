@@ -14,16 +14,7 @@ bool Token::is_kind(const SyntaxKind check_kind) const
 
 std::string Token::get_text() const
 {
-    if (text.has_value())
-        return *text;
-
-    if (keyword_lexemes.contains(kind))
-        return keyword_lexemes.at(kind);
-
-    if (single_char_lexemes.contains(kind))
-        return { 1, single_char_lexemes.at(kind) };
-
-    return span.get_text();
+    return text.value_or(syntax_to_string(kind).value_or(span.get_text()));
 }
 
 std::string Token::format() const

@@ -178,8 +178,8 @@ static void lex(LexState& state)
         return read_identifier_or_keyword(state);
     if (is_numeric_char(character))
         return read_number(state, character);
-    if (single_char_syntaxes.contains(character))
-        return push_token_override_text(state, single_char_syntaxes.at(character), std::string(1, character));
+    if (single_character_syntaxes.contains(character))
+        return push_token_override_text(state, single_character_syntaxes.at(character), std::string(1, character));
 
     report_unexpected_character(current_span(state), character);
 }
