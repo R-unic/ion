@@ -305,9 +305,14 @@ static expression_ptr_t parse_logical_or(ParseState& state)
     return parse_binary_expression(state, parse_logical_and, SyntaxKind::PipePipe);
 }
 
+static expression_ptr_t parse_null_coalesce(ParseState& state)
+{
+    return parse_binary_expression(state, parse_logical_or, SyntaxKind::QuestionQuestion);
+}
+
 static expression_ptr_t parse_ternary_op(ParseState& state)
 {
-    auto condition = parse_logical_or(state);
+    auto condition = parse_null_coalesce(state);
     while (match(state, SyntaxKind::Question))
     {
         const auto question_token = *previous_token(state);
@@ -324,7 +329,7 @@ static expression_ptr_t parse_ternary_op(ParseState& state)
 
 static expression_ptr_t parse_assignment(ParseState& state)
 {
-    auto left = parse_logical_or(state);
+    auto left = parse_ternary_op(state);
     while (match_any(state, assignment_syntaxes))
     {
         assert_assignment_target(left);

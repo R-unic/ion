@@ -24,7 +24,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
         - [x] HSV
     - [x] Identifiers
     - [x] Binary, unary, postfix unary, ternary, & assignment operations
-    - [ ] Null coalescing
+    - [x] Null coalescing
     - [ ] Optional member access
     - [x] Parenthesized expressions
     - [x] Member access & element access
