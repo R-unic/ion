@@ -489,7 +489,9 @@ static statement_ptr_t parse_event_declaration(ParseState& state)
     std::optional<Token> r_paren = std::nullopt;
     if (l_paren.has_value())
     {
-        parameter_types = parse_type_list(state);
+        if (!check(state, SyntaxKind::RParen))
+            parameter_types = parse_type_list(state);
+
         r_paren = expect(state, SyntaxKind::RParen);
     }
 
@@ -505,11 +507,45 @@ static statement_ptr_t parse_enum_member(ParseState& state)
 
 static statement_ptr_t parse_enum_declaration(ParseState& state)
 {
-    const auto enum_keyword = *previous_token(state);
+    const auto keyword = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
     const auto braced_statement_list = parse_braced_statement_list(state, parse_enum_member);
 
-    return EnumDeclaration::create(enum_keyword, name, braced_statement_list);
+    return EnumDeclaration::create(keyword, name, braced_statement_list);
+}
+
+static statement_ptr_t parse_interface_member(ParseState& state)
+{
+    const auto fn_keyword = try_consume(state, SyntaxKind::FnKeyword);
+    const auto name = expect(state, SyntaxKind::Identifier);
+    if (fn_keyword.has_value())
+    {
+        const auto type_parameters = parse_type_parameters(state);
+        const auto l_paren = expect(state, SyntaxKind::LParen);
+        std::vector<type_ref_ptr_t> parameter_types;
+        if (!check(state, SyntaxKind::RParen))
+            parameter_types = parse_type_list(state);
+
+        const auto r_paren = expect(state, SyntaxKind::RParen);
+        const auto colon_token = expect(state, SyntaxKind::Colon);
+        auto return_type = parse_type(state);
+
+        return InterfaceMethod::create(*fn_keyword, name, type_parameters, l_paren, std::move(parameter_types), r_paren,
+                                       colon_token, std::move(return_type));
+    }
+
+    const auto colon_token = expect(state, SyntaxKind::Colon);
+    auto type = parse_type(state);
+    return InterfaceField::create(name, colon_token, std::move(type));
+}
+
+static statement_ptr_t parse_interface_declaration(ParseState& state)
+{
+    const auto keyword = *previous_token(state);
+    const auto name = expect(state, SyntaxKind::Identifier);
+    const auto braced_statement_list = parse_braced_statement_list(state, parse_interface_member);
+
+    return InterfaceDeclaration::create(keyword, name, braced_statement_list);
 }
 
 static statement_ptr_t parse_parameter(ParseState& state)
@@ -751,6 +787,8 @@ static statement_ptr_t parse_declaration(ParseState& state)
         statement = parse_type_declaration(state);
     else if (match(state, SyntaxKind::EnumKeyword))
         statement = parse_enum_declaration(state);
+    else if (match(state, SyntaxKind::InterfaceKeyword))
+        statement = parse_interface_declaration(state);
     else if (match(state, SyntaxKind::InstanceKeyword))
         statement = parse_instance_constructor(state);
 

@@ -68,6 +68,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] `nameof`
     - [x] String interpolation
     - [x] Shorthand attributes (see examples)
+    - [ ] Constant variables and fields
 - [ ] Scope resolution
 - [ ] Symbol binding
 - [ ] Type solving/checking

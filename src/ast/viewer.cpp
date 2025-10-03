@@ -353,7 +353,43 @@ void AstViewer::visit_event_declaration(const EventDeclaration& event_declaratio
     {
         visit(parameter_type);
     });
+    write_closing_paren();
+}
 
+void AstViewer::visit_interface_declaration(const InterfaceDeclaration& interface_declaration)
+{
+    indent_++;
+    write_line("InterfaceDeclaration(");
+    write_line(interface_declaration.name.get_text() + ',');
+    write_list<statement_ptr_t>(interface_declaration.members->statements, [&](const auto& member)
+    {
+        visit(member);
+    });
+    write_closing_paren();
+}
+
+void AstViewer::visit_interface_field(const InterfaceField& interface_field)
+{
+    indent_++;
+    write_line("InterfaceField(");
+    write_line(interface_field.name.get_text() + ',');
+    visit(interface_field.type);
+    write_closing_paren();
+}
+
+void AstViewer::visit_interface_method(const InterfaceMethod& interface_method)
+{
+    indent_++;
+    write_line("InterfaceMethod(");
+    write(interface_method.name.get_text());
+    write_type_list_clause(interface_method.type_parameters);
+    write_line(",");
+    write_list<type_ref_ptr_t>(interface_method.parameter_types, [&](const auto& parameter_type)
+    {
+        visit(parameter_type);
+    });
+    write_line(",");
+    visit(interface_method.return_type);
     write_closing_paren();
 }
 
@@ -446,7 +482,7 @@ void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_c
 {
     indent_++;
     write_line("InstanceConstructor(");
-    write_line(instance_constructor.name.get_text() + ", ");
+    write_line(instance_constructor.name.get_text() + ',');
     visit(instance_constructor.colon_type->type);
     if (instance_constructor.clone_target.has_value())
     {
@@ -474,10 +510,11 @@ void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_c
 
 void AstViewer::visit_instance_property_declarator(const InstancePropertyDeclarator& instance_property_declarator)
 {
-    write("InstancePropertyDeclarator(");
-    write(instance_property_declarator.name.get_text() + ", ");
+    indent_++;
+    write_line("InstancePropertyDeclarator(");
+    write_line(instance_property_declarator.name.get_text() + ',');
     visit(instance_property_declarator.value);
-    write(")");
+    write_closing_paren();
 }
 
 void AstViewer::visit_instance_name_declarator(const InstanceNameDeclarator& instance_name_declarator)
@@ -489,10 +526,11 @@ void AstViewer::visit_instance_name_declarator(const InstanceNameDeclarator& ins
 
 void AstViewer::visit_instance_attribute_declarator(const InstanceAttributeDeclarator& instance_attribute_declarator)
 {
-    write("InstanceAttributeDeclarator(");
-    write(instance_attribute_declarator.name.get_text() + ", ");
+    indent_++;
+    write_line("InstanceAttributeDeclarator(");
+    write(instance_attribute_declarator.name.get_text() + ',');
     visit(instance_attribute_declarator.value);
-    write(")");
+    write_closing_paren();
 }
 
 void AstViewer::visit_instance_tag_declarator(const InstanceTagDeclarator& instance_tag_declarator)

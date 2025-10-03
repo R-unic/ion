@@ -1,1 +1,6 @@
-let message = "#{name}"
+interface Rectangle {
+    x: number
+    y: number
+
+    fn area(): number
+}
