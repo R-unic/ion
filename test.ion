@@ -1,6 +1,1 @@
-interface Rectangle {
-    x: number
-    y: number
-
-    fn area(): number
-}
+let x = 69;
