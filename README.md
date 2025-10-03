@@ -24,16 +24,16 @@ For any bugs please create an issue, describe it descriptively, and include how 
 ## Roadmap
 
 - [ ] Unit testing
-- [ ] Diagnostics
+- [x] Diagnostics
     - [x] Errors
-    - [ ] Warnings
+    - [x] Warnings
     - [x] Colors
     - [x] Line info/code view
 - [x] Lexer
 - [x] Parser
     - [ ] Skip semicolons
-    - [ ] Warn when `if a = b` or `while a = b` is detected
-    - [ ] Warn if any statements come after a `return;`
+    - [x] Warn when `if a = b` or `while a = b` is detected
+    - [x] Warn if any statements come after a `return` statement
     - [x] Primitive literals
     - [x] Extended number literals (see examples)
     - [x] Array literals

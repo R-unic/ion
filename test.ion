@@ -1,6 +1,2 @@
-let x = 69
-
-interface Abc {
-    x: number
-    const y: number
-}
+return 69
+print("abc")

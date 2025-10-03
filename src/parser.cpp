@@ -396,6 +396,9 @@ static BracedStatementList* parse_braced_statement_list(ParseState& state,
 static statement_ptr_t parse_block(ParseState& state)
 {
     const auto braced_statement_list = parse_braced_statement_list(state, parse_statement, false);
+    logger::info("Checking for unreachable code at block level");
+    check_for_unreachable_code(braced_statement_list->statements);
+
     return Block::create(braced_statement_list);
 }
 
@@ -658,6 +661,8 @@ static statement_ptr_t parse_if(ParseState& state)
 {
     const auto if_keyword = *previous_token(state);
     auto condition = parse_expression(state);
+    check_for_ambiguous_equals(condition);
+
     auto then_branch = parse_statement(state);
     const auto else_keyword = try_consume(state, SyntaxKind::ElseKeyword);
     std::optional<statement_ptr_t> else_branch = std::nullopt;
@@ -672,6 +677,7 @@ static statement_ptr_t parse_while(ParseState& state)
     const auto keyword = *previous_token(state);
     auto condition = parse_expression(state);
     auto statement = parse_statement(state);
+    check_for_ambiguous_equals(condition);
 
     return While::create(keyword, std::move(condition), std::move(statement));
 }
@@ -682,6 +688,7 @@ static statement_ptr_t parse_repeat(ParseState& state)
     auto statement = parse_statement(state);
     const auto while_keyword = expect(state, SyntaxKind::WhileKeyword);
     auto condition = parse_expression(state);
+    check_for_ambiguous_equals(condition);
 
     return Repeat::create(repeat_keyword, std::move(statement), while_keyword, std::move(condition));
 }
@@ -967,6 +974,8 @@ std::vector<statement_ptr_t> parse(SourceFile* file)
     while (!is_eof(state))
         file->statements.push_back(parse_statement(state));
 
+    logger::info("Checking for unreachable code at module level");
+    check_for_unreachable_code(file->statements);
     logger::info("Parsed " + std::to_string(file->statements.size()) + " statements");
     return std::move(file->statements);
 }
