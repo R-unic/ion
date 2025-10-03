@@ -428,11 +428,12 @@ static std::optional<EqualsValueClause*> parse_equals_value_clause(ParseState& s
 static statement_ptr_t parse_variable_declaration(ParseState& state)
 {
     const auto let_keyword = *previous_token(state);
+    const auto const_keyword = try_consume(state, SyntaxKind::ConstKeyword);
     const auto name = expect(state, SyntaxKind::Identifier);
     const auto colon_type_clause = parse_optional(state, SyntaxKind::Colon, parse_colon_type_clause);
     const auto equals_value_clause = parse_equals_value_clause(state);
 
-    return VariableDeclaration::create(let_keyword, name, colon_type_clause, equals_value_clause);
+    return VariableDeclaration::create(let_keyword, const_keyword, name, colon_type_clause, equals_value_clause);
 }
 
 static std::vector<type_ref_ptr_t> parse_type_list(ParseState& state,
@@ -516,10 +517,9 @@ static statement_ptr_t parse_enum_declaration(ParseState& state)
 
 static statement_ptr_t parse_interface_member(ParseState& state)
 {
-    const auto fn_keyword = try_consume(state, SyntaxKind::FnKeyword);
-    const auto name = expect(state, SyntaxKind::Identifier);
-    if (fn_keyword.has_value())
+    if (const auto fn_keyword = try_consume(state, SyntaxKind::FnKeyword); fn_keyword.has_value())
     {
+        const auto name = expect(state, SyntaxKind::Identifier);
         const auto type_parameters = parse_type_parameters(state);
         const auto l_paren = expect(state, SyntaxKind::LParen);
         std::vector<type_ref_ptr_t> parameter_types;
@@ -534,9 +534,11 @@ static statement_ptr_t parse_interface_member(ParseState& state)
                                        colon_token, std::move(return_type));
     }
 
+    const auto const_keyword = try_consume(state, SyntaxKind::ConstKeyword);
+    const auto name = expect(state, SyntaxKind::Identifier);
     const auto colon_token = expect(state, SyntaxKind::Colon);
     auto type = parse_type(state);
-    return InterfaceField::create(name, colon_token, std::move(type));
+    return InterfaceField::create(const_keyword, name, colon_token, std::move(type));
 }
 
 static statement_ptr_t parse_interface_declaration(ParseState& state)

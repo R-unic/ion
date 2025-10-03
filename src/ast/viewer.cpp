@@ -338,7 +338,9 @@ void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_d
         write_line(",");
         visit(variable_declaration.equals_value.value()->value);
     }
-
+    write_line(",");
+    write("Const: ");
+    write(variable_declaration.const_keyword.has_value() ? "true" : "false");
     write_closing_paren();
 }
 
@@ -374,6 +376,9 @@ void AstViewer::visit_interface_field(const InterfaceField& interface_field)
     write_line("InterfaceField(");
     write_line(interface_field.name.get_text() + ',');
     visit(interface_field.type);
+    write_line(",");
+    write("Const: ");
+    write(interface_field.const_keyword.has_value() ? "true" : "false");
     write_closing_paren();
 }
 

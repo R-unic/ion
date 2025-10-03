@@ -8,13 +8,15 @@ Statically typed language built for use with Roblox that compiles to Luau.
 
 ## Roadmap
 
-- [x] Lexer
+- [ ] Unit testing
 - [ ] Diagnostics
     - [x] Errors
     - [ ] Warnings
     - [x] Colors
     - [x] Line info/code view
+- [x] Lexer
 - [x] Parser
+    - [ ] Skip semicolons
     - [ ] Warn when `if a = b` or `while a = b` is detected
     - [x] Primitive literals
     - [x] Extended number literals (see examples)
@@ -41,7 +43,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
         - [x] Attribute declarator
         - [x] `clone` clause
     - [x] Enum declarations
-    - [ ] Interface declarations
+    - [x] Interface declarations
     - [x] Basic type parameters
         - [x] Defaults
     - [x] If statements
@@ -68,7 +70,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] `nameof`
     - [x] String interpolation
     - [x] Shorthand attributes (see examples)
-    - [ ] Constant variables and fields
+    - [x] Constant variables and fields
 - [ ] Scope resolution
 - [ ] Symbol binding
 - [ ] Type solving/checking
@@ -146,10 +148,14 @@ my_part.Parent = game.Workspace
 
 ### Shorthand attributes
 
-```rs
-let health = zombie_model@Health
+```ts
+let const
+health = zombie_model
+@Health
 print(health)
-zombie_model@Health -= 10
+zombie_model
+@Health
+-= 10
 ```
 
 ```luau
@@ -179,7 +185,8 @@ print(0, 1, 2, 69, 70)
 ### Imports/exports
 
 ```ts
-export let x = 69;
+export let const
+x = 69;
 ```
 
 ```luau
@@ -207,12 +214,21 @@ end
 
 ### Extended number literals
 
-```rs
-let time = 10s
-let cooldown = 50ms
-let hour = 1h
-let update_rate = 20hz
-let transparency = 50%
+```ts
+let const
+time = 10
+s
+let const
+cooldown = 50
+ms
+let const
+hour = 1
+h
+let const
+update_rate = 20
+hz
+let const
+transparency = 50 %
 ```
 
 ```luau
@@ -242,7 +258,7 @@ end)
 
 `every` statements are a direct syntactic equivalent to an async loop that waits in every iteration
 
-```swift
+```rs
 every 1s
   print("one second passed");
 ```
@@ -258,7 +274,7 @@ end)
 
 Using a conditional `every` statement:
 
-```swift
+```rs
 let elapsed = 0;
 every 1s while elapsed < 10 {
   print("Elapsed time:", elapsed++);
@@ -328,15 +344,16 @@ let message = abc match {
 
 ```luau
 local abc = 0
+local message
 if abc == 0 then
-  print("got a")
+  message = "got a"
 else if abc == 1 then
-  print("got b")
+  message = "got b"
 else if abc == 2 then
-  print("got c")
+  message = "got c"
 else
   local value = abc
-  print("wtf is this:", value)
+  message = "wtf is this: " .. value
 end
 ```
 
@@ -344,9 +361,9 @@ end
 
 Syntactic sugar for assigning variable names to properties/indexes of objects/arrays
 
-```ts
-let {my_field} = my_obj
-let [one, two] = my_arr
+```rs
+let const {my_field} = my_obj
+let const [one, two] = my_arr
 ```
 
 ```luau
