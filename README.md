@@ -10,12 +10,16 @@ Statically typed language built for Roblox that compiles to Luau.
 
 Before contributing please read up on how programming language front-ends
 work. [Crafting interpreters](https://craftinginterpreters.com/contents.html) is a good start.
-Use a commit convention when writing commit names.
 Try to adhere to the project's code style as much as possible, and follow general principles of writing clean and
 maintainable code.
 [Refactoring guru](https://refactoring.guru/refactoring) is a good place to learn principles of writing clean code.
-When contributing, make sure to only add one feature per PR, bloated PRs are a lot harder to review and accept.
+
 For any bugs please create an issue, describe it descriptively, and include how to reproduce it.
+
+### When contributing code
+
+- Use a commit convention when writing commit names
+- Add only one feature per PR, bloated PRs are a lot harder to review and accept.
 
 ## Roadmap
 
