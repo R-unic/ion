@@ -60,8 +60,8 @@ static void read_decimal_number(LexState& state)
 {
     auto decimal_used = false;
     auto malformed = false;
-    char character;
-    while (!is_eof(state) && (is_numeric_char(character = current_character(state)) || character == '.'))
+    auto character = current_character(state);
+    while (!is_eof(state) && (is_numeric_char(character) || character == '.'))
     {
         if (character == '.')
         {
@@ -72,7 +72,7 @@ static void read_decimal_number(LexState& state)
             decimal_used = true;
         }
 
-        advance(state);
+        character = advance(state).value_or(character);
     }
 
     if (malformed)
@@ -115,19 +115,51 @@ static void read_number(LexState& state, const char first_character)
 
 static void read_string(LexState& state, const char terminator)
 {
-    advance_while(state, [&](const auto character)
+    auto was_interpolated = false;
+    auto is_interpolation = false;
+    auto character = current_character(state);
+    while (!is_eof(state) && character != terminator && character != '\n')
     {
-        return character != terminator && character != '\n';
-    });
+        if (character == '#' && check(state, '{', 1))
+        {
+            was_interpolated = true;
+            is_interpolation = true;
+            const auto lexeme = current_lexeme(state);
+            const auto text = unescape(lexeme.empty() ? lexeme : lexeme.substr(1));
+            push_token_override_text(state, SyntaxKind::InterpolatedStringPart, text);
+            character = *advance(state, 2);
+            push_token(state, SyntaxKind::InterpolationStart);
 
-    const auto last_character = current_character(state);
+            do
+            {
+                lex(state);
+                character = current_character(state);
+            } while (!check(state, '}'));
+            continue;
+        }
+
+        if (is_interpolation && character == '}')
+        {
+            is_interpolation = false;
+            advance(state);
+            push_token(state, SyntaxKind::InterpolationEnd);
+            if (check(state, terminator))
+            {
+                character = current_character(state);
+                break;
+            }
+        }
+
+        character = *advance(state);
+    }
+
     advance(state);
-
     const auto text = unescape(current_lexeme(state));
-    if (last_character != terminator)
+    if (character != terminator)
         report_unterminated_string(current_span(state), text);
 
-    push_token_override_text(state, SyntaxKind::StringLiteral, text);
+    const auto kind = was_interpolated ? SyntaxKind::InterpolatedStringPart : SyntaxKind::StringLiteral;
+    push_token_override_text(state, kind, was_interpolated ? text.substr(0, text.size() - 1) : text);
 }
 
 static void skip_single_line_comment(LexState& state)
@@ -159,7 +191,7 @@ static void read_operator(LexState& state, const char character)
     push_token(state, kind);
 }
 
-static void lex(LexState& state)
+void lex(LexState& state)
 {
     const auto character = current_character(state);
     if (operator_rules.contains(character))

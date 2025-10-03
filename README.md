@@ -15,6 +15,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Colors
     - [x] Line info/code view
 - [x] Parser
+    - [ ] Warn when `if a = b` or `while a = b` is detected
     - [x] Primitive literals
     - [x] Extended number literals (see examples)
     - [x] Array literals
@@ -65,7 +66,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Type alias declarations
     - [x] `typeof`
     - [x] `nameof`
-    - [ ] String interpolation
+    - [x] String interpolation
     - [x] Shorthand attributes (see examples)
 - [ ] Scope resolution
 - [ ] Symbol binding

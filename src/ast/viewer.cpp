@@ -155,6 +155,23 @@ void AstViewer::visit_vector_literal(const VectorLiteral& vector_literal)
     write_closing_paren();
 }
 
+void AstViewer::visit_interpolated_string(const InterpolatedString& interpolated_string)
+{
+    indent_++;
+    write_line("InterpolatedString(");
+    write_list<Token>(interpolated_string.parts, [&](const auto& token)
+    {
+        const auto text = token.get_text();
+        write(text.empty() ? "(empty)" : '"' + text + '"');
+    });
+    write_line(",");
+    write_list<expression_ptr_t>(interpolated_string.interpolations, [&](const auto& expression)
+    {
+        visit(expression);
+    });
+    write_closing_paren();
+}
+
 void AstViewer::visit_identifier(const Identifier& identifier)
 {
     write("Identifier(");

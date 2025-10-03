@@ -63,6 +63,21 @@ static expression_ptr_t parse_vector_literal(ParseState& state)
     });
 }
 
+static expression_ptr_t parse_interpolated_string(ParseState& state)
+{
+    std::vector parts = { *previous_token(state) };
+    std::vector<expression_ptr_t> interpolations;
+
+    while (match(state, SyntaxKind::InterpolationStart))
+    {
+        interpolations.push_back(parse_expression(state));
+        expect(state, SyntaxKind::InterpolationEnd);
+        parts.push_back(expect(state, SyntaxKind::InterpolatedStringPart));
+    }
+
+    return InterpolatedString::create(std::move(parts), std::move(interpolations));
+}
+
 static expression_ptr_t parse_array_literal(ParseState& state)
 {
     const auto l_bracket = *previous_token(state);
@@ -96,6 +111,8 @@ static expression_ptr_t parse_primary(ParseState& state)
             return parse_rgb_literal(state);
         case SyntaxKind::HsvKeyword:
             return parse_hsv_literal(state);
+        case SyntaxKind::InterpolatedStringPart:
+            return parse_interpolated_string(state);
         case SyntaxKind::LBracket:
             return parse_array_literal(state);
         case SyntaxKind::LParen:
