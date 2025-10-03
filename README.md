@@ -137,7 +137,7 @@ my_part:AddTag("Lava")
 
 You can also clone instances using this syntax.
 
-```swift
+```php
 instance zombie_model: Model clone ReplicatedStorage.ZombieModel -> game.Workspace
 ```
 
@@ -180,7 +180,7 @@ print(0, 1, 2, 69, 70)
 
 ### Imports/exports
 
-```rs
+```zig
 export let const x = 69;
 ```
 
@@ -214,7 +214,7 @@ let const time = 10s
 let const cooldown = 50ms
 let const hour = 1h
 let const update_rate = 20hz
-let consttransparency = 50%
+let const transparency = 50%
 ```
 
 ```luau
