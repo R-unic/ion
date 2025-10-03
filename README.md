@@ -148,14 +148,10 @@ my_part.Parent = game.Workspace
 
 ### Shorthand attributes
 
-```ts
-let const
-health = zombie_model
-@Health
+```rs
+let const health = zombie_model@Health
 print(health)
-zombie_model
-@Health
--= 10
+zombie_model@Health -= 10
 ```
 
 ```luau
@@ -184,9 +180,8 @@ print(0, 1, 2, 69, 70)
 
 ### Imports/exports
 
-```ts
-export let const
-x = 69;
+```rs
+export let const x = 69;
 ```
 
 ```luau
@@ -214,21 +209,12 @@ end
 
 ### Extended number literals
 
-```ts
-let const
-time = 10
-s
-let const
-cooldown = 50
-ms
-let const
-hour = 1
-h
-let const
-update_rate = 20
-hz
-let const
-transparency = 50 %
+```rs
+let const time = 10s
+let const cooldown = 50ms
+let const hour = 1h
+let const update_rate = 20hz
+let consttransparency = 50%
 ```
 
 ```luau
