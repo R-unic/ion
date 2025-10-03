@@ -1,10 +1,21 @@
 # Ion
 
-Statically typed language built for use with Roblox that compiles to Luau.
+Statically typed language built for Roblox that compiles to Luau.
 
 > [!IMPORTANT]
 > This language **does not have a functional prototype yet**. Check out [the roadmap](#roadmap) to see current progress.
 > Check out [examples](#examples) to see some previews.
+
+## Contributing
+
+Before contributing please read up on how programming language front-ends
+work. [Crafting interpreters](https://craftinginterpreters.com/contents.html) is a good start.
+Use a commit convention when writing commit names.
+Try to adhere to the project's code style as much as possible, and follow general principles of writing clean and
+maintainable code.
+[Refactoring guru](https://refactoring.guru/refactoring) is a good place to learn principles of writing clean code.
+When contributing, make sure to only add one feature per PR, bloated PRs are a lot harder to review and accept.
+For any bugs please create an issue, describe it descriptively, and include how to reproduce it.
 
 ## Roadmap
 
@@ -18,6 +29,7 @@ Statically typed language built for use with Roblox that compiles to Luau.
 - [x] Parser
     - [ ] Skip semicolons
     - [ ] Warn when `if a = b` or `while a = b` is detected
+    - [ ] Warn if any statements come after a `return;`
     - [x] Primitive literals
     - [x] Extended number literals (see examples)
     - [x] Array literals
@@ -67,13 +79,16 @@ Statically typed language built for use with Roblox that compiles to Luau.
     - [x] Type arguments for calls and type names
     - [x] Type alias declarations
     - [x] `typeof`
-    - [x] `nameof`
+    - [x] `nameof` (see examples)
+        - [ ] On member access
     - [x] String interpolation
     - [x] Shorthand attributes (see examples)
     - [x] Constant variables and fields
 - [ ] Scope resolution
 - [ ] Symbol binding
 - [ ] Type solving/checking
+- [ ] Luau transpilation (Ion AST -> Luau AST)
+- [ ] Luau rendering (Luau AST -> Luau source)
 
 ## Examples
 
@@ -341,6 +356,52 @@ else
   local value = abc
   message = "wtf is this: " .. value
 end
+```
+
+### `nameof` expression
+
+`nameof` returns the text of the token it is given.
+
+```rs
+let abc = 69
+fn foo -> null
+interface FooBar {}
+enum Abc {}
+
+print(nameof(abc))
+print(nameof(foo))
+print(nameof(FooBar))
+print(nameof(Abc))
+```
+
+```luau
+local abc = 69
+local function foo()
+  return nil
+end
+
+print("abc")
+print("foo")
+print("FooBar")
+print("Abc")
+```
+
+In the future
+
+```rs
+enum Abc { A B C }
+
+print(Abc)
+print(Abc::A)
+print(Abc::B)
+print(Abc::C)
+```
+
+```luau
+print("Abc")
+print("A")
+print("B")
+print("C")
 ```
 
 ### Destructuring
