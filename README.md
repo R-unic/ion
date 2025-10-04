@@ -31,7 +31,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Line info/code view
 - [x] Lexer
 - [x] Parser
-    - [ ] Skip semicolons
+    - [x] Skip semicolons
     - [x] Warn when `if a = b` or `while a = b` is detected
     - [x] Warn if any statements come after a `return` statement
     - [x] Primitive literals

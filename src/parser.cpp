@@ -848,7 +848,12 @@ statement_ptr_t parse_statement(ParseState& state)
         if (match(state, syntax))
             return subparser(state);
 
-    return parse_declaration(state);
+    auto declaration = parse_declaration(state);
+    while (match(state, SyntaxKind::Semicolon))
+    {
+    }
+
+    return declaration;
 }
 
 type_ref_ptr_t parse_type_name(ParseState& state)
