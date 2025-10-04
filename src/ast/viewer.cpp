@@ -722,6 +722,17 @@ void AstViewer::visit_intersection_type(const IntersectionTypeRef& intersection_
     write_closing_paren();
 }
 
+void AstViewer::visit_tuple_type(const TupleTypeRef& tuple_type)
+{
+    indent_++;
+    write_line("TupleTypeRef(");
+    write_list<type_ref_ptr_t>(tuple_type.elements, [&](const auto& type_ref)
+    {
+        visit(type_ref);
+    });
+    write_closing_paren();
+}
+
 void AstViewer::visit_type_parameter(const TypeParameterRef& type_parameter)
 {
     indent_++;

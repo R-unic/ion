@@ -873,6 +873,15 @@ type_ref_ptr_t parse_literal_type(const ParseState& state)
     return LiteralTypeRef::create(token, value);
 }
 
+type_ref_ptr_t parse_tuple_type(ParseState& state)
+{
+    const auto l_paren = *previous_token(state);
+    auto elements = parse_type_list(state);
+    const auto r_paren = expect(state, SyntaxKind::RParen);
+
+    return TupleTypeRef::create(l_paren, std::move(elements), r_paren);
+}
+
 type_ref_ptr_t parse_singular_type(ParseState& state)
 {
     if (is_eof(state))
@@ -882,6 +891,8 @@ type_ref_ptr_t parse_singular_type(ParseState& state)
         return parse_type_name(state);
     if (match_any(state, primitive_literal_syntaxes))
         return parse_literal_type(state);
+    if (match(state, SyntaxKind::LParen))
+        return parse_tuple_type(state);
 
     const auto token = current_token_guaranteed(state);
     report_expected_different_syntax(token.span, "type", token.get_text(), false);
