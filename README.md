@@ -38,6 +38,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Extended number literals (see examples)
     - [x] Array literals
     - [ ] Object literals
+    - [ ] Tuple literals
     - [x] Range literals (see examples)
     - [x] Vector literals (see examples)
     - [x] Color literals (see examples)
@@ -86,7 +87,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Type alias declarations
     - [x] `typeof`
     - [x] `nameof` (see examples)
-        - [ ] On member access
+        - [x] On member access
     - [x] String interpolation
     - [x] Shorthand attributes (see examples)
     - [x] Constant variables and fields
@@ -392,15 +393,15 @@ print("FooBar")
 print("Abc")
 ```
 
-In the future
+On member access expressions
 
 ```rs
 enum Abc { A B C }
 
-print(Abc)
-print(Abc::A)
-print(Abc::B)
-print(Abc::C)
+print(nameof(Abc))
+print(nameof(Abc::A))
+print(nameof(Abc::B))
+print(nameof(Abc::C))
 ```
 
 ```luau
@@ -417,10 +418,13 @@ Syntactic sugar for assigning variable names to properties/indexes of objects/ar
 ```rs
 let const {my_field} = my_obj
 let const [one, two] = my_arr
+let const (one, two) = my_tuple
 ```
 
 ```luau
 local my_field = my_obj.my_field
 local one = my_arr[1]
 local two = my_arr[2]
+local one = my_tuple[1]
+local two = my_tuple[2]
 ```

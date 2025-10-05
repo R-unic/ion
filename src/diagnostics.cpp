@@ -73,64 +73,70 @@ static void report_warning(const uint8_t code, const FileSpan& span, diagnostic_
 
 [[noreturn]] void report_unexpected_character(const FileSpan& span, const char character)
 {
-    report_error(0001, span, UnexpectedCharacter { character });
+    report_error(1, span, UnexpectedCharacter { character });
 }
 
 [[noreturn]] void report_malformed_number(const FileSpan& span, const std::string& malformed)
 {
-    report_error(0002, span, MalformedNumber { malformed });
+    report_error(2, span, MalformedNumber { malformed });
 }
 
 [[noreturn]] void report_unterminated_string(const FileSpan& span, const std::string& body)
 {
-    report_error(0002, span, UnterminatedString { body });
+    report_error(3, span, UnterminatedString { body });
 }
 
 GENERATE_ERROR_NODE_OVERLOADS_WITH_TEXT(report_unexpected_syntax);
 
 [[noreturn]] void report_unexpected_syntax(const FileSpan& span, const std::string& lexeme)
 {
-    report_error(0003, span, UnexpectedSyntax { lexeme });
+    report_error(4, span, UnexpectedSyntax { lexeme });
 }
 
 [[noreturn]] void report_unexpected_eof(const FileSpan& span)
 {
-    report_error(0004, span, UnexpectedEOF {});
+    report_error(5, span, UnexpectedEOF {});
 }
 
 [[noreturn]] void report_expected_different_syntax(const FileSpan& span, const std::string& expected,
                                                    const std::string& got, const bool quote_expected)
 {
-    report_error(
-        0005, span, ExpectedDifferentSyntax { .expected = expected, .got = got, .quote_expected = quote_expected });
+    report_error(6, span, ExpectedDifferentSyntax { .expected = expected, .got = got, .quote_expected = quote_expected });
 }
 
 GENERATE_ERROR_NODE_OVERLOADS_WITH_TEXT(report_invalid_assignment);
 
 [[noreturn]] void report_invalid_assignment(const FileSpan& span, const std::string& got)
 {
-    report_error(0006, span, InvalidAssignment { .lexeme = got });
+    report_error(7, span, InvalidAssignment { .lexeme = got });
 }
 
 GENERATE_ERROR_NODE_OVERLOADS_WITH_TEXT(report_invalid_export);
 
 [[noreturn]] void report_invalid_export(const FileSpan& span, const std::string& got)
 {
-    report_error(0007, span, InvalidExport { .lexeme = got });
+    report_error(8, span, InvalidExport { .lexeme = got });
+}
+
+GENERATE_ERROR_NODE_OVERLOADS_WITH_TEXT(report_invalid_nameof);
+
+[[noreturn]] void report_invalid_nameof(const FileSpan& span, const std::string& got)
+{
+    report_error(9, span, InvalidNameOf { .lexeme = got });
 }
 
 GENERATE_NODE_OVERLOADS(warn_unreachable_code);
 
 void warn_unreachable_code(const FileSpan& span)
 {
-    report_warning(0100, span, UnreachableCode {});
+    report_warning(100, span, UnreachableCode {});
 }
 
 GENERATE_NODE_OVERLOADS(warn_ambiguous_equals);
 
 void warn_ambiguous_equals(const FileSpan& span)
 {
-    report_warning(0101, span, AmbiguousEquals {});
+    report_warning(101, span, AmbiguousEquals {});
 }
 
 constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
@@ -159,9 +165,11 @@ constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
             return "Expected " + quote + arg.expected + quote + ", got '" + arg.got + "'.";
         }
         else if constexpr (std::is_same_v<type_t, InvalidAssignment>)
-            return "Cannot assign to '" + arg.lexeme + '\'';
+            return "Cannot assign to '" + arg.lexeme + "'.";
         else if constexpr (std::is_same_v<type_t, InvalidExport>)
             return "Only declarations may be exported, got '" + arg.lexeme + "'.";
+        else if constexpr (std::is_same_v<type_t, InvalidNameOf>)
+            return "Cannot get name of '" + arg.lexeme + "', only identifiers and member accesses.";
         else if constexpr (std::is_same_v<type_t, UnreachableCode>)
             return std::string("Unreachable code.");
         else if constexpr (std::is_same_v<type_t, AmbiguousEquals>)

@@ -166,7 +166,7 @@ static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t
     return ElementAccess::create(l_bracket, r_bracket, std::move(expression), std::move(index_expression));
 }
 
-static bool is_invocation(const ParseState& state)
+static bool is_at_invocation(const ParseState& state)
 {
     auto offset = 0;
     if (check(state, SyntaxKind::LArrow, offset))
@@ -187,7 +187,7 @@ static expression_ptr_t parse_postfix(ParseState& state)
     auto expression = parse_primary(state);
     while (true)
     {
-        if (is_invocation(state))
+        if (is_at_invocation(state))
             expression = parse_invocation(state, std::move(expression));
         else if (match(state, SyntaxKind::LBracket))
             expression = parse_element_access(state, std::move(expression));
@@ -206,13 +206,21 @@ static expression_ptr_t parse_postfix(ParseState& state)
     return expression;
 }
 
+template <typename T>
+static std::unique_ptr<T> unsafe_cast(expression_ptr_t& expression)
+{
+    return std::unique_ptr<T>(static_cast<T*>(expression.release()));
+}
 
 static expression_ptr_t parse_unary(ParseState& state)
 {
     if (match(state, SyntaxKind::NameOfKeyword))
     {
         const auto keyword = *previous_token(state);
-        const auto identifier = expect(state, SyntaxKind::Identifier);
+        auto expression = parse_postfix(state);
+        assert_nameof_target(expression);
+
+        const auto identifier = expression->get_last_token();
         return NameOf::create(keyword, identifier);
     }
 
