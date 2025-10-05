@@ -47,7 +47,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Identifiers
     - [x] Binary, unary, postfix unary, ternary, & assignment operations
     - [x] Null coalescing
-    - [ ] Optional member access
+    - [x] Optional member access
     - [x] Parenthesized expressions
     - [x] Member access & element access
     - [x] Invocation

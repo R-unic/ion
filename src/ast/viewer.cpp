@@ -284,6 +284,16 @@ void AstViewer::visit_member_access(const MemberAccess& member_access)
     write_closing_paren();
 }
 
+void AstViewer::visit_optional_member_access(const OptionalMemberAccess& optional_member_access)
+{
+    indent_++;
+    write_line("OptionalMemberAccess(");
+    visit(optional_member_access.expression);
+    write_line(",");
+    write(optional_member_access.name.get_text());
+    write_closing_paren();
+}
+
 void AstViewer::visit_element_access(const ElementAccess& element_access)
 {
     indent_++;

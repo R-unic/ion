@@ -150,7 +150,7 @@ static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t cal
     return Invocation::create(l_paren, r_paren, std::move(callee), bang_token, type_arguments, std::move(arguments));
 }
 
-static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression)
+static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression, const bool optional)
 {
     const auto token = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
@@ -182,6 +182,12 @@ static bool is_at_invocation(const ParseState& state)
     return check(state, SyntaxKind::LParen, offset);
 }
 
+static bool is_at_member_access(const ParseState& state)
+{
+    const auto optional = check(state, SyntaxKind::Question);
+    return check_any(state, member_access_syntaxes, optional ? 1 : 0);
+}
+
 static expression_ptr_t parse_postfix(ParseState& state)
 {
     auto expression = parse_primary(state);
@@ -191,8 +197,13 @@ static expression_ptr_t parse_postfix(ParseState& state)
             expression = parse_invocation(state, std::move(expression));
         else if (match(state, SyntaxKind::LBracket))
             expression = parse_element_access(state, std::move(expression));
-        else if (match_any(state, member_access_syntaxes))
-            expression = parse_member_access(state, std::move(expression));
+        else if (is_at_member_access(state))
+        {
+            const auto optional = match(state, SyntaxKind::Question);
+            match_any(state, member_access_syntaxes);
+
+            expression = parse_member_access(state, std::move(expression), optional);
+        }
         else if (match_any(state, postfix_op_syntaxes))
         {
             assert_assignment_target(expression);
