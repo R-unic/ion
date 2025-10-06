@@ -102,7 +102,17 @@ void AstViewer::visit_primitive_literal(const PrimitiveLiteral& literal)
 void AstViewer::visit_array_literal(const ArrayLiteral& array_literal)
 {
     write("ArrayLiteral(");
-    write_list<expression_ptr_t>(array_literal.expressions, [&](const auto& expression)
+    write_list<expression_ptr_t>(array_literal.elements, [&](const auto& expression)
+    {
+        visit(expression);
+    });
+    write(")");
+}
+
+void AstViewer::visit_tuple_literal(const TupleLiteral& tuple_literal)
+{
+    write("TupleLiteral(");
+    write_list<expression_ptr_t>(tuple_literal.elements, [&](const auto& expression)
     {
         visit(expression);
     });
@@ -647,6 +657,30 @@ void AstViewer::visit_every(const Every& every_statement)
     visit(every_statement.time_expression);
     write_line(",");
     visit(every_statement.statement);
+    write_closing_paren();
+}
+
+void AstViewer::visit_match(const Match& match_statement)
+{
+    indent_++;
+    write("Match(");
+    write_list<statement_ptr_t>(match_statement.cases->statements, [&](const auto& statement)
+    {
+        visit(statement);
+    });
+    write(")");
+}
+
+void AstViewer::visit_match_case(const MatchCase& match_case)
+{
+    indent_++;
+    write_line("MatchCase(");
+    write_list<expression_ptr_t>(match_case.comparands, [&](const auto& statement)
+    {
+        visit(statement);
+    });
+    write_line(",");
+    visit(match_case.statement);
     write_closing_paren();
 }
 

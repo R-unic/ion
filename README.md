@@ -38,7 +38,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Extended number literals (see examples)
     - [x] Array literals
     - [ ] Object literals
-    - [ ] Tuple literals
+    - [x] Tuple literals
     - [x] Range literals (see examples)
     - [x] Vector literals (see examples)
     - [x] Color literals (see examples)

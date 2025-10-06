@@ -10,11 +10,16 @@
 
 static expression_ptr_t parse_parenthesized(ParseState& state)
 {
-    const auto l_paren = peek(state, -1);
-    auto expression = parse_expression(state);
-    const auto r_paren = expect(state, SyntaxKind::RParen);
+    const auto l_paren = *previous_token(state);
+    std::vector<expression_ptr_t> elements;
+    do
+        elements.push_back(parse_expression(state));
+    while (match(state, SyntaxKind::Comma));
 
-    return Parenthesized::create(l_paren, r_paren, std::move(expression));
+    const auto r_paren = expect(state, SyntaxKind::RParen);
+    return elements.size() > 1
+               ? TupleLiteral::create(l_paren, r_paren, std::move(elements))
+               : Parenthesized::create(l_paren, r_paren, std::move(elements.front()));
 }
 
 /** Parses a literal with multiple components surrounded by '<(' and ')>' */
@@ -81,14 +86,26 @@ static expression_ptr_t parse_interpolated_string(ParseState& state)
 static expression_ptr_t parse_array_literal(ParseState& state)
 {
     const auto l_bracket = *previous_token(state);
-    std::vector<expression_ptr_t> expressions;
+    std::vector<expression_ptr_t> elements;
     if (!check(state, SyntaxKind::RBracket))
         do
-            expressions.push_back(parse_expression(state));
+            elements.push_back(parse_expression(state));
         while (match(state, SyntaxKind::Comma));
 
     const auto r_bracket = expect(state, SyntaxKind::RBracket);
-    return ArrayLiteral::create(l_bracket, r_bracket, std::move(expressions));
+    return ArrayLiteral::create(l_bracket, r_bracket, std::move(elements));
+}
+
+static expression_ptr_t parse_tuple_literal(ParseState& state)
+{
+    const auto l_paren = *previous_token(state);
+    std::vector<expression_ptr_t> elements;
+    do
+        elements.push_back(parse_expression(state));
+    while (match(state, SyntaxKind::Comma));
+
+    const auto r_paren = expect(state, SyntaxKind::RParen);
+    return TupleLiteral::create(l_paren, r_paren, std::move(elements));
 }
 
 static expression_ptr_t parse_primary(ParseState& state)
@@ -127,7 +144,7 @@ static expression_ptr_t parse_primary(ParseState& state)
             return PrimitiveLiteral::create(token, std::nullopt);
 
         default:
-            report_unexpected_syntax(token);
+            report_expected_different_syntax(token.span, "expression", token.get_text(), false);
     }
 }
 
