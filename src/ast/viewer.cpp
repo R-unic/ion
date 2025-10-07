@@ -2,6 +2,8 @@
 
 #include "ion/ast/viewer.h"
 
+#include "ion/ast/statements/decorator.h"
+
 void AstViewer::write(const std::string& text)
 {
     write(text.c_str());
@@ -459,6 +461,12 @@ void AstViewer::visit_function_declaration(const FunctionDeclaration& function_d
     write_line("FunctionDeclaration(");
     write(function_declaration.name.get_text());
     write_type_list_clause(function_declaration.type_parameters);
+    write_line(",");
+    write_list<statement_ptr_t>(function_declaration.decorator_list, [&](const auto& decorator)
+    {
+        visit(decorator);
+    });
+
     if (function_declaration.parameters.has_value())
     {
         write_line(",");
@@ -717,6 +725,18 @@ void AstViewer::visit_export(const Export& export_statement)
     indent_++;
     write_line("Export(");
     visit(export_statement.statement);
+    write_closing_paren();
+}
+
+void AstViewer::visit_decorator(const Decorator& decorator)
+{
+    indent_++;
+    write_line("Decorator(");
+    write_line(decorator.name.get_text() + ',');
+    write_list<expression_ptr_t>(decorator.arguments, [&](const auto& argument)
+    {
+        visit(argument);
+    });
     write_closing_paren();
 }
 

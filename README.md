@@ -92,6 +92,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] String interpolation
     - [x] Shorthand attributes (see examples)
     - [x] Constant variables and fields
+    - [x] Decorators (see examples)
 - [ ] Scope resolution
 - [ ] Symbol binding
 - [ ] Type solving/checking
@@ -428,4 +429,36 @@ local one = my_arr[1]
 local two = my_arr[2]
 local one = my_tuple[1]
 local two = my_tuple[2]
+```
+
+### Decorators
+
+Syntactic sugar for wrapping functions with other functions
+
+```rs
+fn log(name: string): void
+    -> print("Called #{name}")
+
+@log
+fn do_something {
+    print("Doing something...")
+}
+
+do_something()
+```
+
+```luau
+local function log(name, f)
+  return function(...)
+    print(`Called {name}`)
+    f(...)
+  end
+end
+
+local function do_something()
+  print("Doing something...")
+end
+do_something = log("do_something", do_something)
+
+do_something() -- prints "Called do_something", then "Doing something..."
 ```

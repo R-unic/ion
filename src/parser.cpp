@@ -8,6 +8,8 @@
 #include "ion/lexer.h"
 #include "ion/parser.h"
 
+#include "ion/ast/statements/decorator.h"
+
 static expression_ptr_t parse_parenthesized(ParseState& state)
 {
     const auto l_paren = *previous_token(state);
@@ -656,7 +658,35 @@ static ParameterListClause* parse_parameter_list(ParseState& state)
     return new ParameterListClause(l_paren, std::move(list), r_paren);
 }
 
-static statement_ptr_t parse_function_declaration(ParseState& state, const std::optional<Token>& async_keyword)
+static statement_ptr_t parse_decorator(ParseState& state)
+{
+    const auto at_token = *previous_token(state);
+    const auto name = expect(state, SyntaxKind::Identifier);
+    const auto l_paren = try_consume(state, SyntaxKind::LParen);
+    std::vector<expression_ptr_t> arguments;
+    if (l_paren.has_value() && !check(state, SyntaxKind::RParen))
+        do
+            arguments.push_back(parse_expression(state));
+        while (match(state, SyntaxKind::Comma));
+
+    std::optional<Token> r_paren = std::nullopt;
+    if (l_paren.has_value())
+        r_paren = expect(state, SyntaxKind::RParen);
+
+    return Decorator::create(at_token, name, l_paren, r_paren, std::move(arguments));
+}
+
+static std::vector<statement_ptr_t> parse_decorator_list(ParseState& state)
+{
+    std::vector<statement_ptr_t> list;
+    while (match(state, SyntaxKind::At))
+        list.push_back(parse_decorator(state));
+
+    return list;
+}
+
+static statement_ptr_t parse_function_declaration(ParseState& state, const std::optional<Token>& async_keyword,
+                                                  std::vector<statement_ptr_t> decorator_list)
 {
     const auto fn_keyword = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
@@ -665,7 +695,8 @@ static statement_ptr_t parse_function_declaration(ParseState& state, const std::
     const auto return_type = parse_optional(state, SyntaxKind::Colon, parse_colon_type_clause);
     const auto body = parse_function_body(state);
 
-    return FunctionDeclaration::create(async_keyword, fn_keyword, name, type_parameters, parameters, return_type, body);
+    return FunctionDeclaration::create(std::move(decorator_list), async_keyword, fn_keyword, name,
+                                       type_parameters, parameters, return_type, body);
 }
 
 static statement_ptr_t parse_instance_declarator_with_initializer(ParseState& state)
@@ -882,19 +913,26 @@ static statement_ptr_t parse_expression_statement(ParseState& state)
 
 static statement_ptr_t parse_declaration(ParseState& state)
 {
+    std::vector<statement_ptr_t> decorator_list;
+    if (check(state, SyntaxKind::At))
+        decorator_list = parse_decorator_list(state);
+
+    std::cout << current_token_guaranteed(state).format() << '\n';
     std::optional<Token> export_keyword = std::nullopt;
     if (match(state, SyntaxKind::ExportKeyword))
         export_keyword = previous_token(state);
 
     std::optional<Token> async_keyword = std::nullopt;
-    if (check(state, SyntaxKind::AsyncKeyword) && check(state, SyntaxKind::FnKeyword, 1))
+    const auto is_sync_function = check(state, SyntaxKind::FnKeyword);
+    const auto is_async_function = check(state, SyntaxKind::AsyncKeyword) && check(state, SyntaxKind::FnKeyword, 1);
+    if (is_async_function)
         async_keyword = advance(state);
 
     std::optional<statement_ptr_t> statement = std::nullopt;
     if (match(state, SyntaxKind::LetKeyword))
         statement = parse_variable_declaration(state);
     else if (match(state, SyntaxKind::FnKeyword))
-        statement = parse_function_declaration(state, async_keyword);
+        statement = parse_function_declaration(state, async_keyword, std::move(decorator_list));
     else if (match(state, SyntaxKind::EventKeyword))
         statement = parse_event_declaration(state);
     else if (match(state, SyntaxKind::TypeKeyword))
@@ -905,6 +943,14 @@ static statement_ptr_t parse_declaration(ParseState& state)
         statement = parse_interface_declaration(state);
     else if (match(state, SyntaxKind::InstanceKeyword))
         statement = parse_instance_constructor(state);
+
+    if (!is_async_function && !is_sync_function && !decorator_list.empty())
+    {
+        if (statement.has_value())
+            report_invalid_decorator_target(*statement);
+
+        report_invalid_decorator_target(current_token(state).value_or(*previous_token(state)));
+    }
 
     if (export_keyword.has_value())
     {
@@ -956,8 +1002,7 @@ statement_ptr_t parse_statement(ParseState& state)
 
     auto declaration = parse_declaration(state);
     while (match(state, SyntaxKind::Semicolon))
-    {
-    }
+        continue;
 
     return declaration;
 }

@@ -125,6 +125,13 @@ GENERATE_ERROR_NODE_OVERLOADS_WITH_TEXT(report_invalid_nameof);
     report_error(9, span, InvalidNameOf { .lexeme = got });
 }
 
+GENERATE_ERROR_NODE_OVERLOADS(report_invalid_decorator_target);
+
+[[noreturn]] void report_invalid_decorator_target(const FileSpan& span)
+{
+    report_error(10, span, InvalidDecoratorTarget {});
+}
+
 GENERATE_NODE_OVERLOADS(warn_unreachable_code);
 
 void warn_unreachable_code(const FileSpan& span)
@@ -170,6 +177,8 @@ constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
             return "Only declarations may be exported, got '" + arg.lexeme + "'.";
         else if constexpr (std::is_same_v<type_t, InvalidNameOf>)
             return "Cannot get name of '" + arg.lexeme + "', only identifiers and member accesses.";
+        else if constexpr (std::is_same_v<type_t, InvalidDecoratorTarget>)
+            return std::string("Invalid decorator target. Decorators may only be used on functions.");
         else if constexpr (std::is_same_v<type_t, UnreachableCode>)
             return std::string("Unreachable code.");
         else if constexpr (std::is_same_v<type_t, AmbiguousEquals>)
