@@ -132,6 +132,48 @@ GENERATE_ERROR_NODE_OVERLOADS(report_invalid_decorator_target);
     report_error(10, span, InvalidDecoratorTarget {});
 }
 
+GENERATE_ERROR_NODE_OVERLOADS_WITH_TEXT(report_duplicate_variable);
+
+void report_duplicate_variable(const FileSpan& span, const std::string& name)
+{
+    report_error(11, span, DuplicateVariable { .name = name });
+}
+
+GENERATE_ERROR_NODE_OVERLOADS_WITH_TEXT(report_variable_not_found);
+
+void report_variable_not_found(const FileSpan& span, const std::string& name)
+{
+    report_error(12, span, VariableNotFound { .name = name });
+}
+
+GENERATE_NODE_OVERLOADS(report_variable_read_in_own_initializer);
+
+void report_variable_read_in_own_initializer(const FileSpan& span)
+{
+    report_error(13, span, VariableReadInOwnInitializer {});
+}
+
+GENERATE_NODE_OVERLOADS(report_invalid_break);
+
+void report_invalid_break(const FileSpan& span)
+{
+    report_error(14, span, InvalidBreak {});
+}
+
+GENERATE_NODE_OVERLOADS(report_invalid_continue);
+
+void report_invalid_continue(const FileSpan& span)
+{
+    report_error(15, span, InvalidContinue {});
+}
+
+GENERATE_NODE_OVERLOADS(report_invalid_return);
+
+void report_invalid_return(const FileSpan& span)
+{
+    report_error(16, span, InvalidReturn {});
+}
+
 GENERATE_NODE_OVERLOADS(warn_unreachable_code);
 
 void warn_unreachable_code(const FileSpan& span)
@@ -179,6 +221,18 @@ constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
             return "Cannot get name of '" + arg.lexeme + "', only identifiers and member accesses.";
         else if constexpr (std::is_same_v<type_t, InvalidDecoratorTarget>)
             return std::string("Invalid decorator target. Decorators may only be used on functions.");
+        else if constexpr (std::is_same_v<type_t, DuplicateVariable>)
+            return "Variable '" + arg.name + "' is already declared in this scope.";
+        else if constexpr (std::is_same_v<type_t, VariableNotFound>)
+            return "Cannot find name '" + arg.name + "'";
+        else if constexpr (std::is_same_v<type_t, VariableReadInOwnInitializer>)
+            return std::string("Cannot read variable in it's own initializer.");
+        else if constexpr (std::is_same_v<type_t, InvalidBreak>)
+            return std::string("Cannot 'break' outside of a loop.");
+        else if constexpr (std::is_same_v<type_t, InvalidContinue>)
+            return std::string("Cannot 'continue' outside of a loop.");
+        else if constexpr (std::is_same_v<type_t, InvalidReturn>)
+            return std::string("Cannot 'return' outside of a function.");
         else if constexpr (std::is_same_v<type_t, UnreachableCode>)
             return std::string("Unreachable code.");
         else if constexpr (std::is_same_v<type_t, AmbiguousEquals>)

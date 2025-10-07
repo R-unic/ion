@@ -2,8 +2,6 @@
 
 #include "ion/ast/viewer.h"
 
-#include "ion/ast/statements/decorator.h"
-
 void AstViewer::write(const std::string& text)
 {
     write(text.c_str());
@@ -36,7 +34,7 @@ void AstViewer::write_line(const char* text) const
     write_indent();
 }
 
-void AstViewer::write_binary_op_contents(const BinaryOp& binary_op) const
+void AstViewer::write_binary_op_contents(const BinaryOp& binary_op)
 {
     visit(binary_op.left);
     write_line(",");

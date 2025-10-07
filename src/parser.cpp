@@ -917,7 +917,6 @@ static statement_ptr_t parse_declaration(ParseState& state)
     if (check(state, SyntaxKind::At))
         decorator_list = parse_decorator_list(state);
 
-    std::cout << current_token_guaranteed(state).format() << '\n';
     std::optional<Token> export_keyword = std::nullopt;
     if (match(state, SyntaxKind::ExportKeyword))
         export_keyword = previous_token(state);

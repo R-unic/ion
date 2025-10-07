@@ -1,6 +1,7 @@
-#include "ion/parser.h"
 #include "ion/source_file.h"
 #include "ion/ast/viewer.h"
+#include "ion/parser.h"
+#include "ion/resolver.h"
 
 int main()
 {
@@ -9,7 +10,11 @@ int main()
     const auto viewer = new AstViewer;
     logger::info("Running AstViewer on parsed statements...");
     std::cout << '\n';
-    viewer->visit(statements);
+    viewer->visit_statements(statements);
+
+    const auto resolver = new Resolver;
+    resolver->visit_ast(statements);
+    logger::info("Successfully resolved AST");
 
     return 0;
 }

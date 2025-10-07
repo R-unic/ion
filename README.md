@@ -93,7 +93,11 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Shorthand attributes (see examples)
     - [x] Constant variables and fields
     - [x] Decorators (see examples)
-- [ ] Scope resolution
+- [ ] Resolver
+    - [x] Report duplicate variables
+    - [x] Report variables not found
+    - [x] Report variables read in their own initializers
+    - [x] Report break/continue outside of loops and return outside of functions
 - [ ] Symbol binding
 - [ ] Type solving/checking
 - [ ] Luau transpilation (Ion AST -> Luau AST)
