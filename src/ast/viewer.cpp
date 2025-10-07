@@ -585,16 +585,14 @@ void AstViewer::visit_continue(const Continue&)
 
 void AstViewer::visit_return(const Return& return_statement)
 {
-    indent_++;
     write("Return");
-    if (return_statement.expression.has_value())
-    {
-        write_line("(");
-        visit(*return_statement.expression);
-        write_closing_paren();
-    }
-    else
-        write_line();
+    if (!return_statement.expression.has_value())
+        return;
+
+    indent_++;
+    write_line("(");
+    visit(*return_statement.expression);
+    write_closing_paren();
 }
 
 void AstViewer::visit_if(const If& if_statement)
