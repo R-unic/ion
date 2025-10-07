@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "ion/ast/viewer.h"
 
 void AstViewer::write(const std::string& text)
@@ -757,28 +759,6 @@ void AstViewer::visit_array_type(const ArrayTypeRef& array_type)
     write_closing_paren();
 }
 
-void AstViewer::visit_union_type(const UnionTypeRef& union_type)
-{
-    indent_++;
-    write_line("UnionType(");
-    write_list<type_ref_ptr_t>(union_type.types, [&](const auto& type_ref)
-    {
-        visit(type_ref);
-    });
-    write_closing_paren();
-}
-
-void AstViewer::visit_intersection_type(const IntersectionTypeRef& intersection_type)
-{
-    indent_++;
-    write_line("IntersectionType(");
-    write_list<type_ref_ptr_t>(intersection_type.types, [&](const auto& type_ref)
-    {
-        visit(type_ref);
-    });
-    write_closing_paren();
-}
-
 void AstViewer::visit_tuple_type(const TupleTypeRef& tuple_type)
 {
     indent_++;
@@ -789,6 +769,50 @@ void AstViewer::visit_tuple_type(const TupleTypeRef& tuple_type)
     });
     write_closing_paren();
 }
+
+void AstViewer::visit_function_type(const FunctionTypeRef& function_type)
+{
+    indent_++;
+    write_line("FunctionTypeRef(");
+    if (function_type.type_parameters.has_value())
+    {
+        write_list<type_ref_ptr_t>(function_type.type_parameters.value()->list, [&](const auto& type_ref)
+        {
+            visit(type_ref);
+        });
+        write_line(",");
+    }
+    write_list<type_ref_ptr_t>(function_type.parameter_types, [&](const auto& type_ref)
+    {
+        visit(type_ref);
+    });
+    write_line(",");
+    visit(function_type.return_type);
+    write_closing_paren();
+}
+
+void AstViewer::visit_union_type(const UnionTypeRef& union_type)
+{
+    indent_++;
+    write_line("UnionTypeRef(");
+    write_list<type_ref_ptr_t>(union_type.types, [&](const auto& type_ref)
+    {
+        visit(type_ref);
+    });
+    write_closing_paren();
+}
+
+void AstViewer::visit_intersection_type(const IntersectionTypeRef& intersection_type)
+{
+    indent_++;
+    write_line("IntersectionTypeRef(");
+    write_list<type_ref_ptr_t>(intersection_type.types, [&](const auto& type_ref)
+    {
+        visit(type_ref);
+    });
+    write_closing_paren();
+}
+
 
 void AstViewer::visit_type_parameter(const TypeParameterRef& type_parameter)
 {

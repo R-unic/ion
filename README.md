@@ -82,7 +82,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Literal types
     - [x] Array types
     - [x] Tuple types
-    - [ ] Function types
+    - [x] Function types
     - [x] Type parameters
     - [x] Type arguments for calls and type names
     - [x] Type alias declarations

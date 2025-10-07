@@ -1059,9 +1059,28 @@ static type_ref_ptr_t parse_array_type(ParseState& state)
     return std::move(element_type);
 }
 
+static type_ref_ptr_t parse_function_type(ParseState& state)
+{
+    if (!check(state, SyntaxKind::LArrow) && !check(state, SyntaxKind::LParen))
+        return parse_array_type(state);
+
+    std::optional<TypeListClause*> type_parameters = std::nullopt;
+    if (check(state, SyntaxKind::LArrow))
+        type_parameters = parse_type_parameters(state);
+
+    const auto l_paren = expect(state, SyntaxKind::LParen);
+    auto parameter_types = parse_type_list(state);
+    const auto r_paren = expect(state, SyntaxKind::RParen);
+    const auto long_arrow = expect(state, SyntaxKind::LongArrow);
+    auto return_type = parse_type(state);
+
+    return FunctionTypeRef::create(type_parameters, l_paren, std::move(parameter_types), r_paren,
+                                   long_arrow, std::move(return_type));
+}
+
 static type_ref_ptr_t parse_nullable_type(ParseState& state)
 {
-    auto non_nullable_type = parse_array_type(state);
+    auto non_nullable_type = parse_function_type(state);
     return match(state, SyntaxKind::Question)
                ? NullableTypeRef::create(std::move(non_nullable_type), *previous_token(state))
                : std::move(non_nullable_type);
