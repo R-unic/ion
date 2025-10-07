@@ -67,7 +67,8 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] For loops (see examples)
     - [x] While loops
     - [x] Repeat loops
-    - [ ] Match statements & expressions (see examples)
+    - [x] Match statements(see examples)
+    - [ ] Match expressions (see examples)
     - [x] Imports & exports (see examples)
     - [x] After statements (see examples)
     - [x] Every statements (see examples)

@@ -167,11 +167,13 @@ static expression_ptr_t parse_invocation(ParseState& state, expression_ptr_t cal
     return Invocation::create(l_paren, r_paren, std::move(callee), bang_token, type_arguments, std::move(arguments));
 }
 
-static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression, const bool optional)
+static expression_ptr_t parse_member_access(ParseState& state, expression_ptr_t expression, const std::optional<Token>& question_token)
 {
     const auto token = *previous_token(state);
     const auto name = expect(state, SyntaxKind::Identifier);
-    return MemberAccess::create(token, std::move(expression), name);
+    return question_token.has_value()
+               ? OptionalMemberAccess::create(token, *question_token, std::move(expression), name)
+               : MemberAccess::create(token, std::move(expression), name);
 }
 
 static expression_ptr_t parse_element_access(ParseState& state, expression_ptr_t expression)
@@ -216,11 +218,15 @@ static expression_ptr_t parse_postfix(ParseState& state)
             expression = parse_element_access(state, std::move(expression));
         else if (is_at_member_access(state))
         {
-            const auto optional = match(state, SyntaxKind::Question);
+            const auto question_token = try_consume(state, SyntaxKind::Question);
             match_any(state, member_access_syntaxes);
 
-            expression = parse_member_access(state, std::move(expression), optional);
+            expression = parse_member_access(state, std::move(expression), question_token);
         }
+        // else if (match(state, SyntaxKind::MatchKeyword))
+        // {
+        //     expression = parse_match_expression(state, std::move(expression));
+        // }
         else if (match_any(state, postfix_op_syntaxes))
         {
             assert_assignment_target(expression);
@@ -424,6 +430,21 @@ static BracedStatementList* parse_braced_statement_list(ParseState& state,
         if (comma_allowed)
             match(state, SyntaxKind::Comma);
     }
+
+    const auto r_brace = expect(state, SyntaxKind::RBrace);
+    return new BracedStatementList(l_brace, std::move(statements), r_brace);
+}
+
+static BracedStatementList* parse_braced_statement_list_comma_separated(ParseState& state,
+                                                                        const std::function<statement_ptr_t (ParseState&)>&
+                                                                        parse_list_statement)
+{
+    const auto l_brace = expect(state, SyntaxKind::LBrace);
+    std::vector<statement_ptr_t> statements;
+    if (!check(state, SyntaxKind::RBrace))
+        do
+            statements.push_back(parse_list_statement(state));
+        while (match(state, SyntaxKind::Comma));
 
     const auto r_brace = expect(state, SyntaxKind::RBrace);
     return new BracedStatementList(l_brace, std::move(statements), r_brace);
@@ -770,6 +791,54 @@ static statement_ptr_t parse_every(ParseState& state)
     return Every::create(keyword, std::move(time_expression), std::move(statement));
 }
 
+static std::pair<Token, statement_ptr_t> parse_match_case_block(ParseState& state)
+{
+    auto long_arrow = expect(state, SyntaxKind::LongArrow);
+    const auto is_block = check(state, SyntaxKind::LBrace);
+    auto statement = is_block
+                         ? parse_block(state)
+                         : ExpressionStatement::create(parse_expression(state));
+
+    return std::make_pair<Token, statement_ptr_t>(std::move(long_arrow), std::move(statement));
+}
+
+using ParseCaseBodyFn = std::function<std::pair<Token, statement_ptr_t> (ParseState&)>;
+
+static statement_ptr_t parse_match_else_case(ParseState& state, const ParseCaseBodyFn& parse_case_body)
+{
+    const auto keyword = *previous_token(state);
+    const auto name = try_consume(state, SyntaxKind::Identifier);
+    auto [long_arrow, statement] = parse_case_body(state);
+
+    return MatchElseCase::create(keyword, name, long_arrow, std::move(statement));
+}
+
+static statement_ptr_t parse_match_case(ParseState& state, const ParseCaseBodyFn& parse_case_body)
+{
+    if (match(state, SyntaxKind::ElseKeyword))
+        return parse_match_else_case(state, parse_case_body);
+
+    std::vector<expression_ptr_t> comparands;
+    do
+        comparands.push_back(parse_expression(state));
+    while (match(state, SyntaxKind::Comma));
+
+    auto [long_arrow, statement] = parse_case_body(state);
+    return MatchCase::create(std::move(comparands), long_arrow, std::move(statement));
+}
+
+static statement_ptr_t parse_match(ParseState& state)
+{
+    const auto keyword = *previous_token(state);
+    auto expression = parse_expression(state);
+    const auto cases = parse_braced_statement_list_comma_separated(state, [&](const auto& _)
+    {
+        return parse_match_case(state, parse_match_case_block);
+    });
+
+    return Match::create(keyword, std::move(expression), cases);
+}
+
 static statement_ptr_t parse_import(ParseState& state)
 {
     const auto import_keyword = *previous_token(state);
@@ -869,6 +938,7 @@ static const std::unordered_map<SyntaxKind, std::function<statement_ptr_t (Parse
     { SyntaxKind::ForKeyword, parse_for },
     { SyntaxKind::AfterKeyword, parse_after },
     { SyntaxKind::EveryKeyword, parse_every },
+    { SyntaxKind::MatchKeyword, parse_match },
     { SyntaxKind::ImportKeyword, parse_import },
     { SyntaxKind::ReturnKeyword, parse_return },
     { SyntaxKind::BreakKeyword, parse_break },

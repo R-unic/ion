@@ -663,12 +663,14 @@ void AstViewer::visit_every(const Every& every_statement)
 void AstViewer::visit_match(const Match& match_statement)
 {
     indent_++;
-    write("Match(");
+    write_line("Match(");
+    visit(match_statement.expression);
+    write_line(",");
     write_list<statement_ptr_t>(match_statement.cases->statements, [&](const auto& statement)
     {
         visit(statement);
     });
-    write(")");
+    write_closing_paren();
 }
 
 void AstViewer::visit_match_case(const MatchCase& match_case)
@@ -681,6 +683,17 @@ void AstViewer::visit_match_case(const MatchCase& match_case)
     });
     write_line(",");
     visit(match_case.statement);
+    write_closing_paren();
+}
+
+void AstViewer::visit_match_else_case(const MatchElseCase& match_else_case)
+{
+    indent_++;
+    write_line("MatchElseCase(");
+    if (match_else_case.name.has_value())
+        write_line(match_else_case.name->get_text() + ',');
+
+    visit(match_else_case.statement);
     write_closing_paren();
 }
 
