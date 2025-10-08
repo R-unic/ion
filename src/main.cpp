@@ -1,6 +1,6 @@
 #include "ion/source_file.h"
 #include "ion/ast/viewer.h"
-#include "ion/parser.h"
+#include "../include/ion/parsing/parser.h"
 #include "ion/resolver.h"
 
 int main()
