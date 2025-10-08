@@ -71,6 +71,7 @@ static statement_ptr_t parse_interface_member(ParseState& state)
         const auto r_paren = expect(state, SyntaxKind::RParen);
         const auto colon_token = expect(state, SyntaxKind::Colon);
         auto return_type = parse_type(state);
+        consume_semicolons(state);
 
         return InterfaceMethod::create(*fn_keyword, name, type_parameters, l_paren, std::move(parameter_types), r_paren,
                                        colon_token, std::move(return_type));
@@ -80,6 +81,8 @@ static statement_ptr_t parse_interface_member(ParseState& state)
     const auto name = expect(state, SyntaxKind::Identifier);
     const auto colon_token = expect(state, SyntaxKind::Colon);
     auto type = parse_type(state);
+    consume_semicolons(state);
+
     return InterfaceField::create(const_keyword, name, colon_token, std::move(type));
 }
 
@@ -163,7 +166,7 @@ static statement_ptr_t parse_instance_constructor(ParseState& state)
     if (clone_keyword.has_value())
         clone_target = parse_expression(state);
 
-    const auto declarators = parse_optional(state, SyntaxKind::Colon, [&](ParseState&)
+    const auto declarators = parse_optional(state, SyntaxKind::LBrace, [&](ParseState&)
     {
         return parse_braced_statement_list(state, parse_instance_declarator);
     });

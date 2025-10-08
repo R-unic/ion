@@ -178,7 +178,12 @@ GENERATE_NODE_OVERLOADS(report_invalid_await);
 
 void report_invalid_await(const FileSpan& span)
 {
-    report_error(18, span, InvalidAwait {});
+    report_error(17, span, InvalidAwait {});
+}
+
+void report_duplicate_member(const FileSpan& span, const std::string& field_type)
+{
+    report_error(18, span, DuplicateField { .field_type = field_type });
 }
 
 GENERATE_NODE_OVERLOADS(warn_unreachable_code);
@@ -212,7 +217,7 @@ constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
             return "Unterminated string: '" + body + "'";
         }
         else if constexpr (std::is_same_v<type_t, UnexpectedSyntax>)
-            return "Unexpected token '" + arg.lexeme + "'";
+            return "Unexpected token: '" + arg.lexeme + "'";
         else if constexpr (std::is_same_v<type_t, UnexpectedEOF>)
             return std::string("Unexpected end of file.");
         else if constexpr (std::is_same_v<type_t, ExpectedDifferentSyntax>)
@@ -231,7 +236,7 @@ constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
         else if constexpr (std::is_same_v<type_t, DuplicateVariable>)
             return "Name '" + arg.name + "' is already declared in this scope.";
         else if constexpr (std::is_same_v<type_t, VariableNotFound>)
-            return "Cannot find name '" + arg.name + "'";
+            return "Cannot find name '" + arg.name + "'.";
         else if constexpr (std::is_same_v<type_t, VariableReadInOwnInitializer>)
             return std::string("Cannot read variable in it's own initializer.");
         else if constexpr (std::is_same_v<type_t, InvalidBreak>)
@@ -242,6 +247,8 @@ constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
             return std::string("Cannot 'return' outside of a function.");
         else if constexpr (std::is_same_v<type_t, InvalidAwait>)
             return std::string("Cannot 'await' outside of an async function.");
+        else if constexpr (std::is_same_v<type_t, DuplicateField>)
+            return "Duplicate " + arg.field_type + '.';
         else if constexpr (std::is_same_v<type_t, UnreachableCode>)
             return std::string("Unreachable code.");
         else if constexpr (std::is_same_v<type_t, AmbiguousEquals>)

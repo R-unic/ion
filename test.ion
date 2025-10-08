@@ -1,12 +1,4 @@
-event data_changed<T>(T)
-
-fn on_data_change<T>(new_data: T): void {
-  print("New data: %{new_data}")
+instance folder: Folder {
+    "SigmaFolder"
+    Name: "SigmaFolder"
 }
-
-data_changed += on_data_change
-
-let data = 420
-data_changed!(data)
-
-data_changed -= on_data_change

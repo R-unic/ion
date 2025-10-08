@@ -99,8 +99,9 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Report variables not found
     - [x] Report variables read in their own initializers
     - [x] Report break/continue outside of loops and return outside of functions
-    - [ ] Report duplicate interface/object/instance fields
+    - [x] Report duplicate interface/object/instance members
     - [x] Report `await` outside of async context
+    - [ ] Report use of `Name` and `Parent` properties in instance constructors
     - [ ] Warn shadowed variable declaration
 - [ ] Symbol binding
 - [ ] Type solving/checking

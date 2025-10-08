@@ -1,13 +1,5 @@
 #include "ion/resolver.h"
 
-#include <iostream>
-
-#define ASSERT_CONTEXT(node, report_fn, ctx) \
-    if (context != ctx) report_fn(node.get_span());
-
-#define ASSERT_ANY_CONTEXT(node, report_fn, contexts) \
-    if (!contexts.contains(context)) report_fn(node.get_span());
-
 /** Sets the current context and returns it back to the enclosing context when this struct goes out of scope */
 struct ContextGuard
 {
@@ -176,24 +168,23 @@ void Resolver::visit_interface_declaration(const InterfaceDeclaration& interface
     AstVisitor::visit_interface_declaration(interface_declaration);
 }
 
+void Resolver::visit_interface_field(const InterfaceField& interface_field)
+{
+    DUPLICATE_MEMBER_CHECK(interface_field, used_interface_members, "interface member");
+    AstVisitor::visit_interface_field(interface_field);
+}
+
+void Resolver::visit_interface_method(const InterfaceMethod& interface_method)
+{
+    DUPLICATE_MEMBER_CHECK(interface_method, used_interface_members, "interface member");
+    AstVisitor::visit_interface_method(interface_method);
+}
+
 void Resolver::visit_function_declaration(const FunctionDeclaration& function_declaration)
 {
     declare_define(function_declaration.name);
-    visit_statements(function_declaration.decorator_list);
-
     push_scope();
-    visit_type_list_clause(function_declaration.type_parameters);
-    visit_statements(function_declaration.parameters.value()->list);
-    if (function_declaration.return_type.has_value())
-        visit(function_declaration.return_type.value()->type);
-
-    const auto new_context = function_declaration.async_keyword.has_value() ? Context::AsyncFunction : Context::Function;
-    ContextGuard fn(this, new_context);
-    if (function_declaration.body->block.has_value())
-        visit(*function_declaration.body->block);
-    else
-        visit(function_declaration.body->expression_body.value()->expression);
-
+    AstVisitor::visit_function_declaration(function_declaration);
     pop_scope();
 }
 
@@ -206,6 +197,31 @@ void Resolver::visit_parameter(const Parameter& parameter)
 void Resolver::visit_instance_constructor(const InstanceConstructor& instance_constructor)
 {
     declare_define(instance_constructor.name);
+    AstVisitor::visit_instance_constructor(instance_constructor);
+}
+
+void Resolver::visit_instance_attribute_declarator(const InstanceAttributeDeclarator& instance_attribute_declarator)
+{
+    DUPLICATE_MEMBER_CHECK(instance_attribute_declarator, used_instance_attributes, "instance attribute");
+    AstVisitor::visit_instance_attribute_declarator(instance_attribute_declarator);
+}
+
+void Resolver::visit_instance_name_declarator(const InstanceNameDeclarator& instance_name_declarator)
+{
+    DUPLICATE_MEMBER_CHECK_CUSTOM_NAME(instance_name_declarator, used_instance_properties, "instance name property", "Name");
+    AstVisitor::visit_instance_name_declarator(instance_name_declarator);
+}
+
+void Resolver::visit_instance_property_declarator(const InstancePropertyDeclarator& instance_property_declarator)
+{
+    DUPLICATE_MEMBER_CHECK(instance_property_declarator, used_instance_properties, "instance property");
+    AstVisitor::visit_instance_property_declarator(instance_property_declarator);
+}
+
+void Resolver::visit_instance_tag_declarator(const InstanceTagDeclarator& instance_tag_declarator)
+{
+    DUPLICATE_MEMBER_CHECK(instance_tag_declarator, used_instance_tags, "instance tag");
+    AstVisitor::visit_instance_tag_declarator(instance_tag_declarator);
 }
 
 void Resolver::visit_break(const Break& break_statement)
@@ -224,29 +240,12 @@ void Resolver::visit_return(const Return& return_statement)
     AstVisitor::visit_return(return_statement);
 }
 
-void Resolver::visit_while(const While& while_statement)
-{
-    ContextGuard loop(this, Context::Loop);
-    AstVisitor::visit_while(while_statement);
-}
-
-void Resolver::visit_repeat(const Repeat& repeat_statement)
-{
-    ContextGuard loop(this, Context::Loop);
-    AstVisitor::visit_repeat(repeat_statement);
-}
-
-void Resolver::visit_for(const For& for_statement)
-{
-    ContextGuard loop(this, Context::Loop);
-    AstVisitor::visit_for(for_statement);
-}
-
-void Resolver::visit_every(const Every& every_statement)
-{
-    ContextGuard loop(this, Context::Loop);
-    AstVisitor::visit_every(every_statement);
-}
+// @formatter:off
+DEFINE_LOOP_VISITOR(while,  While);
+DEFINE_LOOP_VISITOR(repeat, Repeat);
+DEFINE_LOOP_VISITOR(for, For);
+DEFINE_LOOP_VISITOR(every, Every);
+// @formatter:on
 
 void Resolver::visit_import(const Import& import_statement)
 {
@@ -263,10 +262,6 @@ void Resolver::visit_type_name(const TypeNameRef& type_name)
 void Resolver::visit_type_parameter(const TypeParameterRef& type_parameter)
 {
     declare(type_parameter.name);
-    if (type_parameter.base_type.has_value())
-        visit(*type_parameter.base_type);
-    if (type_parameter.default_type.has_value())
-        visit(*type_parameter.default_type);
-
+    AstVisitor::visit_type_parameter(type_parameter);
     define(type_parameter.name);
 }
