@@ -1,1 +1,1 @@
-return
+for x : 1..10 return;

@@ -72,6 +72,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Imports & exports (see examples)
     - [x] After statements (see examples)
     - [x] Every statements (see examples)
+        - [ ] While condition
     - [ ] Destructuring (see examples)
     - [x] Async/await
     - [x] Breaks/continues
@@ -98,6 +99,9 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Report variables not found
     - [x] Report variables read in their own initializers
     - [x] Report break/continue outside of loops and return outside of functions
+    - [ ] Report duplicate interface/object/instance fields
+    - [ ] Report `await` outside of async context
+    - [ ] Warn shadowed variable declaration
 - [ ] Symbol binding
 - [ ] Type solving/checking
 - [ ] Luau transpilation (Ion AST -> Luau AST)

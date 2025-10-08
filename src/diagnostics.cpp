@@ -222,7 +222,7 @@ constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
         else if constexpr (std::is_same_v<type_t, InvalidDecoratorTarget>)
             return std::string("Invalid decorator target. Decorators may only be used on functions.");
         else if constexpr (std::is_same_v<type_t, DuplicateVariable>)
-            return "Variable '" + arg.name + "' is already declared in this scope.";
+            return "Name '" + arg.name + "' is already declared in this scope.";
         else if constexpr (std::is_same_v<type_t, VariableNotFound>)
             return "Cannot find name '" + arg.name + "'";
         else if constexpr (std::is_same_v<type_t, VariableReadInOwnInitializer>)

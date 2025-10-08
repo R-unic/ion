@@ -10,6 +10,12 @@
 
 #include "ion/ast/statements/decorator.h"
 
+static void consume_semicolons(ParseState& state)
+{
+    while (match(state, SyntaxKind::Semicolon))
+        continue;
+}
+
 static expression_ptr_t parse_parenthesized(ParseState& state)
 {
     const auto l_paren = *previous_token(state);
@@ -899,7 +905,8 @@ static statement_ptr_t parse_return(ParseState& state)
     const auto keyword = *previous_token(state);
     std::optional<expression_ptr_t> expression = std::nullopt;
 
-    if (!is_eof(state) && !keyword.span.has_line_break_between(current_token_guaranteed(state)))
+    const auto has_line_break_between = keyword.span.has_line_break_between(current_token_guaranteed(state));
+    if (!is_eof(state) && !check(state, SyntaxKind::Semicolon) && !has_line_break_between)
         expression = parse_expression(state);
 
     return Return::create(keyword, std::move(expression));
@@ -996,12 +1003,17 @@ statement_ptr_t parse_statement(ParseState& state)
         return parse_block(state);
 
     for (const auto& [syntax, subparser] : statement_parsers)
-        if (match(state, syntax))
-            return subparser(state);
+    {
+        if (!match(state, syntax))
+            continue;
+
+        auto statement = subparser(state);
+        consume_semicolons(state);
+        return statement;
+    }
 
     auto declaration = parse_declaration(state);
-    while (match(state, SyntaxKind::Semicolon))
-        continue;
+    consume_semicolons(state);
 
     return declaration;
 }
