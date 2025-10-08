@@ -72,7 +72,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Imports & exports (see examples)
     - [x] After statements (see examples)
     - [x] Every statements (see examples)
-        - [ ] While condition
+        - [x] While condition
     - [ ] Destructuring (see examples)
     - [x] Async/await
     - [x] Breaks/continues
@@ -94,7 +94,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Shorthand attributes (see examples)
     - [x] Constant variables and fields
     - [x] Decorators (see examples)
-- [ ] Resolver
+- [x] Resolver
     - [x] Report duplicate variables
     - [x] Report variables not found
     - [x] Report variables read in their own initializers

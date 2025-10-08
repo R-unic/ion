@@ -160,11 +160,13 @@ static statement_ptr_t parse_after(ParseState& state)
 
 static statement_ptr_t parse_every(ParseState& state)
 {
-    const auto keyword = previous_token_guaranteed(state);
+    const auto every_keyword = previous_token_guaranteed(state);
     auto time_expression = parse_expression(state);
+    const auto while_keyword = try_consume(state, SyntaxKind::WhileKeyword);
+    auto condition = parse_expression(state);
     auto statement = parse_statement(state);
 
-    return Every::create(keyword, std::move(time_expression), std::move(statement));
+    return Every::create(every_keyword, std::move(time_expression), while_keyword, std::move(condition), std::move(statement));
 }
 
 static std::pair<Token, statement_ptr_t> parse_match_case_block(ParseState& state)

@@ -111,6 +111,8 @@ static void read_number(LexState& state, const char first_character)
         return read_non_decimal_number(state, is_octal_digit);
     if (match_any(state, binary_specifier))
         return read_non_decimal_number(state, is_binary_digit);
+
+    read_decimal_number(state);
 }
 
 static void read_string(LexState& state, const char terminator)

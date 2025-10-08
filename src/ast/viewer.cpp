@@ -661,6 +661,11 @@ void AstViewer::visit_every(const Every& every_statement)
     indent_++;
     write_line("Every(");
     visit(every_statement.time_expression);
+    if (every_statement.condition.has_value())
+    {
+        write_line(",");
+        visit(*every_statement.condition);
+    }
     write_line(",");
     visit(every_statement.statement);
     write_closing_paren();

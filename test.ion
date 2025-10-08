@@ -1,4 +1,3 @@
-instance folder: Folder {
-    "SigmaFolder"
-    Name: "SigmaFolder"
-}
+let i = 0;
+every 10ms while i < 10
+    print(i++);
