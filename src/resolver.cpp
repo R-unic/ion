@@ -1,7 +1,10 @@
 #include "ion/resolver.h"
 
-#define ASSERT_CONTEXT(statement, ctx, report_fn) \
-    if (context != ctx) report_fn(statement.get_span());
+#define ASSERT_CONTEXT(node, report_fn, ctx) \
+    if (context != ctx) report_fn(node.get_span());
+
+#define ASSERT_ANY_CONTEXT(node, report_fn, contexts) \
+    if (!contexts.contains(context)) report_fn(node.get_span());
 
 /** Sets the current context and returns it back to the enclosing context when this struct goes out of scope */
 struct ContextGuard
@@ -37,7 +40,7 @@ void Resolver::define(const std::string& name)
     if (scopes_.empty())
         return;
 
-    auto& scope = scopes_.top();
+    auto& scope = scopes_.back();
     scope.insert_or_assign(name, true);
 }
 
@@ -51,7 +54,7 @@ void Resolver::declare(const std::string& name, const FileSpan& span)
     if (scopes_.empty())
         return;
 
-    auto& scope = scopes_.top();
+    auto& scope = scopes_.back();
     if (is_declared_in_scope(name, scope))
         report_duplicate_variable(span, name);
 
@@ -70,28 +73,24 @@ void Resolver::declare_define(const std::string& name, const FileSpan& span)
     define(name);
 }
 
-bool Resolver::is_defined(const std::string& name)
+bool Resolver::is_defined(const std::string& name) const
 {
     auto scopes = scopes_; // intentional copy
     for (auto i = scopes_.size(); i > 0; i--)
-    {
-        if (const auto& scope = scopes_.top(); is_declared_in_scope(name, scope))
+        if (const auto& scope = scopes_.at(i - 1); is_declared_in_scope(name, scope))
             return scope.at(name);
-
-        scopes_.pop();
-    }
 
     return false;
 }
 
 void Resolver::push_scope()
 {
-    scopes_.emplace();
+    scopes_.emplace_back();
 }
 
 void Resolver::pop_scope()
 {
-    scopes_.pop();
+    scopes_.pop_back();
 }
 
 void Resolver::visit_ast(const std::vector<statement_ptr_t>& statements)
@@ -106,12 +105,18 @@ void Resolver::visit_identifier(const Identifier& identifier)
     if (scopes_.empty())
         return;
 
-    const auto& scope = scopes_.top();
+    const auto& scope = scopes_.back();
     const auto name = identifier.get_text();
     if (is_declared_in_scope(name, scope) && scope.at(name) == false)
         report_variable_read_in_own_initializer(identifier.name);
     if (!is_defined(name))
         report_variable_not_found(identifier.name);
+}
+
+void Resolver::visit_await(const Await& await)
+{
+    ASSERT_CONTEXT(await, report_invalid_await, Context::AsyncFunction);
+    AstVisitor::visit_await(await);
 }
 
 void Resolver::visit_block(const Block& block)
@@ -156,14 +161,15 @@ void Resolver::visit_function_declaration(const FunctionDeclaration& function_de
 {
     declare_define(function_declaration.name);
     visit_statements(function_declaration.decorator_list);
-    visit_type_list_clause(function_declaration.type_parameters);
 
     push_scope();
+    visit_type_list_clause(function_declaration.type_parameters);
     visit_statements(function_declaration.parameters.value()->list);
     if (function_declaration.return_type.has_value())
         visit(function_declaration.return_type.value()->type);
 
-    ContextGuard fn(this, ResolverContext::Function);
+    const auto new_context = function_declaration.async_keyword.has_value() ? Context::AsyncFunction : Context::Function;
+    ContextGuard fn(this, new_context);
     if (function_declaration.body->block.has_value())
         visit(*function_declaration.body->block);
     else
@@ -175,10 +181,7 @@ void Resolver::visit_function_declaration(const FunctionDeclaration& function_de
 void Resolver::visit_parameter(const Parameter& parameter)
 {
     declare_define(parameter.name);
-    if (parameter.colon_type.has_value())
-        visit(parameter.colon_type.value()->type);
-    if (parameter.equals_value.has_value())
-        visit(parameter.equals_value.value()->value);
+    AstVisitor::visit_parameter(parameter);
 }
 
 void Resolver::visit_instance_constructor(const InstanceConstructor& instance_constructor)
@@ -188,19 +191,18 @@ void Resolver::visit_instance_constructor(const InstanceConstructor& instance_co
 
 void Resolver::visit_break(const Break& break_statement)
 {
-    ASSERT_CONTEXT(break_statement, Context::Loop, report_invalid_break);
+    ASSERT_CONTEXT(break_statement, report_invalid_break, Context::Loop);
 }
 
 void Resolver::visit_continue(const Continue& continue_statement)
 {
-    ASSERT_CONTEXT(continue_statement, Context::Loop, report_invalid_continue);
+    ASSERT_CONTEXT(continue_statement, report_invalid_continue, Context::Loop);
 }
 
 void Resolver::visit_return(const Return& return_statement)
 {
-    ASSERT_CONTEXT(return_statement, Context::Function, report_invalid_return);
-    if (return_statement.expression.has_value())
-        visit(*return_statement.expression);
+    ASSERT_ANY_CONTEXT(return_statement, report_invalid_return, function_contexts);
+    AstVisitor::visit_return(return_statement);
 }
 
 void Resolver::visit_while(const While& while_statement)

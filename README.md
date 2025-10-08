@@ -100,7 +100,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Report variables read in their own initializers
     - [x] Report break/continue outside of loops and return outside of functions
     - [ ] Report duplicate interface/object/instance fields
-    - [ ] Report `await` outside of async context
+    - [x] Report `await` outside of async context
     - [ ] Warn shadowed variable declaration
 - [ ] Symbol binding
 - [ ] Type solving/checking

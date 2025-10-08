@@ -174,6 +174,13 @@ void report_invalid_return(const FileSpan& span)
     report_error(16, span, InvalidReturn {});
 }
 
+GENERATE_NODE_OVERLOADS(report_invalid_await);
+
+void report_invalid_await(const FileSpan& span)
+{
+    report_error(18, span, InvalidAwait {});
+}
+
 GENERATE_NODE_OVERLOADS(warn_unreachable_code);
 
 void warn_unreachable_code(const FileSpan& span)
@@ -233,6 +240,8 @@ constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
             return std::string("Cannot 'continue' outside of a loop.");
         else if constexpr (std::is_same_v<type_t, InvalidReturn>)
             return std::string("Cannot 'return' outside of a function.");
+        else if constexpr (std::is_same_v<type_t, InvalidAwait>)
+            return std::string("Cannot 'await' outside of an async function.");
         else if constexpr (std::is_same_v<type_t, UnreachableCode>)
             return std::string("Unreachable code.");
         else if constexpr (std::is_same_v<type_t, AmbiguousEquals>)
