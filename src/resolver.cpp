@@ -1,5 +1,7 @@
 #include "ion/resolver.h"
 
+#include <iostream>
+
 #define ASSERT_CONTEXT(node, report_fn, ctx) \
     if (context != ctx) report_fn(node.get_span());
 
@@ -32,6 +34,7 @@ bool Resolver::is_declared_in_scope(const std::string& name, const std::unordere
 
 void Resolver::define(const Token& identifier)
 {
+    COMPILER_ASSERT(identifier.is_kind(SyntaxKind::Identifier), "Expected identifier token");
     define(identifier.get_text());
 }
 
@@ -46,6 +49,7 @@ void Resolver::define(const std::string& name)
 
 void Resolver::declare(const Token& identifier)
 {
+    COMPILER_ASSERT(identifier.is_kind(SyntaxKind::Identifier), "Expected identifier token");
     declare(identifier.get_text(), identifier.span);
 }
 
@@ -106,9 +110,16 @@ void Resolver::pop_scope()
     scopes_.pop_back();
 }
 
+void Resolver::define_intrinsic_name(const std::string& name)
+{
+    declare_define(Token { .kind = SyntaxKind::Identifier, .text = name });
+    logger::info("Defined intrinsic name '" + name + "' for resolver");
+}
+
 void Resolver::visit_ast(const std::vector<statement_ptr_t>& statements)
 {
     push_scope();
+    define_intrinsic_name("print");
     visit_statements(statements);
     pop_scope();
 }

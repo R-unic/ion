@@ -14,7 +14,13 @@ bool Token::is_kind(const SyntaxKind check_kind) const
 
 std::string Token::get_text() const
 {
-    return text.value_or(syntax_to_string(kind).value_or(span.get_text()));
+    if (text.has_value())
+        return *text;
+
+    if (const auto conversion = syntax_to_string(kind); conversion.has_value())
+        return *conversion;
+
+    return span.get_text();
 }
 
 std::string Token::format() const
