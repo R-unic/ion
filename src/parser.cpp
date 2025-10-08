@@ -8,8 +8,6 @@
 #include "ion/lexer.h"
 #include "ion/parser.h"
 
-#include "ion/ast/statements/decorator.h"
-
 static void consume_semicolons(ParseState& state)
 {
     while (match(state, SyntaxKind::Semicolon))

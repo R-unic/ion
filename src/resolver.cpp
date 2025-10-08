@@ -83,6 +83,19 @@ bool Resolver::is_defined(const std::string& name) const
     return false;
 }
 
+void Resolver::resolve_name(const Token& name) const
+{
+    if (scopes_.empty())
+        return;
+
+    const auto& scope = scopes_.back();
+    const auto text = name.get_text();
+    if (is_declared_in_scope(text, scope) && scope.at(text) == false)
+        report_variable_read_in_own_initializer(name);
+    if (!is_defined(text))
+        report_variable_not_found(name);
+}
+
 void Resolver::push_scope()
 {
     scopes_.emplace_back();
@@ -102,15 +115,7 @@ void Resolver::visit_ast(const std::vector<statement_ptr_t>& statements)
 
 void Resolver::visit_identifier(const Identifier& identifier)
 {
-    if (scopes_.empty())
-        return;
-
-    const auto& scope = scopes_.back();
-    const auto name = identifier.get_text();
-    if (is_declared_in_scope(name, scope) && scope.at(name) == false)
-        report_variable_read_in_own_initializer(identifier.name);
-    if (!is_defined(name))
-        report_variable_not_found(identifier.name);
+    resolve_name(identifier.name);
 }
 
 void Resolver::visit_await(const Await& await)
@@ -130,6 +135,7 @@ void Resolver::visit_type_declaration(const TypeDeclaration& type_declaration)
 {
     declare(type_declaration.name);
     AstVisitor::visit_type_declaration(type_declaration);
+    define(type_declaration.name);
 }
 
 void Resolver::visit_variable_declaration(const VariableDeclaration& variable_declaration)
@@ -142,19 +148,21 @@ void Resolver::visit_variable_declaration(const VariableDeclaration& variable_de
 void Resolver::visit_event_declaration(const EventDeclaration& event_declaration)
 {
     declare_define(event_declaration.name);
+    push_scope();
     AstVisitor::visit_event_declaration(event_declaration);
-}
-
-void Resolver::visit_interface_declaration(const InterfaceDeclaration& interface_declaration)
-{
-    declare(interface_declaration.name);
-    AstVisitor::visit_interface_declaration(interface_declaration);
+    pop_scope();
 }
 
 void Resolver::visit_enum_declaration(const EnumDeclaration& enum_declaration)
 {
     declare_define(enum_declaration.name);
     AstVisitor::visit_enum_declaration(enum_declaration);
+}
+
+void Resolver::visit_interface_declaration(const InterfaceDeclaration& interface_declaration)
+{
+    declare_define(interface_declaration.name);
+    AstVisitor::visit_interface_declaration(interface_declaration);
 }
 
 void Resolver::visit_function_declaration(const FunctionDeclaration& function_declaration)
@@ -236,6 +244,18 @@ void Resolver::visit_import(const Import& import_statement)
         declare_define(name);
 }
 
-void Resolver::visit_type_name(const TypeNameRef&)
+void Resolver::visit_type_name(const TypeNameRef& type_name)
 {
+    resolve_name(type_name.name);
+}
+
+void Resolver::visit_type_parameter(const TypeParameterRef& type_parameter)
+{
+    declare(type_parameter.name);
+    if (type_parameter.base_type.has_value())
+        visit(*type_parameter.base_type);
+    if (type_parameter.default_type.has_value())
+        visit(*type_parameter.default_type);
+
+    define(type_parameter.name);
 }
