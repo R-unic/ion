@@ -1,1 +1,1 @@
-let abc = 69
+print(69)

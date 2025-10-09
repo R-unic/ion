@@ -1,8 +1,9 @@
 #include "ion/source_file.h"
-#include "ion/ast/viewer.h"
-#include "../include/ion/parsing/parser.h"
+#include "ion/symbols/named_symbol.h"
+#include "ion/parsing/parser.h"
 #include "ion/binder.h"
 #include "ion/resolver.h"
+#include "ion/ast/viewer.h"
 
 int main()
 {

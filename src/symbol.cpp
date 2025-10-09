@@ -1,5 +1,5 @@
 #include "ion/diagnostics.h"
-#include "ion/symbol.h"
+#include "../include/ion/symbols/symbol.h"
 
 type_ptr_t Symbol::get_type()
 {

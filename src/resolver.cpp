@@ -1,5 +1,7 @@
 #include "ion/resolver.h"
 
+#include "ion/intrinsics.h"
+
 /** Sets the current context and returns it back to the enclosing context when this struct goes out of scope */
 struct ContextGuard
 {
@@ -100,10 +102,11 @@ void Resolver::define_intrinsic_name(const std::string& name)
 
 void Resolver::visit_ast(const std::vector<statement_ptr_t>& statements)
 {
-    push_scope();
-    define_intrinsic_name("print");
-    visit_statements(statements);
-    pop_scope();
+    ScopedAstVisitor::visit_ast(statements, [&]
+    {
+        for (const auto& symbol : intrinsic_symbols)
+            define_intrinsic_name(symbol->name);
+    });
 }
 
 void Resolver::visit_identifier(Identifier& identifier)
