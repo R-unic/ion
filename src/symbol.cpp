@@ -3,6 +3,6 @@
 
 type_ptr_t Symbol::get_type()
 {
-    COMPILER_ASSERT(type.has_value(), "No type for symbol '" + name + "' found");
+    COMPILER_ASSERT(type.has_value(), "No type for symbol found");
     return std::move(*type);
 }

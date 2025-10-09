@@ -88,7 +88,7 @@ void AstViewer::write_type_list_clause(const std::optional<TypeListClause*>& typ
     });
 }
 
-void AstViewer::visit_primitive_literal(const PrimitiveLiteral& literal)
+void AstViewer::visit_primitive_literal(PrimitiveLiteral& literal)
 {
     write("Literal(");
     if (!literal.value.has_value())
@@ -101,7 +101,7 @@ void AstViewer::visit_primitive_literal(const PrimitiveLiteral& literal)
     write(")");
 }
 
-void AstViewer::visit_array_literal(const ArrayLiteral& array_literal)
+void AstViewer::visit_array_literal(ArrayLiteral& array_literal)
 {
     write("ArrayLiteral(");
     write_list<expression_ptr_t>(array_literal.elements, [&](const auto& expression)
@@ -111,7 +111,7 @@ void AstViewer::visit_array_literal(const ArrayLiteral& array_literal)
     write(")");
 }
 
-void AstViewer::visit_tuple_literal(const TupleLiteral& tuple_literal)
+void AstViewer::visit_tuple_literal(TupleLiteral& tuple_literal)
 {
     write("TupleLiteral(");
     write_list<expression_ptr_t>(tuple_literal.elements, [&](const auto& expression)
@@ -121,7 +121,7 @@ void AstViewer::visit_tuple_literal(const TupleLiteral& tuple_literal)
     write(")");
 }
 
-void AstViewer::visit_range_literal(const RangeLiteral& range_literal)
+void AstViewer::visit_range_literal(RangeLiteral& range_literal)
 {
     indent_++;
     write_line("RangeLiteral(");
@@ -131,7 +131,7 @@ void AstViewer::visit_range_literal(const RangeLiteral& range_literal)
     write_closing_paren();
 }
 
-void AstViewer::visit_rgb_literal(const RgbLiteral& rgb_literal)
+void AstViewer::visit_rgb_literal(RgbLiteral& rgb_literal)
 {
     indent_++;
     write_line("RgbLiteral(");
@@ -143,7 +143,7 @@ void AstViewer::visit_rgb_literal(const RgbLiteral& rgb_literal)
     write_closing_paren();
 }
 
-void AstViewer::visit_hsv_literal(const HsvLiteral& hsv_literal)
+void AstViewer::visit_hsv_literal(HsvLiteral& hsv_literal)
 {
     indent_++;
     write_line("HsvLiteral(");
@@ -155,7 +155,7 @@ void AstViewer::visit_hsv_literal(const HsvLiteral& hsv_literal)
     write_closing_paren();
 }
 
-void AstViewer::visit_vector_literal(const VectorLiteral& vector_literal)
+void AstViewer::visit_vector_literal(VectorLiteral& vector_literal)
 {
     indent_++;
     write_line("VectorLiteral(");
@@ -167,7 +167,7 @@ void AstViewer::visit_vector_literal(const VectorLiteral& vector_literal)
     write_closing_paren();
 }
 
-void AstViewer::visit_interpolated_string(const InterpolatedString& interpolated_string)
+void AstViewer::visit_interpolated_string(InterpolatedString& interpolated_string)
 {
     indent_++;
     write_line("InterpolatedString(");
@@ -184,14 +184,14 @@ void AstViewer::visit_interpolated_string(const InterpolatedString& interpolated
     write_closing_paren();
 }
 
-void AstViewer::visit_identifier(const Identifier& identifier)
+void AstViewer::visit_identifier(Identifier& identifier)
 {
     write("Identifier(");
     write(identifier.name.get_text());
     write(")");
 }
 
-void AstViewer::visit_parenthesized(const Parenthesized& parenthesized)
+void AstViewer::visit_parenthesized(Parenthesized& parenthesized)
 {
     indent_++;
     write_line("Parenthesized(");
@@ -199,7 +199,7 @@ void AstViewer::visit_parenthesized(const Parenthesized& parenthesized)
     write_closing_paren();
 }
 
-void AstViewer::visit_binary_op(const BinaryOp& binary_op)
+void AstViewer::visit_binary_op(BinaryOp& binary_op)
 {
     indent_++;
     write_line("BinaryOp(");
@@ -207,7 +207,7 @@ void AstViewer::visit_binary_op(const BinaryOp& binary_op)
     write_closing_paren();
 }
 
-void AstViewer::visit_unary_op(const UnaryOp& unary_op)
+void AstViewer::visit_unary_op(UnaryOp& unary_op)
 {
     indent_++;
     write_line("UnaryOp(");
@@ -216,7 +216,7 @@ void AstViewer::visit_unary_op(const UnaryOp& unary_op)
     write_closing_paren();
 }
 
-void AstViewer::visit_postfix_unary_op(const PostfixUnaryOp& postfix_unary_op)
+void AstViewer::visit_postfix_unary_op(PostfixUnaryOp& postfix_unary_op)
 {
     indent_++;
     write_line("PostfixUnaryOp(");
@@ -226,7 +226,7 @@ void AstViewer::visit_postfix_unary_op(const PostfixUnaryOp& postfix_unary_op)
     write_closing_paren();
 }
 
-void AstViewer::visit_assignment_op(const AssignmentOp& assignment_op)
+void AstViewer::visit_assignment_op(AssignmentOp& assignment_op)
 {
     indent_++;
     write_line("AssignmentOp(");
@@ -234,7 +234,7 @@ void AstViewer::visit_assignment_op(const AssignmentOp& assignment_op)
     write_closing_paren();
 }
 
-void AstViewer::visit_ternary_op(const TernaryOp& ternary_op)
+void AstViewer::visit_ternary_op(TernaryOp& ternary_op)
 {
     indent_++;
     write_line("TernaryOp(");
@@ -246,7 +246,7 @@ void AstViewer::visit_ternary_op(const TernaryOp& ternary_op)
     write_closing_paren();
 }
 
-void AstViewer::visit_invocation(const Invocation& invocation)
+void AstViewer::visit_invocation(Invocation& invocation)
 {
     indent_++;
     write_line("Invocation(");
@@ -263,7 +263,7 @@ void AstViewer::visit_invocation(const Invocation& invocation)
     write_closing_paren();
 }
 
-void AstViewer::visit_type_of(const TypeOf& type_of)
+void AstViewer::visit_type_of(TypeOf& type_of)
 {
     indent_++;
     write_line("TypeOf(");
@@ -271,14 +271,14 @@ void AstViewer::visit_type_of(const TypeOf& type_of)
     write_closing_paren();
 }
 
-void AstViewer::visit_name_of(const NameOf& name_of)
+void AstViewer::visit_name_of(NameOf& name_of)
 {
     write("NameOf(");
     write(name_of.identifier.get_text());
     write(")");
 }
 
-void AstViewer::visit_await(const Await& await)
+void AstViewer::visit_await(Await& await)
 {
     indent_++;
     write_line("Await(");
@@ -286,7 +286,7 @@ void AstViewer::visit_await(const Await& await)
     write_closing_paren();
 }
 
-void AstViewer::visit_member_access(const MemberAccess& member_access)
+void AstViewer::visit_member_access(MemberAccess& member_access)
 {
     indent_++;
     write_line("MemberAccess(");
@@ -296,7 +296,7 @@ void AstViewer::visit_member_access(const MemberAccess& member_access)
     write_closing_paren();
 }
 
-void AstViewer::visit_optional_member_access(const OptionalMemberAccess& optional_member_access)
+void AstViewer::visit_optional_member_access(OptionalMemberAccess& optional_member_access)
 {
     indent_++;
     write_line("OptionalMemberAccess(");
@@ -306,7 +306,7 @@ void AstViewer::visit_optional_member_access(const OptionalMemberAccess& optiona
     write_closing_paren();
 }
 
-void AstViewer::visit_element_access(const ElementAccess& element_access)
+void AstViewer::visit_element_access(ElementAccess& element_access)
 {
     indent_++;
     write_line("ElementAccess(");
@@ -316,7 +316,7 @@ void AstViewer::visit_element_access(const ElementAccess& element_access)
     write_closing_paren();
 }
 
-void AstViewer::visit_expression_statement(const ExpressionStatement& expression_statement)
+void AstViewer::visit_expression_statement(ExpressionStatement& expression_statement)
 {
     indent_++;
     write_line("ExpressionStatement(");
@@ -324,7 +324,7 @@ void AstViewer::visit_expression_statement(const ExpressionStatement& expression
     write_closing_paren();
 }
 
-void AstViewer::visit_block(const Block& block)
+void AstViewer::visit_block(Block& block)
 {
     write("Block(");
     write_list<statement_ptr_t>(block.braced_statement_list->statements, [&](const auto& statement)
@@ -334,7 +334,7 @@ void AstViewer::visit_block(const Block& block)
     write(")");
 }
 
-void AstViewer::visit_type_declaration(const TypeDeclaration& type_declaration)
+void AstViewer::visit_type_declaration(TypeDeclaration& type_declaration)
 {
     indent_++;
     write_line("TypeDeclaration(");
@@ -345,7 +345,7 @@ void AstViewer::visit_type_declaration(const TypeDeclaration& type_declaration)
     write_closing_paren();
 }
 
-void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_declaration)
+void AstViewer::visit_variable_declaration(VariableDeclaration& variable_declaration)
 {
     indent_++;
     write_line("VariableDeclaration(");
@@ -366,7 +366,7 @@ void AstViewer::visit_variable_declaration(const VariableDeclaration& variable_d
     write_closing_paren();
 }
 
-void AstViewer::visit_event_declaration(const EventDeclaration& event_declaration)
+void AstViewer::visit_event_declaration(EventDeclaration& event_declaration)
 {
     indent_++;
     write_line("EventDeclaration(");
@@ -380,7 +380,7 @@ void AstViewer::visit_event_declaration(const EventDeclaration& event_declaratio
     write_closing_paren();
 }
 
-void AstViewer::visit_interface_declaration(const InterfaceDeclaration& interface_declaration)
+void AstViewer::visit_interface_declaration(InterfaceDeclaration& interface_declaration)
 {
     indent_++;
     write_line("InterfaceDeclaration(");
@@ -392,7 +392,7 @@ void AstViewer::visit_interface_declaration(const InterfaceDeclaration& interfac
     write_closing_paren();
 }
 
-void AstViewer::visit_interface_field(const InterfaceField& interface_field)
+void AstViewer::visit_interface_field(InterfaceField& interface_field)
 {
     indent_++;
     write_line("InterfaceField(");
@@ -404,7 +404,7 @@ void AstViewer::visit_interface_field(const InterfaceField& interface_field)
     write_closing_paren();
 }
 
-void AstViewer::visit_interface_method(const InterfaceMethod& interface_method)
+void AstViewer::visit_interface_method(InterfaceMethod& interface_method)
 {
     indent_++;
     write_line("InterfaceMethod(");
@@ -420,7 +420,7 @@ void AstViewer::visit_interface_method(const InterfaceMethod& interface_method)
     write_closing_paren();
 }
 
-void AstViewer::visit_enum_declaration(const EnumDeclaration& enum_declaration)
+void AstViewer::visit_enum_declaration(EnumDeclaration& enum_declaration)
 {
     indent_++;
     write_line("EnumDeclaration(");
@@ -432,7 +432,7 @@ void AstViewer::visit_enum_declaration(const EnumDeclaration& enum_declaration)
     write_closing_paren();
 }
 
-void AstViewer::visit_enum_member(const EnumMember& enum_member)
+void AstViewer::visit_enum_member(EnumMember& enum_member)
 {
     const auto has_initializer = enum_member.equals_value.has_value();
     if (has_initializer)
@@ -453,7 +453,7 @@ void AstViewer::visit_enum_member(const EnumMember& enum_member)
     }
 }
 
-void AstViewer::visit_function_declaration(const FunctionDeclaration& function_declaration)
+void AstViewer::visit_function_declaration(FunctionDeclaration& function_declaration)
 {
     indent_++;
     write_line("FunctionDeclaration(");
@@ -492,7 +492,7 @@ void AstViewer::visit_function_declaration(const FunctionDeclaration& function_d
     write_closing_paren();
 }
 
-void AstViewer::visit_parameter(const Parameter& parameter)
+void AstViewer::visit_parameter(Parameter& parameter)
 {
     indent_++;
     write_line("Parameter(");
@@ -511,7 +511,7 @@ void AstViewer::visit_parameter(const Parameter& parameter)
     write_closing_paren();
 }
 
-void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_constructor)
+void AstViewer::visit_instance_constructor(InstanceConstructor& instance_constructor)
 {
     indent_++;
     write_line("InstanceConstructor(");
@@ -541,7 +541,7 @@ void AstViewer::visit_instance_constructor(const InstanceConstructor& instance_c
     write_closing_paren();
 }
 
-void AstViewer::visit_instance_property_declarator(const InstancePropertyDeclarator& instance_property_declarator)
+void AstViewer::visit_instance_property_declarator(InstancePropertyDeclarator& instance_property_declarator)
 {
     indent_++;
     write_line("InstancePropertyDeclarator(");
@@ -550,14 +550,14 @@ void AstViewer::visit_instance_property_declarator(const InstancePropertyDeclara
     write_closing_paren();
 }
 
-void AstViewer::visit_instance_name_declarator(const InstanceNameDeclarator& instance_name_declarator)
+void AstViewer::visit_instance_name_declarator(InstanceNameDeclarator& instance_name_declarator)
 {
     write("InstanceNameDeclarator(");
     write(instance_name_declarator.name.get_text());
     write(")");
 }
 
-void AstViewer::visit_instance_attribute_declarator(const InstanceAttributeDeclarator& instance_attribute_declarator)
+void AstViewer::visit_instance_attribute_declarator(InstanceAttributeDeclarator& instance_attribute_declarator)
 {
     indent_++;
     write_line("InstanceAttributeDeclarator(");
@@ -566,24 +566,24 @@ void AstViewer::visit_instance_attribute_declarator(const InstanceAttributeDecla
     write_closing_paren();
 }
 
-void AstViewer::visit_instance_tag_declarator(const InstanceTagDeclarator& instance_tag_declarator)
+void AstViewer::visit_instance_tag_declarator(InstanceTagDeclarator& instance_tag_declarator)
 {
     write("InstanceTagDeclarator(");
     write(instance_tag_declarator.name.get_text());
     write(")");
 }
 
-void AstViewer::visit_break(const Break&)
+void AstViewer::visit_break(Break&)
 {
     write("Break");
 }
 
-void AstViewer::visit_continue(const Continue&)
+void AstViewer::visit_continue(Continue&)
 {
     write("Continue");
 }
 
-void AstViewer::visit_return(const Return& return_statement)
+void AstViewer::visit_return(Return& return_statement)
 {
     write("Return");
     if (!return_statement.expression.has_value())
@@ -595,7 +595,7 @@ void AstViewer::visit_return(const Return& return_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_if(const If& if_statement)
+void AstViewer::visit_if(If& if_statement)
 {
     indent_++;
     write_line("If(");
@@ -611,7 +611,7 @@ void AstViewer::visit_if(const If& if_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_while(const While& while_statement)
+void AstViewer::visit_while(While& while_statement)
 {
     indent_++;
     write_line("While(");
@@ -621,7 +621,7 @@ void AstViewer::visit_while(const While& while_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_repeat(const Repeat& repeat_statement)
+void AstViewer::visit_repeat(Repeat& repeat_statement)
 {
     indent_++;
     write_line("Repeat(");
@@ -631,7 +631,7 @@ void AstViewer::visit_repeat(const Repeat& repeat_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_for(const For& for_statement)
+void AstViewer::visit_for(For& for_statement)
 {
     indent_++;
     write_line("For(");
@@ -646,7 +646,7 @@ void AstViewer::visit_for(const For& for_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_after(const After& after_statement)
+void AstViewer::visit_after(After& after_statement)
 {
     indent_++;
     write_line("After(");
@@ -656,7 +656,7 @@ void AstViewer::visit_after(const After& after_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_every(const Every& every_statement)
+void AstViewer::visit_every(Every& every_statement)
 {
     indent_++;
     write_line("Every(");
@@ -671,7 +671,7 @@ void AstViewer::visit_every(const Every& every_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_match(const Match& match_statement)
+void AstViewer::visit_match(Match& match_statement)
 {
     indent_++;
     write_line("Match(");
@@ -684,7 +684,7 @@ void AstViewer::visit_match(const Match& match_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_match_case(const MatchCase& match_case)
+void AstViewer::visit_match_case(MatchCase& match_case)
 {
     indent_++;
     write_line("MatchCase(");
@@ -697,7 +697,7 @@ void AstViewer::visit_match_case(const MatchCase& match_case)
     write_closing_paren();
 }
 
-void AstViewer::visit_match_else_case(const MatchElseCase& match_else_case)
+void AstViewer::visit_match_else_case(MatchElseCase& match_else_case)
 {
     indent_++;
     write_line("MatchElseCase(");
@@ -708,7 +708,7 @@ void AstViewer::visit_match_else_case(const MatchElseCase& match_else_case)
     write_closing_paren();
 }
 
-void AstViewer::visit_import(const Import& import)
+void AstViewer::visit_import(Import& import)
 {
     indent_++;
     write_line("Import(");
@@ -721,7 +721,7 @@ void AstViewer::visit_import(const Import& import)
     write_closing_paren();
 }
 
-void AstViewer::visit_export(const Export& export_statement)
+void AstViewer::visit_export(Export& export_statement)
 {
     indent_++;
     write_line("Export(");
@@ -729,7 +729,7 @@ void AstViewer::visit_export(const Export& export_statement)
     write_closing_paren();
 }
 
-void AstViewer::visit_decorator(const Decorator& decorator)
+void AstViewer::visit_decorator(Decorator& decorator)
 {
     indent_++;
     write_line("Decorator(");
@@ -741,21 +741,21 @@ void AstViewer::visit_decorator(const Decorator& decorator)
     write_closing_paren();
 }
 
-void AstViewer::visit_primitive_type(const PrimitiveTypeRef& primitive_type)
+void AstViewer::visit_primitive_type(PrimitiveTypeRef& primitive_type)
 {
     write("PrimitiveTypeRef(");
     write(primitive_type.keyword.get_text());
     write(")");
 }
 
-void AstViewer::visit_literal_type(const LiteralTypeRef& literal_type)
+void AstViewer::visit_literal_type(LiteralTypeRef& literal_type)
 {
     write("LiteralTypeRef(");
     write(literal_type.token.get_text());
     write(")");
 }
 
-void AstViewer::visit_type_name(const TypeNameRef& type_name)
+void AstViewer::visit_type_name(TypeNameRef& type_name)
 {
     indent_++;
     write_line("TypeNameRef(");
@@ -764,7 +764,7 @@ void AstViewer::visit_type_name(const TypeNameRef& type_name)
     write_closing_paren();
 }
 
-void AstViewer::visit_nullable_type(const NullableTypeRef& nullable_type)
+void AstViewer::visit_nullable_type(NullableTypeRef& nullable_type)
 {
     indent_++;
     write_line("NullableTypeRef(");
@@ -772,7 +772,7 @@ void AstViewer::visit_nullable_type(const NullableTypeRef& nullable_type)
     write_closing_paren();
 }
 
-void AstViewer::visit_array_type(const ArrayTypeRef& array_type)
+void AstViewer::visit_array_type(ArrayTypeRef& array_type)
 {
     indent_++;
     write_line("ArrayTypeRef(");
@@ -780,7 +780,7 @@ void AstViewer::visit_array_type(const ArrayTypeRef& array_type)
     write_closing_paren();
 }
 
-void AstViewer::visit_tuple_type(const TupleTypeRef& tuple_type)
+void AstViewer::visit_tuple_type(TupleTypeRef& tuple_type)
 {
     indent_++;
     write_line("TupleTypeRef(");
@@ -791,7 +791,7 @@ void AstViewer::visit_tuple_type(const TupleTypeRef& tuple_type)
     write_closing_paren();
 }
 
-void AstViewer::visit_function_type(const FunctionTypeRef& function_type)
+void AstViewer::visit_function_type(FunctionTypeRef& function_type)
 {
     indent_++;
     write_line("FunctionTypeRef(");
@@ -812,7 +812,7 @@ void AstViewer::visit_function_type(const FunctionTypeRef& function_type)
     write_closing_paren();
 }
 
-void AstViewer::visit_union_type(const UnionTypeRef& union_type)
+void AstViewer::visit_union_type(UnionTypeRef& union_type)
 {
     indent_++;
     write_line("UnionTypeRef(");
@@ -823,7 +823,7 @@ void AstViewer::visit_union_type(const UnionTypeRef& union_type)
     write_closing_paren();
 }
 
-void AstViewer::visit_intersection_type(const IntersectionTypeRef& intersection_type)
+void AstViewer::visit_intersection_type(IntersectionTypeRef& intersection_type)
 {
     indent_++;
     write_line("IntersectionTypeRef(");
@@ -835,7 +835,7 @@ void AstViewer::visit_intersection_type(const IntersectionTypeRef& intersection_
 }
 
 
-void AstViewer::visit_type_parameter(const TypeParameterRef& type_parameter)
+void AstViewer::visit_type_parameter(TypeParameterRef& type_parameter)
 {
     indent_++;
     write_line("TypeParameter(");
