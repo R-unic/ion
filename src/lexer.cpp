@@ -34,8 +34,10 @@ static void read_identifier_or_keyword(LexState& state)
     });
 
     const auto text = current_lexeme(state);
-    const auto kind = keyword_syntaxes.contains(text) ? keyword_syntaxes.at(text) : SyntaxKind::Identifier;
-    push_token(state, kind);
+    if (keyword_syntaxes.contains(text))
+        push_token(state, keyword_syntaxes.at(text));
+    else
+        push_token_override_text(state, SyntaxKind::Identifier, text);
 }
 
 static void read_non_decimal_number(LexState& state, bool (*is_valid_digit)(const LexState&))

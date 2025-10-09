@@ -94,6 +94,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Shorthand attributes (see examples)
     - [x] Constant variables and fields
     - [x] Decorators (see examples)
+    - [ ] Type packs
 - [x] Resolver
     - [x] Report duplicate variables
     - [x] Report variables not found

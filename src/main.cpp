@@ -22,9 +22,6 @@ int main()
     binder->visit_ast(statements);
     logger::info("Successfully bound AST");
     for (const auto& statement : statements)
-        if (statement->symbol.has_value() && statement->symbol.value()->is_named_symbol())
-        {
-            const auto symbol = dynamic_cast<NamedSymbol*>(statement->symbol.value().get());
-            std::cout << symbol->name << '\n';
-        }
+        if (statement->symbol.has_value())
+            std::cout << statement->symbol.value()->to_string() << '\n';
 }

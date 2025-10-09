@@ -234,7 +234,7 @@ void Resolver::visit_return(Return& return_statement)
 }
 
 // @formatter:off
-DEFINE_LOOP_VISITOR(while,  While);
+DEFINE_LOOP_VISITOR(while, While);
 DEFINE_LOOP_VISITOR(repeat, Repeat);
 DEFINE_LOOP_VISITOR(for, For);
 DEFINE_LOOP_VISITOR(every, Every);

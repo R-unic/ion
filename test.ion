@@ -1,1 +1,5 @@
-print(69)
+let x = 69;
+event on_abc;
+
+type X = number
+instance my_part: X

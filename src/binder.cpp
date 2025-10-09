@@ -3,6 +3,7 @@
 #include "ion/intrinsics.h"
 #include "ion/symbols/named_symbol.h"
 
+
 void Binder::bind_symbol(NamedDeclaration& named_declaration) const
 {
     bind_symbol(named_declaration, named_declaration.name);
@@ -40,13 +41,12 @@ void Binder::visit_ast(const std::vector<statement_ptr_t>& statements)
         for (const auto& symbol : intrinsic_symbols)
         {
             auto _ = define_symbol(symbol);
-            logger::info("Defined intrinsic name '" + symbol->name + "' for binder");
+            logger::info("Defined intrinsic symbol '" + symbol->to_string() + "' for binder");
         }
     });
 }
 
-void Binder::visit_variable_declaration(VariableDeclaration& variable_declaration)
-{
-    bind_symbol(variable_declaration);
-    AstVisitor::visit_variable_declaration(variable_declaration);
-}
+DEFINE_NAMED_DECLARATION_VISITOR(variable_declaration, VariableDeclaration);
+DEFINE_NAMED_DECLARATION_VISITOR(function_declaration, FunctionDeclaration);
+DEFINE_NAMED_DECLARATION_VISITOR(event_declaration, EventDeclaration);
+DEFINE_NAMED_DECLARATION_VISITOR(instance_constructor, InstanceConstructor);
