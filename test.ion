@@ -1,3 +1,2 @@
-fn abc {
-    abc
-}
+let x = 69
+x

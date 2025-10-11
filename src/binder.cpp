@@ -48,17 +48,11 @@ SymbolTy Binder::define_symbol(const SymbolTy& symbol)
 
 std::optional<named_symbol_ptr_t> Binder::find_named_symbol(const std::string& name) const
 {
-    for (auto i = scopes_.size(); i > 0; i--)
-    {
-        for (const auto& symbol_ptr : scopes_.at(i - 1))
-        {
-            if (!symbol_ptr->is_named_symbol())
-                continue;
-
-            if (const auto symbol = dynamic_cast<NamedSymbol*>(symbol_ptr.get()); symbol->name == name)
-                return std::static_pointer_cast<NamedSymbol>(symbol_ptr);
-        }
-    }
+    for (auto it = scopes_.rbegin(); it != scopes_.rend(); ++it)
+        for (const auto& symbol_ptr : *it)
+            if (auto named = std::dynamic_pointer_cast<NamedSymbol>(symbol_ptr))
+                if (named->name == name)
+                    return named;
 
     return std::nullopt;
 }
@@ -71,6 +65,10 @@ void Binder::visit_ast(const std::vector<statement_ptr_t>& statements)
             logger::info("Defined intrinsic symbol '" + define_symbol(symbol)->to_string() + "' for binder");
     });
 }
+
+DEFINE_EMPTY_SYMBOL_VISITOR(primitive_literal, PrimitiveLiteral)
+
+DEFINE_EMPTY_SYMBOL_VISITOR(array_literal, ArrayLiteral)
 
 void Binder::visit_identifier(Identifier& identifier)
 {
@@ -93,10 +91,7 @@ void Binder::visit_expression_statement(ExpressionStatement& expression_statemen
 {
     ScopedAstVisitor::visit_expression_statement(expression_statement);
     expression_statement.symbol = expression_statement.expression->symbol;
-}
-
-DEFINE_EMPTY_SYMBOL_VISITOR(primitive_literal, PrimitiveLiteral)
-DEFINE_EMPTY_SYMBOL_VISITOR(array_literal, ArrayLiteral);
+};
 DEFINE_EMPTY_SYMBOL_VISITOR(tuple_literal, TupleLiteral);
 DEFINE_EMPTY_SYMBOL_VISITOR(range_literal, RangeLiteral);
 DEFINE_EMPTY_SYMBOL_VISITOR(rgb_literal, RgbLiteral);
