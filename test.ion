@@ -1,2 +1,3 @@
-let x = 69;
-print(x)
+fn abc {
+    abc
+}

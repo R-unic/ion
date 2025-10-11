@@ -50,11 +50,8 @@ std::optional<named_symbol_ptr_t> Binder::find_named_symbol(const std::string& n
 {
     for (auto i = scopes_.size(); i > 0; i--)
     {
-        logger::info("Symbols in scope: " + std::to_string(scopes_.at(i - 1).size()));
-
         for (const auto& symbol_ptr : scopes_.at(i - 1))
         {
-            logger::info("Found symbol: " + symbol_ptr->to_string());
             if (!symbol_ptr->is_named_symbol())
                 continue;
 
@@ -98,7 +95,7 @@ void Binder::visit_expression_statement(ExpressionStatement& expression_statemen
     expression_statement.symbol = expression_statement.expression->symbol;
 }
 
-DEFINE_EMPTY_SYMBOL_VISITOR(primitive_literal, PrimitiveLiteral);
+DEFINE_EMPTY_SYMBOL_VISITOR(primitive_literal, PrimitiveLiteral)
 DEFINE_EMPTY_SYMBOL_VISITOR(array_literal, ArrayLiteral);
 DEFINE_EMPTY_SYMBOL_VISITOR(tuple_literal, TupleLiteral);
 DEFINE_EMPTY_SYMBOL_VISITOR(range_literal, RangeLiteral);
@@ -120,6 +117,6 @@ DEFINE_EMPTY_SYMBOL_VISITOR(name_of, NameOf)
 DEFINE_EMPTY_SYMBOL_VISITOR(type_of, TypeOf)
 
 DEFINE_DECLARATION_VISITOR(variable_declaration, VariableDeclaration);
-DEFINE_DECLARATION_VISITOR(function_declaration, FunctionDeclaration);
-DEFINE_DECLARATION_VISITOR(event_declaration, EventDeclaration);
-DEFINE_DECLARATION_VISITOR(instance_constructor, InstanceConstructor);
+DEFINE_SCOPED_DECLARATION_VISITOR(function_declaration, FunctionDeclaration);
+DEFINE_SCOPED_DECLARATION_VISITOR(event_declaration, EventDeclaration);
+DEFINE_SCOPED_DECLARATION_VISITOR(instance_constructor, InstanceConstructor);
