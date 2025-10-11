@@ -23,5 +23,5 @@ int main()
     logger::info("Successfully bound AST");
     for (const auto& statement : statements)
         if (statement->symbol.has_value())
-            std::cout << statement->symbol.value()->to_string() << '\n';
+            std::cout << typeid(*statement).name() << ": " << statement->symbol.value()->to_string() << '\n';
 }

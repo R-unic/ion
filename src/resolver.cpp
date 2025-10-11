@@ -73,7 +73,6 @@ void Resolver::declare_define(const std::string& name, const FileSpan& span)
 
 bool Resolver::is_defined(const std::string& name) const
 {
-    auto scopes = scopes_; // intentional copy
     for (auto i = scopes_.size(); i > 0; i--)
         if (const auto& scope = scopes_.at(i - 1); is_declared_in_scope(name, scope))
             return scope.at(name);
