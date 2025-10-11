@@ -104,7 +104,14 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Report `await` outside of async context
     - [ ] Report use of `Name` and `Parent` properties in instance constructors
     - [ ] Warn shadowed variable declaration
+- [ ] Intrinsics
+    - [x] `print` symbol
+        - [ ] Type pack arguments (e.g. `print<T...>(T...): void`)
+    - [ ] Roblox data type symbols (`Vector3`, `Color3`, etc.)
 - [ ] Symbol binding
+    - [x] Declaration symbols
+    - [x] Named symbols inherited from declarations
+    - [ ] Type symbols
 - [ ] Type solving/checking
 - [ ] Luau transpilation (Ion AST -> Luau AST)
 - [ ] Luau rendering (Luau AST -> Luau source)
