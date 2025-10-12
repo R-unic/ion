@@ -127,5 +127,4 @@ DEFINE_SCOPED_DECLARATION_VISITOR(function_declaration, FunctionDeclaration);
 DEFINE_SCOPED_DECLARATION_VISITOR(event_declaration, EventDeclaration);
 DEFINE_SCOPED_DECLARATION_VISITOR(instance_constructor, InstanceConstructor);
 DEFINE_TYPE_DECLARATION_VISITOR(type_declaration, TypeDeclaration, Type::from(type_declaration.type));
-DEFINE_TYPE_DECLARATION_VISITOR(interface_declaration, InterfaceDeclaration, void_type.as_unique());
-// TODO: create real type from interface
+DEFINE_TYPE_DECLARATION_VISITOR(interface_declaration, InterfaceDeclaration, Type::from_interface(interface_declaration));

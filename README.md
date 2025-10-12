@@ -95,6 +95,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Constant variables and fields
     - [x] Decorators (see examples)
     - [ ] Type packs
+    - [ ] Interface computed properties (e.g. `[69]: true`)
 - [x] Resolver
     - [x] Report duplicate variables
     - [x] Report variables not found
@@ -111,7 +112,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
 - [ ] Symbol binding
     - [x] Declaration symbols
     - [x] Named symbols inherited from declarations
-    - [ ] Type symbols
+    - [x] Type symbols
 - [ ] Type solving/checking
 - [ ] Luau transpilation (Ion AST -> Luau AST)
 - [ ] Luau rendering (Luau AST -> Luau source)
