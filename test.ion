@@ -1,3 +1,3 @@
 interface Foo {
-    bar: string;
+    fn bar<T>(): T;
 }

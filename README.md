@@ -96,6 +96,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Decorators (see examples)
     - [ ] Type packs
     - [ ] Interface computed properties (e.g. `[69]: true`)
+    - [ ] Namespaced types
 - [x] Resolver
     - [x] Report duplicate variables
     - [x] Report variables not found

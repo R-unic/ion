@@ -1,17 +1,26 @@
 #include "ion/ast/ast.h"
 #include "ion/types/type.h"
+
+#include "ion/logger.h"
 #include "ion/types/primitive_type.h"
 #include "ion/types/function_type.h"
 #include "ion/types/interface_type.h"
 #include "ion/types/intersection_type.h"
 #include "ion/types/literal_type.h"
 #include "ion/types/nullable_type.h"
+#include "ion/types/type_name.h"
+#include "ion/types/type_parameter.h"
 #include "ion/types/union_type.h"
 
 template <typename To, typename From>
-static std::unique_ptr<To> reinterpret_unique_ptr_cast(std::unique_ptr<From>&& from)
+std::unique_ptr<To> dynamic_unique_ptr_cast(std::unique_ptr<From>& from)
 {
-    return std::unique_ptr<To>(reinterpret_cast<To*>(from.release()));
+    if (auto* ptr = dynamic_cast<To*>(from.get()))
+    {
+        from.release();
+        return std::unique_ptr<To>(ptr);
+    }
+    return nullptr;
 }
 
 static PrimitiveTypeKind get_primitive_type_kind(const std::unique_ptr<PrimitiveTypeRef>& primitive)
@@ -37,41 +46,58 @@ static std::vector<type_ptr_t> from_list(std::vector<type_ref_ptr_t>& list)
 }
 
 template <class FunctionLike>
-std::shared_ptr<FunctionType> from_function_like(FunctionLike&& method)
+std::shared_ptr<FunctionType> from_function_like(const FunctionLike& fn_like)
 {
-    return std::make_shared<FunctionType>(from_list(method->parameter_types), Type::from(method->return_type));
+    const auto type_parameters = fn_like->type_parameters.has_value()
+                                     ? from_list(fn_like->type_parameters.value()->list)
+                                     : std::vector<type_ptr_t>();
+
+    return std::make_shared<FunctionType>(type_parameters, from_list(fn_like->parameter_types), Type::from(fn_like->return_type));
 }
 
 type_ptr_t Type::from_interface(const InterfaceDeclaration& declaration)
 {
     InterfaceType::member_map_t members;
     for (auto& member : declaration.members->statements)
-        if (const auto field = reinterpret_unique_ptr_cast<InterfaceField>(std::move(member)))
+        if (const auto field = dynamic_unique_ptr_cast<InterfaceField>(member))
             members.insert_or_assign(std::make_shared<LiteralType>(field->name.get_text()),
                                      from(field->type));
-        else if (auto method = reinterpret_unique_ptr_cast<InterfaceMethod>(std::move(member)))
+        else if (const auto method = dynamic_unique_ptr_cast<InterfaceMethod>(member))
             members.insert_or_assign(std::make_shared<LiteralType>(method->name.get_text()),
-                                     from_function_like(std::move(method)));
+                                     from_function_like(method));
 
     return std::make_unique<InterfaceType>(declaration.name.get_text(), members);
 }
 
 type_ptr_t Type::from(type_ref_ptr_t& type_ref)
 {
-    if (const auto primitive_type = reinterpret_unique_ptr_cast<PrimitiveTypeRef>(std::move(type_ref)))
+    if (const auto primitive_type = dynamic_unique_ptr_cast<PrimitiveTypeRef>(type_ref))
         return std::make_shared<PrimitiveType>(get_primitive_type_kind(primitive_type));
-    if (const auto literal_type = reinterpret_unique_ptr_cast<LiteralTypeRef>(std::move(type_ref)))
+    if (const auto type_name = dynamic_unique_ptr_cast<TypeNameRef>(type_ref))
+        return std::make_shared<TypeName>(type_name->name.get_text());
+    if (const auto literal_type = dynamic_unique_ptr_cast<LiteralTypeRef>(type_ref))
         return std::make_shared<LiteralType>(literal_type->value);
-    if (const auto nullable_type = reinterpret_unique_ptr_cast<NullableTypeRef>(std::move(type_ref)))
+    if (const auto nullable_type = dynamic_unique_ptr_cast<NullableTypeRef>(type_ref))
         return std::make_shared<NullableType>(from(nullable_type->non_nullable_type));
-    if (const auto union_type = reinterpret_unique_ptr_cast<UnionTypeRef>(std::move(type_ref)))
+    if (const auto union_type = dynamic_unique_ptr_cast<UnionTypeRef>(type_ref))
         return std::make_shared<UnionType>(from_list(union_type->types));
-    if (const auto intersection_type = reinterpret_unique_ptr_cast<IntersectionTypeRef>(std::move(type_ref)))
+    if (const auto intersection_type = dynamic_unique_ptr_cast<IntersectionTypeRef>(type_ref))
         return std::make_shared<IntersectionType>(from_list(intersection_type->types));
     // if (const auto object_type = reinterpret_unique_ptr_cast<ObjectTypeRef>(std::move(type_ref)))
     //     return std::make_shared<ObjectType>(from_list(function_type->parameter_types), from(function_type->return_type));
-    if (const auto function_type = reinterpret_unique_ptr_cast<FunctionTypeRef>(std::move(type_ref)))
-        return std::make_shared<FunctionType>(from_list(function_type->parameter_types), from(function_type->return_type));
+    if (const auto function_type = dynamic_unique_ptr_cast<FunctionTypeRef>(type_ref))
+        return from_function_like(function_type);
+    if (const auto type_parameter = dynamic_unique_ptr_cast<TypeParameterRef>(type_ref))
+    {
+        const auto base_type = type_parameter->base_type.has_value()
+                                   ? from(*type_parameter->base_type)
+                                   : std::optional<type_ptr_t>(std::nullopt);
+        const auto default_type = type_parameter->default_type.has_value()
+                                      ? from(*type_parameter->default_type)
+                                      : std::optional<type_ptr_t>(std::nullopt);
 
-    report_compiler_error("Failed to convert type ref to type");
+        return std::make_shared<TypeParameter>(type_parameter->name.get_text(), base_type, default_type);
+    }
+
+    report_compiler_error(std::string("Failed to convert type ref to type: ") + typeid(*type_ref).name());
 }
