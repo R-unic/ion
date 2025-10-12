@@ -3,7 +3,10 @@
 #include "ion/types/primitive_type.h"
 #include "ion/types/function_type.h"
 #include "ion/types/interface_type.h"
+#include "ion/types/intersection_type.h"
 #include "ion/types/literal_type.h"
+#include "ion/types/nullable_type.h"
+#include "ion/types/union_type.h"
 
 template <typename To, typename From>
 static std::unique_ptr<To> reinterpret_unique_ptr_cast(std::unique_ptr<From>&& from)
@@ -57,7 +60,16 @@ type_ptr_t Type::from(type_ref_ptr_t& type_ref)
 {
     if (const auto primitive_type = reinterpret_unique_ptr_cast<PrimitiveTypeRef>(std::move(type_ref)))
         return std::make_shared<PrimitiveType>(get_primitive_type_kind(primitive_type));
-
+    if (const auto literal_type = reinterpret_unique_ptr_cast<LiteralTypeRef>(std::move(type_ref)))
+        return std::make_shared<LiteralType>(literal_type->value);
+    if (const auto nullable_type = reinterpret_unique_ptr_cast<NullableTypeRef>(std::move(type_ref)))
+        return std::make_shared<NullableType>(from(nullable_type->non_nullable_type));
+    if (const auto union_type = reinterpret_unique_ptr_cast<UnionTypeRef>(std::move(type_ref)))
+        return std::make_shared<UnionType>(from_list(union_type->types));
+    if (const auto intersection_type = reinterpret_unique_ptr_cast<IntersectionTypeRef>(std::move(type_ref)))
+        return std::make_shared<IntersectionType>(from_list(intersection_type->types));
+    // if (const auto object_type = reinterpret_unique_ptr_cast<ObjectTypeRef>(std::move(type_ref)))
+    //     return std::make_shared<ObjectType>(from_list(function_type->parameter_types), from(function_type->return_type));
     if (const auto function_type = reinterpret_unique_ptr_cast<FunctionTypeRef>(std::move(type_ref)))
         return std::make_shared<FunctionType>(from_list(function_type->parameter_types), from(function_type->return_type));
 
