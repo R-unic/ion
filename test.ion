@@ -1,3 +1,2 @@
-interface Foo {
-    fn bar<T>(): T;
-}
+enum Abc { A B C }
+let x: Abc = 69
