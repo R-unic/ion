@@ -1,2 +1,2 @@
-let x = 69
-x
+type X = number
+let x: X

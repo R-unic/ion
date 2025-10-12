@@ -2,10 +2,16 @@
 
 #include "ion/intrinsics.h"
 #include "ion/symbols/named_symbol.h"
+#include "ion/symbols/type_declaration_symbol.h"
 
 void Binder::bind_declaration_symbol(NamedDeclaration* named_declaration)
 {
     named_declaration->symbol = define_declaration_symbol(named_declaration);
+}
+
+void Binder::bind_type_declaration_symbol(NamedDeclaration* named_declaration, type_ptr_t& type)
+{
+    named_declaration->symbol = define_type_declaration_symbol(named_declaration, type);
 }
 
 void Binder::bind_named_symbol(SyntaxNode& node, const Token& token)
@@ -27,6 +33,12 @@ void Binder::bind_empty_symbol(SyntaxNode& node)
 declaration_symbol_ptr_t Binder::define_declaration_symbol(const NamedDeclaration* named_declaration)
 {
     const auto symbol = std::make_shared<DeclarationSymbol>(named_declaration->name.get_text(), named_declaration);
+    return define_symbol(symbol);
+}
+
+declaration_symbol_ptr_t Binder::define_type_declaration_symbol(const NamedDeclaration* named_declaration, type_ptr_t& type)
+{
+    const auto symbol = std::make_shared<TypeDeclarationSymbol>(named_declaration->name.get_text(), std::move(type), named_declaration);
     return define_symbol(symbol);
 }
 
@@ -66,10 +78,6 @@ void Binder::visit_ast(const std::vector<statement_ptr_t>& statements)
     });
 }
 
-DEFINE_EMPTY_SYMBOL_VISITOR(primitive_literal, PrimitiveLiteral)
-
-DEFINE_EMPTY_SYMBOL_VISITOR(array_literal, ArrayLiteral)
-
 void Binder::visit_identifier(Identifier& identifier)
 {
     if (const auto symbol_opt = find_named_symbol(identifier.get_text()); symbol_opt.has_value())
@@ -91,27 +99,33 @@ void Binder::visit_expression_statement(ExpressionStatement& expression_statemen
 {
     ScopedAstVisitor::visit_expression_statement(expression_statement);
     expression_statement.symbol = expression_statement.expression->symbol;
-};
+}
+
+DEFINE_EMPTY_SYMBOL_VISITOR(primitive_literal, PrimitiveLiteral);
+DEFINE_EMPTY_SYMBOL_VISITOR(array_literal, ArrayLiteral);
 DEFINE_EMPTY_SYMBOL_VISITOR(tuple_literal, TupleLiteral);
 DEFINE_EMPTY_SYMBOL_VISITOR(range_literal, RangeLiteral);
 DEFINE_EMPTY_SYMBOL_VISITOR(rgb_literal, RgbLiteral);
 DEFINE_EMPTY_SYMBOL_VISITOR(hsv_literal, HsvLiteral);
-DEFINE_EMPTY_SYMBOL_VISITOR(vector_literal, VectorLiteral)
-DEFINE_EMPTY_SYMBOL_VISITOR(interpolated_string, InterpolatedString)
-DEFINE_EMPTY_SYMBOL_VISITOR(parenthesized, Parenthesized)
-DEFINE_EMPTY_SYMBOL_VISITOR(binary_op, BinaryOp)
-DEFINE_EMPTY_SYMBOL_VISITOR(assignment_op, AssignmentOp)
-DEFINE_EMPTY_SYMBOL_VISITOR(unary_op, UnaryOp)
-DEFINE_EMPTY_SYMBOL_VISITOR(postfix_unary_op, PostfixUnaryOp)
-DEFINE_EMPTY_SYMBOL_VISITOR(invocation, Invocation)
-DEFINE_EMPTY_SYMBOL_VISITOR(member_access, MemberAccess)
-DEFINE_EMPTY_SYMBOL_VISITOR(optional_member_access, OptionalMemberAccess)
-DEFINE_EMPTY_SYMBOL_VISITOR(element_access, ElementAccess)
-DEFINE_EMPTY_SYMBOL_VISITOR(await, Await)
-DEFINE_EMPTY_SYMBOL_VISITOR(name_of, NameOf)
-DEFINE_EMPTY_SYMBOL_VISITOR(type_of, TypeOf)
+DEFINE_EMPTY_SYMBOL_VISITOR(vector_literal, VectorLiteral);
+DEFINE_EMPTY_SYMBOL_VISITOR(interpolated_string, InterpolatedString);
+DEFINE_EMPTY_SYMBOL_VISITOR(parenthesized, Parenthesized);
+DEFINE_EMPTY_SYMBOL_VISITOR(binary_op, BinaryOp);
+DEFINE_EMPTY_SYMBOL_VISITOR(assignment_op, AssignmentOp);
+DEFINE_EMPTY_SYMBOL_VISITOR(unary_op, UnaryOp);
+DEFINE_EMPTY_SYMBOL_VISITOR(postfix_unary_op, PostfixUnaryOp);
+DEFINE_EMPTY_SYMBOL_VISITOR(invocation, Invocation);
+DEFINE_EMPTY_SYMBOL_VISITOR(member_access, MemberAccess);
+DEFINE_EMPTY_SYMBOL_VISITOR(optional_member_access, OptionalMemberAccess);
+DEFINE_EMPTY_SYMBOL_VISITOR(element_access, ElementAccess);
+DEFINE_EMPTY_SYMBOL_VISITOR(await, Await);
+DEFINE_EMPTY_SYMBOL_VISITOR(name_of, NameOf);
+DEFINE_EMPTY_SYMBOL_VISITOR(type_of, TypeOf);
 
 DEFINE_DECLARATION_VISITOR(variable_declaration, VariableDeclaration);
 DEFINE_SCOPED_DECLARATION_VISITOR(function_declaration, FunctionDeclaration);
 DEFINE_SCOPED_DECLARATION_VISITOR(event_declaration, EventDeclaration);
 DEFINE_SCOPED_DECLARATION_VISITOR(instance_constructor, InstanceConstructor);
+DEFINE_TYPE_DECLARATION_VISITOR(type_declaration, TypeDeclaration, Type::from(type_declaration.type));
+DEFINE_TYPE_DECLARATION_VISITOR(interface_declaration, InterfaceDeclaration, void_type.as_unique());
+// TODO: create real type from interface
