@@ -30,9 +30,9 @@ bool FileSpan::has_line_break_between(const FileSpan& other) const
     return end.line < other.start.line;
 }
 
-FileLocation get_start_location(const SourceFile* file)
+FileLocation get_start_location(const SourceFile& file)
 {
-    return FileLocation { .file = file };
+    return FileLocation { .file = &file };
 }
 
 FileSpan create_span(const FileLocation& start, const FileLocation& end)

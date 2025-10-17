@@ -220,11 +220,11 @@ void lex(LexState& state)
     report_unexpected_character(current_span(state), character);
 }
 
-std::vector<Token> tokenize(const SourceFile* file)
+std::vector<Token> tokenize(const SourceFile& file)
 {
-    logger::info("Lexing file: " + file->path);
+    logger::info("Lexing file: " + file.path);
     auto state = LexState {
-        { .file = file },
+        { .file = &file },
         get_start_location(file),
         {}
     };

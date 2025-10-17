@@ -22,12 +22,12 @@ static std::string read_file(const std::string& path)
     return contents;
 }
 
-SourceFile* create_file(const std::string& path)
+SourceFile create_file(const std::string& path)
 {
     const auto text = read_file(path);
     logger::info("Created source file from path: " + path);
 
-    return new SourceFile(path, text);
+    return SourceFile(path, text);
 }
 
 std::string format_location(const FileLocation& location, const bool include_file_path, const bool colors)
