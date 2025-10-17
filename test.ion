@@ -1,2 +1,2 @@
-enum Abc { A B C }
-let x: Abc = 69
+let const x = 69
+x

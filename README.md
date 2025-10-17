@@ -110,11 +110,12 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] `print` symbol
         - [ ] Type pack arguments (e.g. `print<T...>(T...): void`)
     - [ ] Roblox data type symbols (`Vector3`, `Color3`, etc.)
-- [ ] Symbol binding
+- [x] Symbol binding
     - [x] Declaration symbols
     - [x] Named symbols inherited from declarations
     - [x] Type symbols
-- [ ] Type solving/checking
+- [ ] Type solving
+- [ ] Type checking
 - [ ] Luau transpilation (Ion AST -> Luau AST)
 - [ ] Luau rendering (Luau AST -> Luau source)
 

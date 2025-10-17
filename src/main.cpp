@@ -3,6 +3,7 @@
 #include "ion/parsing/parser.h"
 #include "ion/binder.h"
 #include "ion/resolver.h"
+#include "ion/type_solver.h"
 #include "ion/ast/viewer.h"
 
 int main()
@@ -21,6 +22,11 @@ int main()
     const auto binder = new Binder;
     binder->visit_ast(statements);
     logger::info("Successfully bound AST");
+
+    const auto type_solver = new TypeSolver;
+    type_solver->visit_ast(statements);
+    logger::info("Successfully solved types for AST");
+
     for (const auto& statement : statements)
         if (statement->symbol.has_value())
             std::cout << typeid(*statement).name() << ": " << statement->symbol.value()->to_string() << '\n';

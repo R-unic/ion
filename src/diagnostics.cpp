@@ -68,7 +68,9 @@ static void report_warning(const uint8_t code, const FileSpan& span, diagnostic_
 
 [[noreturn]] void report_compiler_error(const std::string& message)
 {
-    error("Compiler error: " + message, -1);
+    const auto full_message = "Compiler error: " + message;
+    print(full_message);
+    throw std::exception(full_message.c_str(), -1);
 }
 
 [[noreturn]] void report_unexpected_character(const FileSpan& span, const char character)
@@ -186,6 +188,13 @@ void report_duplicate_member(const FileSpan& span, const std::string& field_type
     report_error(18, span, DuplicateField { .field_type = field_type });
 }
 
+GENERATE_ERROR_NODE_OVERLOADS(report_no_variable_type_or_initializer)
+
+void report_no_variable_type_or_initializer(const FileSpan& span)
+{
+    report_error(19, span, NoVariableTypeOrInitializer {});
+}
+
 GENERATE_NODE_OVERLOADS(warn_unreachable_code);
 
 void warn_unreachable_code(const FileSpan& span)
@@ -249,6 +258,8 @@ constexpr std::string get_diagnostic_message(const Diagnostic& diagnostic)
             return std::string("Cannot 'await' outside of an async function.");
         else if constexpr (std::is_same_v<type_t, DuplicateField>)
             return "Duplicate " + arg.field_type + '.';
+        else if constexpr (std::is_same_v<type_t, NoVariableTypeOrInitializer>)
+            return std::string("Variable declarations must have, a type, an initializer, or both.");
         else if constexpr (std::is_same_v<type_t, UnreachableCode>)
             return std::string("Unreachable code.");
         else if constexpr (std::is_same_v<type_t, AmbiguousEquals>)
