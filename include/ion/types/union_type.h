@@ -13,10 +13,25 @@ struct UnionType final : Type
     {
     }
 
-    [[nodiscard]] type_ptr_t as_shared() const override
+    [[nodiscard]] bool is_literal_union() const override
     {
-        return std::make_shared<UnionType>(*this);
+        auto is_literal = true;
+        for (const auto& type : types)
+            is_literal = is_literal && type->is_literal_like();
+
+        return is_literal;
     }
+
+    [[nodiscard]] bool is_same(const type_ptr_t& other) const override
+    {
+        if (!other->is_union())
+            return false;
+
+        const auto union_ = std::dynamic_pointer_cast<UnionType>(other);
+        return is_list_same(types, union_->types);
+    }
+
+    TYPE_OVERRIDES(union, UnionType);
 
     [[nodiscard]] std::string to_string() const override
     {

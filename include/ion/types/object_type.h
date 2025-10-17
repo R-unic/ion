@@ -6,22 +6,6 @@
 
 struct ObjectType : Type
 {
-    struct TypePtrHash
-    {
-        size_t operator()(const std::shared_ptr<Type>& ptr) const noexcept
-        {
-            return std::hash<const Type*> {}(ptr.get());
-        }
-    };
-
-    struct TypePtrEq
-    {
-        bool operator()(const std::shared_ptr<Type>& a, const std::shared_ptr<Type>& b) const noexcept
-        {
-            return a.get() == b.get();
-        }
-    };
-
     using member_map_t = std::unordered_map<type_ptr_t, type_ptr_t, TypePtrHash, TypePtrEq>;
     member_map_t members;
 
@@ -30,10 +14,17 @@ struct ObjectType : Type
     {
     }
 
-    [[nodiscard]] type_ptr_t as_shared() const override
+    [[nodiscard]] bool is_same(const type_ptr_t& other) const override
     {
-        return std::make_shared<ObjectType>(*this);
+        CAST_CHECK(object, ObjectType);
+        auto is_same = true;
+        for (const auto& [key, value] : members)
+            is_same = is_same && object->members.contains(key) && object->members.at(key)->is_same(value);
+
+        return is_same;
     }
+
+    TYPE_OVERRIDES(object, ObjectType);
 
     [[nodiscard]] std::string to_string() const override
     {

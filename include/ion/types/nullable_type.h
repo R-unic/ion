@@ -13,10 +13,13 @@ struct NullableType final : Type
     {
     }
 
-    [[nodiscard]] type_ptr_t as_shared() const override
+    [[nodiscard]] bool is_same(const type_ptr_t& other) const override
     {
-        return std::make_shared<NullableType>(*this);
+        CAST_CHECK(nullable, NullableType);
+        return non_nullable_type->is_same(nullable->non_nullable_type);
     }
+
+    TYPE_OVERRIDES(nullable, NullableType);
 
     [[nodiscard]] std::string to_string() const override
     {

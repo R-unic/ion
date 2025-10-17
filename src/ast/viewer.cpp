@@ -784,7 +784,7 @@ void AstViewer::visit_tuple_type(TupleTypeRef& tuple_type)
 {
     indent_++;
     write_line("TupleTypeRef(");
-    write_list<type_ref_ptr_t>(tuple_type.elements, [&](const auto& type_ref)
+    write_list<type_ref_ptr_t>(tuple_type.element_types, [&](const auto& type_ref)
     {
         visit(type_ref);
     });

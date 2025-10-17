@@ -24,19 +24,17 @@ struct LiteralType final : PrimitiveType
         }, value);
     }
 
-    [[nodiscard]] bool is_literal() const override
+    [[nodiscard]] bool is_same(const type_ptr_t& other) const override
     {
-        return true;
+        CAST_CHECK(literal, LiteralType);
+        return value == literal->value;
     }
+
+    TYPE_OVERRIDES(literal, LiteralType);
 
     [[nodiscard]] type_ptr_t as_primitive() const
     {
         return std::make_shared<PrimitiveType>(*this);
-    }
-
-    [[nodiscard]] type_ptr_t as_shared() const override
-    {
-        return std::make_shared<LiteralType>(*this);
     }
 
     [[nodiscard]] std::string to_string() const override

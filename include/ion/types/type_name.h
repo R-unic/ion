@@ -19,10 +19,13 @@ struct TypeName final : Type
     {
     }
 
-    [[nodiscard]] type_ptr_t as_shared() const override
+    [[nodiscard]] bool is_same(const type_ptr_t& other) const override
     {
-        return std::make_shared<TypeName>(*this);
+        CAST_CHECK(type_name, TypeName);
+        return name == type_name->name;
     }
+
+    TYPE_OVERRIDES(type_name, TypeName);
 
     [[nodiscard]] std::string to_string() const override
     {

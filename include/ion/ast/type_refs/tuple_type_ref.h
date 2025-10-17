@@ -8,12 +8,12 @@ class TupleTypeRef final : public TypeRef
 {
 public:
     Token l_paren, r_paren;
-    std::vector<type_ref_ptr_t> elements;
+    std::vector<type_ref_ptr_t> element_types;
 
-    explicit TupleTypeRef(Token l_paren, std::vector<type_ref_ptr_t> elements, Token r_paren)
+    explicit TupleTypeRef(Token l_paren, std::vector<type_ref_ptr_t> element_types, Token r_paren)
         : l_paren(std::move(l_paren)),
           r_paren(std::move(r_paren)),
-          elements(std::move(elements))
+          element_types(std::move(element_types))
     {
     }
 
@@ -39,6 +39,6 @@ public:
 
     [[nodiscard]] std::string get_text() const override
     {
-        return '(' + join_by(elements, ", ") + ')';
+        return '(' + join_by(element_types, ", ") + ')';
     }
 };

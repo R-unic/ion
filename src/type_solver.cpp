@@ -2,8 +2,10 @@
 
 #include <iostream>
 
+#include "ion/types/array_type.h"
 #include "ion/types/literal_type.h"
 #include "ion/types/primitive_type.h"
+#include "ion/types/union_type.h"
 
 void TypeSolver::bind_type(const SyntaxNode& node, const type_ptr_t& type)
 {
@@ -18,6 +20,58 @@ void TypeSolver::visit_primitive_literal(PrimitiveLiteral& primitive_literal)
         type = std::make_shared<LiteralType>(*primitive_literal.value);
 
     bind_type(primitive_literal, type);
+}
+
+void TypeSolver::visit_array_literal(ArrayLiteral& array_literal)
+{
+    AstVisitor::visit_array_literal(array_literal);
+    std::vector<type_ptr_t> types;
+    for (const auto& element : array_literal.elements)
+    {
+        ASSERT_SYMBOL(element->symbol);
+
+        const auto symbol = *element->symbol;
+        ASSERT_TYPE(symbol);
+        types.push_back(*symbol->type);
+    }
+
+    auto is_singular = true;
+    auto last_type = types.front();
+    for (const auto& type : types)
+    {
+        is_singular = is_singular && last_type->is_same(type);
+        last_type = type;
+    }
+
+    const auto element_type = is_singular ? last_type : std::make_shared<UnionType>(types);
+    const auto type = std::make_shared<ArrayType>(element_type);
+    bind_type(array_literal, type);
+}
+
+// TODO: constant optimizations can be done here
+void TypeSolver::visit_range_literal(RangeLiteral& range_literal)
+{
+    AstVisitor::visit_range_literal(range_literal);
+}
+
+void TypeSolver::visit_tuple_literal(TupleLiteral& tuple_literal)
+{
+    AstVisitor::visit_tuple_literal(tuple_literal);
+}
+
+void TypeSolver::visit_rgb_literal(RgbLiteral& rgb_literal)
+{
+    AstVisitor::visit_rgb_literal(rgb_literal);
+}
+
+void TypeSolver::visit_hsv_literal(HsvLiteral& hsv_literal)
+{
+    AstVisitor::visit_hsv_literal(hsv_literal);
+}
+
+void TypeSolver::visit_vector_literal(VectorLiteral& vector_literal)
+{
+    AstVisitor::visit_vector_literal(vector_literal);
 }
 
 void TypeSolver::visit_identifier(Identifier& identifier)
@@ -65,13 +119,8 @@ void TypeSolver::visit_variable_declaration(VariableDeclaration& variable_declar
         ASSERT_TYPE(initializer_symbol);
 
         const auto initializer_type = *initializer_symbol->type;
-        if (is_const && initializer_type->is_literal())
-            type = initializer_type;
-        else
-        {
-            const auto literal_type = std::dynamic_pointer_cast<LiteralType>(initializer_type);
-            type = literal_type->as_primitive();
-        }
+        const auto keep_constness = is_const && initializer_type->is_literal_like();
+        type = keep_constness ? initializer_type : Type::lower(initializer_type);
     }
     else
         report_no_variable_type_or_initializer(variable_declaration.get_span());

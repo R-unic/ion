@@ -6,12 +6,6 @@
 #include "ion/file_location.h"
 #include "ion/symbols/symbol.h"
 
-#define DEFINE_IS_FN(name) \
-    [[nodiscard]] virtual bool is_##name() const \
-    { \
-        return false; \
-    }
-
 class SyntaxNode
 {
 public:

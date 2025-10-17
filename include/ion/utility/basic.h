@@ -1,10 +1,23 @@
 #pragma once
 #include <variant>
 #include <ranges>
+#include <set>
 #include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#define DEFINE_IS_FN(name) \
+    [[nodiscard]] virtual bool is_##name() const \
+    { \
+        return false; \
+    }
+
+#define TRUE_IS_FN(name) \
+    [[nodiscard]] bool is_##name() const override \
+    { \
+        return true; \
+    }
 
 using primitive_value_t = std::variant<double, bool, std::string>;
 

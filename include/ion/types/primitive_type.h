@@ -20,10 +20,13 @@ struct PrimitiveType : Type
     {
     }
 
-    [[nodiscard]] type_ptr_t as_shared() const override
+    [[nodiscard]] bool is_same(const type_ptr_t& other) const override
     {
-        return std::make_shared<PrimitiveType>(*this);
+        CAST_CHECK(primitive, PrimitiveType);
+        return kind == primitive->kind;
     }
+
+    TYPE_OVERRIDES(primitive, PrimitiveType);
 
     [[nodiscard]] std::string to_string() const override
     {

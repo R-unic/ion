@@ -395,7 +395,7 @@ struct AstVisitor : ExpressionVisitor<R>, StatementVisitor<R>, TypeRefVisitor<R>
 
     void visit_tuple_type(TupleTypeRef& tuple_type) override
     {
-        visit_type_refs(tuple_type.elements);
+        visit_type_refs(tuple_type.element_types);
     }
 
     void visit_function_type(FunctionTypeRef& function_type) override

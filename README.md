@@ -115,7 +115,12 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Named symbols inherited from declarations
     - [x] Type symbols
 - [ ] Type solving
-    - [x] Literals
+    - [x] Primitive literals
+    - [ ] Internal literals (array, tuple, range)
+        - [x] Array
+        - [ ] Tuple
+        - [ ] Range
+    - [ ] Roblox literals (rgb, hsv, vector)
     - [x] Identifiers
     - [x] Variable declarations
 - [ ] Type checking

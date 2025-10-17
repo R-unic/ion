@@ -14,10 +14,13 @@ struct InterfaceType final : ObjectType
     {
     }
 
-    [[nodiscard]] type_ptr_t as_shared() const override
+    [[nodiscard]] bool is_same(const type_ptr_t& other) const override
     {
-        return std::make_shared<InterfaceType>(*this);
+        CAST_CHECK(interface, InterfaceType);
+        return name == interface->name && ObjectType::is_same(other);
     }
+
+    TYPE_OVERRIDES(interface, InterfaceType);
 
     [[nodiscard]] std::string to_string() const override
     {

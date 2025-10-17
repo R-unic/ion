@@ -1,2 +1,1 @@
-let const x = 69
-x
+let const vec = [69, 420]

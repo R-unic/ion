@@ -13,10 +13,13 @@ struct IntersectionType final : Type
     {
     }
 
-    [[nodiscard]] type_ptr_t as_shared() const override
+    [[nodiscard]] bool is_same(const type_ptr_t& other) const override
     {
-        return std::make_shared<IntersectionType>(*this);
+        CAST_CHECK(intersection, IntersectionType);
+        return is_list_same(types, intersection->types);
     }
+
+    TYPE_OVERRIDES(intersection, IntersectionType);
 
     [[nodiscard]] std::string to_string() const override
     {

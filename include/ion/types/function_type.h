@@ -16,10 +16,15 @@ struct FunctionType final : Type
     {
     }
 
-    [[nodiscard]] type_ptr_t as_shared() const override
+    [[nodiscard]] bool is_same(const type_ptr_t& other) const override
     {
-        return std::make_shared<FunctionType>(*this);
+        CAST_CHECK(function, FunctionType);
+        return is_list_same(type_parameters, function->type_parameters)
+               && is_list_same(parameters, function->parameters)
+               && return_type->is_same(function->return_type);
     }
+
+    TYPE_OVERRIDES(function, FunctionType);
 
     [[nodiscard]] std::string to_string() const override
     {
