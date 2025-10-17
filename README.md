@@ -115,6 +115,9 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Named symbols inherited from declarations
     - [x] Type symbols
 - [ ] Type solving
+    - [x] Literals
+    - [x] Identifiers
+    - [x] Variable declarations
 - [ ] Type checking
 - [ ] Luau transpilation (Ion AST -> Luau AST)
 - [ ] Luau rendering (Luau AST -> Luau source)
