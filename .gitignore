@@ -1,7 +1,7 @@
 bin/
 obj/
 .idea/
-Ion/
+./Ion/
 x64/
 **/x64/
 /packages/
