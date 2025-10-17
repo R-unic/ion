@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "ion/compiler.h"
 #include "ion/parsing/parser.h"
 #include "ion/binder.h"
@@ -34,9 +36,31 @@ void Compiler::pre_emit(SourceFile& file)
     const auto type_solver = new TypeSolver;
     type_solver->visit_ast(file.statements);
     logger::info("Successfully solved types for AST");
+
+    for (const auto& statement : file.statements)
+        if (statement->symbol.has_value())
+            std::cout << typeid(*statement).name() << ": " << statement->symbol.value()->to_string() << '\n';
 }
 
 void Compiler::emit(SourceFile& file)
 {
     // TODO: transpilation
+}
+
+void compile_files(std::vector<SourceFile>& files)
+{
+    auto compiler = Compiler(std::move(files));
+    compiler.emit();
+}
+
+void compile_file(const std::string& path)
+{
+    auto file = create_file(path);
+    compile_file(file);
+}
+
+void compile_file(SourceFile& file)
+{
+    auto compiler = Compiler(std::move(file));
+    compiler.emit();
 }
