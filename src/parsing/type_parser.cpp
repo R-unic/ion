@@ -46,15 +46,6 @@ type_ref_ptr_t parse_literal_type(const ParseState& state)
     return LiteralTypeRef::create(token, value);
 }
 
-type_ref_ptr_t parse_tuple_type(ParseState& state)
-{
-    const auto l_paren = previous_token_guaranteed(state);
-    auto elements = parse_type_list(state);
-    const auto r_paren = expect(state, SyntaxKind::RParen);
-
-    return TupleTypeRef::create(l_paren, std::move(elements), r_paren);
-}
-
 type_ref_ptr_t parse_singular_type(ParseState& state)
 {
     if (is_eof(state))
@@ -64,8 +55,6 @@ type_ref_ptr_t parse_singular_type(ParseState& state)
         return parse_type_name(state);
     if (match_any(state, primitive_literal_syntaxes))
         return parse_literal_type(state);
-    if (match(state, SyntaxKind::LParen))
-        return parse_tuple_type(state);
 
     const auto token = current_token_guaranteed(state);
     report_expected_different_syntax(token.span, "type", token.get_text(), false);
@@ -126,28 +115,35 @@ static type_ref_ptr_t parse_array_type(ParseState& state)
     return std::move(element_type);
 }
 
-static type_ref_ptr_t parse_function_type(ParseState& state)
+static type_ref_ptr_t parse_function_or_type(ParseState& state)
 {
-    if (!check(state, SyntaxKind::LArrow) && !check(state, SyntaxKind::LParen))
+    const auto has_type_parameters = check(state, SyntaxKind::LArrow);
+    if (!has_type_parameters && !check(state, SyntaxKind::LParen))
         return parse_array_type(state);
 
     std::optional<TypeListClause*> type_parameters = std::nullopt;
-    if (check(state, SyntaxKind::LArrow))
+    if (has_type_parameters)
         type_parameters = parse_type_parameters(state);
 
     const auto l_paren = expect(state, SyntaxKind::LParen);
-    auto parameter_types = parse_type_list(state);
+    auto types = parse_type_list(state);
     const auto r_paren = expect(state, SyntaxKind::RParen);
+
+    if (!has_type_parameters && !check(state, SyntaxKind::LongArrow))
+    {
+        // we have a tuple
+        return TupleTypeRef::create(l_paren, std::move(types), r_paren);
+    }
+
     const auto long_arrow = expect(state, SyntaxKind::LongArrow);
     auto return_type = parse_type(state);
-
-    return FunctionTypeRef::create(type_parameters, l_paren, std::move(parameter_types), r_paren,
+    return FunctionTypeRef::create(type_parameters, l_paren, std::move(types), r_paren,
                                    long_arrow, std::move(return_type));
 }
 
 static type_ref_ptr_t parse_nullable_type(ParseState& state)
 {
-    auto non_nullable_type = parse_function_type(state);
+    auto non_nullable_type = parse_function_or_type(state);
     return match(state, SyntaxKind::Question)
                ? NullableTypeRef::create(std::move(non_nullable_type), previous_token_guaranteed(state))
                : std::move(non_nullable_type);
