@@ -114,12 +114,14 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Declaration symbols
     - [x] Named symbols inherited from declarations
     - [x] Type symbols
+    - [ ] Generic symbols
 - [ ] Type solving
     - [x] Primitive literals
     - [ ] Internal literals (array, tuple, range)
         - [x] Array
         - [x] Tuple
         - [ ] Range
+    - [ ] Generics
     - [ ] Roblox literals (rgb, hsv, vector)
     - [x] Identifiers
     - [x] Variable declarations
