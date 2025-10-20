@@ -1,11 +1,8 @@
-#include "ion/type_solver.h"
-
 #include <iostream>
 
-#include "ion/types/array_type.h"
-#include "ion/types/literal_type.h"
-#include "ion/types/primitive_type.h"
-#include "ion/types/union_type.h"
+#include "ion/type_solver.h"
+#include "ion/utility/types.h"
+#include "ion/types/all.h"
 
 void TypeSolver::bind_type(const SyntaxNode& node, const type_ptr_t& type)
 {
@@ -25,25 +22,7 @@ void TypeSolver::visit_primitive_literal(PrimitiveLiteral& primitive_literal)
 void TypeSolver::visit_array_literal(ArrayLiteral& array_literal)
 {
     AstVisitor::visit_array_literal(array_literal);
-    std::vector<type_ptr_t> types;
-    for (const auto& element : array_literal.elements)
-    {
-        ASSERT_SYMBOL(element->symbol);
-
-        const auto symbol = *element->symbol;
-        ASSERT_TYPE(symbol);
-        types.push_back(*symbol->type);
-    }
-
-    auto is_singular = true;
-    auto last_type = types.front();
-    for (const auto& type : types)
-    {
-        is_singular = is_singular && last_type->is_same(type);
-        last_type = type;
-    }
-
-    const auto element_type = is_singular ? last_type : std::make_shared<UnionType>(types);
+    const auto element_type = create_union(get_types(array_literal.elements));
     const auto type = std::make_shared<ArrayType>(element_type);
     bind_type(array_literal, type);
 }
@@ -57,6 +36,9 @@ void TypeSolver::visit_range_literal(RangeLiteral& range_literal)
 void TypeSolver::visit_tuple_literal(TupleLiteral& tuple_literal)
 {
     AstVisitor::visit_tuple_literal(tuple_literal);
+    const auto types = get_types(tuple_literal.elements);
+    const auto type = std::make_shared<TupleType>(types);
+    bind_type(tuple_literal, type);
 }
 
 void TypeSolver::visit_rgb_literal(RgbLiteral& rgb_literal)

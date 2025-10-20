@@ -1,39 +1,21 @@
-#include <set>
-
 #include "ion/ast/ast.h"
 #include "ion/types/type.h"
 
-#include "ion/types/array_type.h"
-#include "ion/types/primitive_type.h"
-#include "ion/types/function_type.h"
-#include "ion/types/interface_type.h"
-#include "ion/types/intersection_type.h"
-#include "ion/types/literal_type.h"
-#include "ion/types/nullable_type.h"
-#include "ion/types/tuple_type.h"
-#include "ion/types/type_name.h"
-#include "ion/types/type_parameter.h"
-#include "ion/types/union_type.h"
+#include "ion/types/all.h"
 
 template <typename To, typename From>
-std::unique_ptr<To> dynamic_unique_ptr_cast(std::unique_ptr<From>& from)
+To* dynamic_unique_ptr_cast(std::unique_ptr<From>& from)
 {
-    if (auto* ptr = dynamic_cast<To*>(from.get()))
-    {
-        from.release();
-        return std::unique_ptr<To>(ptr);
-    }
-    return nullptr;
+    return dynamic_cast<To*>(from.get());
 }
 
-static PrimitiveTypeKind get_primitive_type_kind(const std::unique_ptr<PrimitiveTypeRef>& primitive)
+static PrimitiveTypeKind get_primitive_type_kind(const std::string& primitive_name)
 {
-    const auto text = primitive->get_text();
-    if (text == "number")
+    if (primitive_name == "number")
         return PrimitiveTypeKind::Number;
-    if (text == "string")
+    if (primitive_name == "string")
         return PrimitiveTypeKind::String;
-    if (text == "bool")
+    if (primitive_name == "bool")
         return PrimitiveTypeKind::Bool;
 
     return PrimitiveTypeKind::Void;
@@ -58,7 +40,7 @@ type_ptr_t from_function_like(const FunctionLike& fn_like)
     return std::make_shared<FunctionType>(type_parameters, from_list(fn_like->parameter_types), Type::from(fn_like->return_type));
 }
 
-type_ptr_t from_type_parameter(const std::unique_ptr<TypeParameterRef>& type_parameter)
+type_ptr_t from_type_parameter(TypeParameterRef* type_parameter)
 {
     const auto base_type = type_parameter->base_type.has_value()
                                ? Type::from(*type_parameter->base_type)
@@ -86,28 +68,32 @@ type_ptr_t Type::from_interface(const InterfaceDeclaration& declaration)
 
 type_ptr_t Type::from(type_ref_ptr_t& type_ref)
 {
+    std::optional<type_ptr_t> result;
     if (const auto primitive_type = dynamic_unique_ptr_cast<PrimitiveTypeRef>(type_ref))
-        return std::make_shared<PrimitiveType>(get_primitive_type_kind(primitive_type));
+        result = std::make_shared<PrimitiveType>(get_primitive_type_kind(primitive_type->get_text()));
     if (const auto type_name = dynamic_unique_ptr_cast<TypeNameRef>(type_ref))
-        return std::make_shared<TypeName>(type_name->name.get_text());
+        result = std::make_shared<TypeName>(type_name->name.get_text());
     if (const auto literal_type = dynamic_unique_ptr_cast<LiteralTypeRef>(type_ref))
-        return std::make_shared<LiteralType>(literal_type->value);
+        result = std::make_shared<LiteralType>(literal_type->value);
     if (const auto nullable_type = dynamic_unique_ptr_cast<NullableTypeRef>(type_ref))
-        return std::make_shared<NullableType>(from(nullable_type->non_nullable_type));
+        result = std::make_shared<NullableType>(from(nullable_type->non_nullable_type));
     if (const auto array_type = dynamic_unique_ptr_cast<ArrayTypeRef>(type_ref))
-        return std::make_shared<ArrayType>(from(array_type->element_type));
+        result = std::make_shared<ArrayType>(from(array_type->element_type));
     if (const auto tuple_type = dynamic_unique_ptr_cast<TupleTypeRef>(type_ref))
-        return std::make_shared<TupleType>(from_list(tuple_type->element_types));
+        result = std::make_shared<TupleType>(from_list(tuple_type->element_types));
     if (const auto union_type = dynamic_unique_ptr_cast<UnionTypeRef>(type_ref))
-        return std::make_shared<UnionType>(from_list(union_type->types));
+        result = std::make_shared<UnionType>(from_list(union_type->types));
     if (const auto intersection_type = dynamic_unique_ptr_cast<IntersectionTypeRef>(type_ref))
-        return std::make_shared<IntersectionType>(from_list(intersection_type->types));
+        result = std::make_shared<IntersectionType>(from_list(intersection_type->types));
     // if (const auto object_type = reinterpret_unique_ptr_cast<ObjectTypeRef>(std::move(type_ref)))
-    //     return std::make_shared<ObjectType>(from_list(function_type->parameter_types), from(function_type->return_type));
+    //     result = std::make_shared<ObjectType>(from_list(function_type->parameter_types), from(function_type->return_type));
     if (const auto function_type = dynamic_unique_ptr_cast<FunctionTypeRef>(type_ref))
-        return from_function_like(function_type);
+        result = from_function_like(function_type);
     if (const auto type_parameter = dynamic_unique_ptr_cast<TypeParameterRef>(type_ref))
-        return from_type_parameter(type_parameter);
+        result = from_type_parameter(type_parameter);
+
+    if (result.has_value())
+        return *result;
 
     report_compiler_error(std::string("Failed to convert type ref to type: ") + typeid(*type_ref).name());
 }

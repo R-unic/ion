@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "ion/parsing/parser.h"
 
 ColonTypeClause* parse_colon_type_clause(ParseState& state)
@@ -115,7 +117,7 @@ static type_ref_ptr_t parse_array_type(ParseState& state)
     return std::move(element_type);
 }
 
-static type_ref_ptr_t parse_function_or_type(ParseState& state)
+static type_ref_ptr_t parse_function_or_tuple_type(ParseState& state)
 {
     const auto has_type_parameters = check(state, SyntaxKind::LArrow);
     if (!has_type_parameters && !check(state, SyntaxKind::LParen))
@@ -130,10 +132,7 @@ static type_ref_ptr_t parse_function_or_type(ParseState& state)
     const auto r_paren = expect(state, SyntaxKind::RParen);
 
     if (!has_type_parameters && !check(state, SyntaxKind::LongArrow))
-    {
-        // we have a tuple
         return TupleTypeRef::create(l_paren, std::move(types), r_paren);
-    }
 
     const auto long_arrow = expect(state, SyntaxKind::LongArrow);
     auto return_type = parse_type(state);
@@ -143,7 +142,7 @@ static type_ref_ptr_t parse_function_or_type(ParseState& state)
 
 static type_ref_ptr_t parse_nullable_type(ParseState& state)
 {
-    auto non_nullable_type = parse_function_or_type(state);
+    auto non_nullable_type = parse_function_or_tuple_type(state);
     return match(state, SyntaxKind::Question)
                ? NullableTypeRef::create(std::move(non_nullable_type), previous_token_guaranteed(state))
                : std::move(non_nullable_type);

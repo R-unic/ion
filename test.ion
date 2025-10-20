@@ -1,1 +1,1 @@
-let const vec = [69, 420]
+let const tuple: (number, number, number) = (69, 420, 1337)

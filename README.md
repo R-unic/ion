@@ -118,7 +118,7 @@ For any bugs please create an issue, describe it descriptively, and include how 
     - [x] Primitive literals
     - [ ] Internal literals (array, tuple, range)
         - [x] Array
-        - [ ] Tuple
+        - [x] Tuple
         - [ ] Range
     - [ ] Roblox literals (rgb, hsv, vector)
     - [x] Identifiers
