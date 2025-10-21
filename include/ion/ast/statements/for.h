@@ -50,6 +50,6 @@ public:
     [[nodiscard]] std::string get_text() const override
     {
         const auto separator = statement->is_block() ? ' ' : '\n';
-        return "for " + join_tokens_by(names, ", ") + " : " + iterable->get_text() + separator + statement->get_text();
+        return "for " + join_by(names, ", ") + " : " + iterable->get_text() + separator + statement->get_text();
     }
 };

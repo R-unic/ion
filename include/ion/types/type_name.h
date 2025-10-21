@@ -1,26 +1,23 @@
 #pragma once
-#include <optional>
 #include <string>
 
 #include "type.h"
-
-static std::string get_last_segment(const std::string& s)
-{
-    const auto pos = s.rfind("::");
-    return pos == std::string::npos ? s : s.substr(pos + 2);
-}
+#include "ion/utility/ast.h"
 
 struct TypeName final : Type
 {
     std::string name;
+    std::vector<type_ptr_t> type_arguments;
 
-    explicit TypeName(std::string name)
-        : name(std::move(name))
+    explicit TypeName(std::string name, std::vector<type_ptr_t> type_arguments)
+        : name(std::move(name)),
+          type_arguments(std::move(type_arguments))
     {
     }
 
     [[nodiscard]] bool is_same(const type_ptr_t& other) const override
     {
+        // TODO: check type params
         CAST_CHECK(type_name, TypeName);
         return name == type_name->name;
     }
@@ -29,6 +26,6 @@ struct TypeName final : Type
 
     [[nodiscard]] std::string to_string() const override
     {
-        return name;
+        return name + generics_to_string(type_arguments);
     }
 };

@@ -6,6 +6,16 @@
 #include "ion/diagnostics.h"
 #include "ion/ast/node.h"
 
+#define DEFINE_JOIN_BY_METHOD(element_name, string_eval, element_type) \
+    inline std::string join_by(const std::vector<element_type>& element_name##s, const std::string& separator) \
+    { \
+        std::vector<std::string> texts = {}; \
+        texts.reserve(element_name##s.size()); \
+        for (const auto& element_name : element_name##s) \
+            texts.push_back(string_eval()); \
+        return join_by(texts, separator); \
+    }
+
 static void check_for_ambiguous_equals(const expression_ptr_t& condition)
 {
     if (condition->is_assignment())
@@ -34,42 +44,13 @@ inline void assert_assignment_target(const expression_ptr_t& expression)
         report_invalid_assignment(expression);
 }
 
-inline std::string join_by(const std::vector<expression_ptr_t>& expressions, const std::string& separator)
+DEFINE_JOIN_BY_METHOD(type, type->to_string, type_ptr_t);
+DEFINE_JOIN_BY_METHOD(expression, expression->get_text, expression_ptr_t);
+DEFINE_JOIN_BY_METHOD(statement, statement->get_text, statement_ptr_t);
+DEFINE_JOIN_BY_METHOD(type_ref, type_ref->get_text, type_ref_ptr_t);
+DEFINE_JOIN_BY_METHOD(token, token.get_text, Token);
+
+inline std::string generics_to_string(const std::vector<type_ptr_t>& type_parameters)
 {
-    std::vector<std::string> texts = {};
-    texts.reserve(texts.size());
-    for (const auto& expression : expressions)
-        texts.push_back(expression->get_text());
-
-    return join_strings_by(texts, separator);
-}
-
-inline std::string join_by(const std::vector<statement_ptr_t>& statements, const std::string& separator)
-{
-    std::vector<std::string> texts = {};
-    texts.reserve(texts.size());
-    for (const auto& statement : statements)
-        texts.push_back(statement->get_text());
-
-    return join_strings_by(texts, separator);
-}
-
-inline std::string join_by(const std::vector<type_ref_ptr_t>& type_refs, const std::string& separator)
-{
-    std::vector<std::string> texts = {};
-    texts.reserve(texts.size());
-    for (const auto& type_ref : type_refs)
-        texts.push_back(type_ref->get_text());
-
-    return join_strings_by(texts, separator);
-}
-
-inline std::string join_tokens_by(const std::vector<Token>& tokens, const std::string& separator)
-{
-    std::vector<std::string> texts = {};
-    texts.reserve(texts.size());
-    for (const auto& token : tokens)
-        texts.push_back(token.get_text());
-
-    return join_strings_by(texts, separator);
+    return type_parameters.empty() ? "" : '<' + join_by(type_parameters, ", ") + '>';
 }

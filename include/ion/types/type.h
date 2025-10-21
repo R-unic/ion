@@ -73,19 +73,3 @@ struct Type
 
     virtual ~Type() = default;
 };
-
-inline std::string join_types_by(const std::vector<type_ptr_t>& texts, const std::string& separator)
-{
-    std::ostringstream oss;
-    auto first = true;
-    for (auto& s : texts)
-    {
-        if (!first)
-            oss << separator;
-
-        oss << s->to_string();
-        first = false;
-    }
-
-    return oss.str();
-}

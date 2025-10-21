@@ -35,6 +35,6 @@ struct UnionType final : Type
 
     [[nodiscard]] std::string to_string() const override
     {
-        return join_types_by(types, " | ");
+        return join_by(types, " | ");
     }
 };

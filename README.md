@@ -121,7 +121,13 @@ For any bugs please create an issue, describe it descriptively, and include how 
         - [x] Array
         - [x] Tuple
         - [ ] Range
+    - [x] Interfaces
+    - [ ] Functions
+    - [ ] Events
     - [ ] Generics
+        - [x] Type
+        - [ ] Function
+        - [ ] Event
     - [ ] Roblox literals (rgb, hsv, vector)
     - [x] Identifiers
     - [x] Variable declarations

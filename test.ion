@@ -1,1 +1,5 @@
-let const tuple: (number, number, number) = (69, 420, 1337)
+interface Foo<T> {
+    bar: T;
+}
+
+let x: Foo<number>

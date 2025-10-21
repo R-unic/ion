@@ -57,13 +57,15 @@ type_ptr_t Type::from_interface(const InterfaceDeclaration& declaration)
     InterfaceType::member_map_t members;
     for (auto& member : declaration.members->statements)
         if (const auto field = dynamic_unique_ptr_cast<InterfaceField>(member))
-            members.insert_or_assign(std::make_shared<LiteralType>(field->name.get_text()),
-                                     from(field->type));
+            members.insert_or_assign(std::make_shared<LiteralType>(field->name.get_text()), from(field->type));
         else if (const auto method = dynamic_unique_ptr_cast<InterfaceMethod>(member))
-            members.insert_or_assign(std::make_shared<LiteralType>(method->name.get_text()),
-                                     from_function_like(method));
+            members.insert_or_assign(std::make_shared<LiteralType>(method->name.get_text()), from_function_like(method));
 
-    return std::make_unique<InterfaceType>(declaration.name.get_text(), members);
+    const auto type_parameters = declaration.type_parameters.has_value()
+                                     ? from_list(declaration.type_parameters.value()->list)
+                                     : std::vector<type_ptr_t>();
+
+    return std::make_unique<InterfaceType>(declaration.name.get_text(), members, type_parameters);
 }
 
 type_ptr_t Type::from(type_ref_ptr_t& type_ref)
@@ -72,7 +74,13 @@ type_ptr_t Type::from(type_ref_ptr_t& type_ref)
     if (const auto primitive_type = dynamic_unique_ptr_cast<PrimitiveTypeRef>(type_ref))
         result = std::make_shared<PrimitiveType>(get_primitive_type_kind(primitive_type->get_text()));
     if (const auto type_name = dynamic_unique_ptr_cast<TypeNameRef>(type_ref))
-        result = std::make_shared<TypeName>(type_name->name.get_text());
+    {
+        auto type_arguments = type_name->type_arguments.has_value()
+                                  ? from_list(type_name->type_arguments.value()->list)
+                                  : std::vector<type_ptr_t>();
+
+        result = std::make_shared<TypeName>(type_name->name.get_text(), std::move(type_arguments));
+    }
     if (const auto literal_type = dynamic_unique_ptr_cast<LiteralTypeRef>(type_ref))
         result = std::make_shared<LiteralType>(literal_type->value);
     if (const auto nullable_type = dynamic_unique_ptr_cast<NullableTypeRef>(type_ref))

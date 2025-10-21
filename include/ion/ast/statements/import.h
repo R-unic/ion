@@ -47,6 +47,6 @@ public:
 
     [[nodiscard]] std::string get_text() const override
     {
-        return "import " + join_tokens_by(names, ", ") + " from " + module_name.get_text();
+        return "import " + join_by(names, ", ") + " from " + module_name.get_text();
     }
 };

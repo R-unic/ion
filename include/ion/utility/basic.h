@@ -101,7 +101,7 @@ auto skip_first(R&& r)
     return std::forward<R>(r) | std::views::drop(1);
 }
 
-inline std::string join_strings_by(const std::vector<std::string>& texts, const std::string& separator)
+inline std::string join_by(const std::vector<std::string>& texts, const std::string& separator)
 {
     std::ostringstream oss;
     auto first = true;

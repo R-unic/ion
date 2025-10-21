@@ -32,6 +32,6 @@ struct TupleType final : Type
 
     [[nodiscard]] std::string to_string() const override
     {
-        return '(' + join_types_by(element_types, ", ") + ')';
+        return '(' + join_by(element_types, ", ") + ')';
     }
 };

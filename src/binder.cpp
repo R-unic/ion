@@ -148,7 +148,8 @@ void Binder::visit_type_name(TypeNameRef& type_name_ref)
             type_name_ref.symbol = symbol;
         else
         {
-            type_ptr_t type = std::make_shared<TypeName>(type_name_ref.get_text());
+            type_ref_ptr_t type_ref_ptr = std::make_unique<TypeNameRef>(type_name_ref);
+            auto type = Type::from(type_ref_ptr);
             const auto named_symbol = define_type_symbol(symbol->name, type);
             named_symbol->declaring_symbol = symbol;
             type_name_ref.symbol = named_symbol;

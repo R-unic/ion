@@ -28,8 +28,8 @@ struct FunctionType final : Type
 
     [[nodiscard]] std::string to_string() const override
     {
-        const auto type_parameters_text = type_parameters.empty() ? "" : '<' + join_types_by(type_parameters, ", ") + '>';
-        const auto parameters_text = join_types_by(parameters, ", ");
+        const auto type_parameters_text = type_parameters.empty() ? "" : '<' + join_by(type_parameters, ", ") + '>';
+        const auto parameters_text = join_by(parameters, ", ");
         return type_parameters_text + '(' + parameters_text + ") -> " + return_type->to_string();
     }
 };

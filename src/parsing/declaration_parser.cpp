@@ -90,9 +90,10 @@ static statement_ptr_t parse_interface_declaration(ParseState& state)
 {
     const auto keyword = previous_token_guaranteed(state);
     const auto name = expect(state, SyntaxKind::Identifier);
+    const auto type_parameters = parse_type_parameters(state);
     const auto braced_statement_list = parse_braced_statement_list(state, parse_interface_member);
 
-    return InterfaceDeclaration::create(keyword, name, braced_statement_list);
+    return InterfaceDeclaration::create(keyword, name, type_parameters, braced_statement_list);
 }
 
 static FunctionBody* parse_function_body(ParseState& state)
